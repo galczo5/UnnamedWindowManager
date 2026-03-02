@@ -3,7 +3,7 @@
 //  UnnamedWindowManager
 //
 
-import Foundation
+import AppKit
 
 struct SnapKey: Hashable, Sendable {
     let pid: pid_t
@@ -34,9 +34,11 @@ final class SnapRegistry {
     }
 
     func setSize(width: CGFloat, height: CGFloat, for key: SnapKey) {
+        guard let screen = NSScreen.main else { return }
+        let clamped = WindowSnapper.clampSize(CGSize(width: width, height: height), screen: screen)
         queue.async(flags: .barrier) {
-            self.store[key]?.width = width
-            self.store[key]?.height = height
+            self.store[key]?.width  = clamped.width
+            self.store[key]?.height = clamped.height
         }
     }
 

@@ -56,6 +56,17 @@ extension WindowSnapper {
         }
     }
 
+    /// Returns `size` with width and height clamped to the per-screen maximums defined in `Config`.
+    static func clampSize(_ size: CGSize, screen: NSScreen) -> CGSize {
+        let visible = screen.visibleFrame
+        let maxW = visible.width  * Config.maxWidthFraction
+        let maxH = visible.height * Config.maxHeightFraction - Config.gap * 2
+        return CGSize(
+            width:  min(size.width,  maxW),
+            height: min(size.height, maxH)
+        )
+    }
+
     private static func xRange(
         for targetKey: SnapKey,
         entries: [(key: SnapKey, entry: SnapEntry)],

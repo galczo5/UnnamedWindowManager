@@ -11,6 +11,11 @@ enum Config {
     static let gap: CGFloat = 10
     /// Fallback width fraction of the visible screen when a window's size cannot be read.
     static let fallbackWidthFraction: CGFloat = 0.4
+    /// Maximum width of a snapped window as a fraction of the visible screen width.
+    static let maxWidthFraction: CGFloat = 0.80
+    /// Maximum height of a snapped window: full visible height minus top and bottom gaps.
+    /// Expressed as a multiplier; effective cap = visible.height × maxHeightFraction − 2 × gap.
+    static let maxHeightFraction: CGFloat = 1.0
     /// Corner radius of the swap-target overlay rectangle (points).
     static let overlayCornerRadius: CGFloat = 8
     /// Border width of the swap-target overlay rectangle (points).

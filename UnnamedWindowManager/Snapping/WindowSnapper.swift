@@ -23,13 +23,17 @@ struct WindowSnapper {
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let axWindow = focusedWindow as! AXUIElement
 
-        let visible = NSScreen.main?.visibleFrame ?? .zero
-        let snapHeight = visible.height - Config.gap * 2
-        let originalWidth = readSize(of: axWindow)?.width ?? visible.width * Config.fallbackWidthFraction
+        guard let screen = NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let rawSize = CGSize(
+            width:  readSize(of: axWindow)?.width ?? visible.width * Config.fallbackWidthFraction,
+            height: visible.height - Config.gap * 2
+        )
+        let clamped = WindowSnapper.clampSize(rawSize, screen: screen)
 
         let key  = snapKey(for: axWindow, pid: pid)
         let slot = SnapRegistry.shared.nextSlot()
-        SnapRegistry.shared.register(key, slot: slot, width: originalWidth, height: snapHeight)
+        SnapRegistry.shared.register(key, slot: slot, width: clamped.width, height: clamped.height)
         applyPosition(to: axWindow, key: key)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
     }
