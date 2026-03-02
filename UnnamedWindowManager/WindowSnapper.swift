@@ -6,6 +6,9 @@
 import AppKit
 import ApplicationServices
 
+@_silgen_name("_AXUIElementGetWindow")
+private func _AXUIElementGetWindow(_ element: AXUIElement, _ outWindowID: UnsafeMutablePointer<CGWindowID>) -> AXError
+
 struct WindowSnapper {
 
     static func snap() {
@@ -78,7 +81,55 @@ struct WindowSnapper {
         return (size.width > 0 && size.height > 0) ? size : nil
     }
 
+    internal static func windowID(of window: AXUIElement) -> CGWindowID? {
+        var wid: CGWindowID = 0
+        return _AXUIElementGetWindow(window, &wid) == .success ? wid : nil
+    }
+
+    internal static func readOrigin(of window: AXUIElement) -> CGPoint? {
+        var ref: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(window, kAXPositionAttribute as CFString, &ref) == .success,
+              let axVal = ref,
+              CFGetTypeID(axVal) == AXValueGetTypeID()
+        else { return nil }
+        var point = CGPoint.zero
+        AXValueGetValue(axVal as! AXValue, .cgPoint, &point)
+        return point
+    }
+
+    /// Returns the key of the snapped window whose horizontal zone contains the mid-X of `window`,
+    /// or `nil` if the window was dropped over empty space.
+    static func findSwapTarget(for key: SnapKey, window: AXUIElement) -> SnapKey? {
+        guard let screen = NSScreen.main,
+              let droppedSize = readSize(of: window),
+              let droppedOrigin = readOrigin(of: window) else { return nil }
+
+        let droppedMidX = droppedOrigin.x + droppedSize.width / 2
+        let entries = SnapRegistry.shared.allEntries()
+
+        return entries.first(where: { item in
+            item.key != key &&
+            xRange(for: item.key, entries: entries, screen: screen)?.contains(droppedMidX) == true
+        })?.key
+    }
+
     // MARK: - Private
+
+    private static func xRange(
+        for targetKey: SnapKey,
+        entries: [(key: SnapKey, entry: SnapEntry)],
+        screen: NSScreen
+    ) -> ClosedRange<CGFloat>? {
+        guard let myEntry = entries.first(where: { $0.key == targetKey })?.entry else { return nil }
+        let visible = screen.visibleFrame
+
+        var xOffset = visible.minX + Config.gap
+        for item in entries {
+            if item.entry.slot == myEntry.slot { break }
+            xOffset += item.entry.width + Config.gap
+        }
+        return xOffset...(xOffset + myEntry.width)
+    }
 
     private static func applyPosition(
         to window: AXUIElement,

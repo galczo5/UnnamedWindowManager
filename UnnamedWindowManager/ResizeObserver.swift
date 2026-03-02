@@ -37,6 +37,8 @@ final class ResizeObserver {
     private var reapplying: Set<SnapKey>                 = []
     /// Pending mouse-up poll work items, keyed by SnapKey.
     private var pendingReapply: [SnapKey: DispatchWorkItem] = [:]
+    /// Translucent overlay shown over the current swap target while dragging.
+    private var swapOverlay: NSWindow?
 
     // MARK: – Public
 
@@ -85,10 +87,62 @@ final class ResizeObserver {
         guard !reapplying.contains(key) else { return }
 
         let isResize = notification == (kAXWindowResizedNotification as String)
+
+        // While a drag is in progress, update the swap-target overlay in real time.
+        if !isResize && NSEvent.pressedMouseButtons != 0 {
+            updateSwapOverlay(for: key, draggedWindow: element)
+        }
+
         scheduleReapplyWhenMouseUp(key: key, isResize: isResize)
     }
 
     // MARK: – Private
+
+    private func updateSwapOverlay(for draggedKey: SnapKey, draggedWindow: AXUIElement) {
+        guard let targetKey = WindowSnapper.findSwapTarget(for: draggedKey, window: draggedWindow),
+              let targetElement = elements[targetKey],
+              let axOrigin = WindowSnapper.readOrigin(of: targetElement),
+              let axSize   = WindowSnapper.readSize(of: targetElement) else {
+            hideSwapOverlay()
+            return
+        }
+
+        // AX coordinates use a top-left origin; convert to AppKit's bottom-left origin.
+        let screenHeight = NSScreen.screens[0].frame.height
+        let appKitOrigin = CGPoint(x: axOrigin.x, y: screenHeight - axOrigin.y - axSize.height)
+        let frame = CGRect(origin: appKitOrigin, size: axSize)
+        let draggedWindowNumber = WindowSnapper.windowID(of: draggedWindow).map(Int.init)
+        showSwapOverlay(frame: frame, belowWindow: draggedWindowNumber)
+    }
+
+    private func showSwapOverlay(frame: CGRect, belowWindow windowNumber: Int?) {
+        if swapOverlay == nil {
+            let win = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
+            win.isOpaque = false
+            win.backgroundColor = .clear
+            win.ignoresMouseEvents = true
+            win.collectionBehavior = [.canJoinAllSpaces, .transient]
+
+            let view = NSView()
+            view.wantsLayer = true
+            view.layer?.backgroundColor = Config.overlayFillColor.cgColor
+            view.layer?.borderColor = Config.overlayBorderColor.cgColor
+            view.layer?.borderWidth = Config.overlayBorderWidth
+            view.layer?.cornerRadius = Config.overlayCornerRadius
+            win.contentView = view
+            swapOverlay = win
+        }
+        swapOverlay?.setFrame(frame, display: false)
+        if let windowNumber {
+            swapOverlay?.order(.below, relativeTo: windowNumber)
+        } else {
+            swapOverlay?.orderFront(nil)
+        }
+    }
+
+    private func hideSwapOverlay() {
+        swapOverlay?.orderOut(nil)
+    }
 
     private func axObserver(for pid: pid_t) -> AXObserver? {
         if let existing = observers[pid] { return existing }
@@ -117,6 +171,8 @@ final class ResizeObserver {
                 return
             }
 
+            self.hideSwapOverlay()
+
             guard !self.reapplying.contains(key),
                   let storedElement = self.elements[key] else { return }
 
@@ -132,11 +188,22 @@ final class ResizeObserver {
                     self?.reapplying.subtract(allKeys)
                 }
             } else {
-                // Restore position (and stored size) of the moved window only.
-                self.reapplying.insert(key)
-                WindowSnapper.reapply(window: storedElement, key: key)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.reapplying.remove(key)
+                // Check if the window was dropped on another snapped window's zone.
+                if let targetKey = WindowSnapper.findSwapTarget(for: key, window: storedElement) {
+                    SnapRegistry.shared.swapSlots(key, targetKey)
+                    let allKeys = Set(SnapRegistry.shared.allEntries().map(\.key))
+                    self.reapplying.formUnion(allKeys)
+                    WindowSnapper.reapplyAll()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        self?.reapplying.subtract(allKeys)
+                    }
+                } else {
+                    // Restore position (and stored size) of the moved window only.
+                    self.reapplying.insert(key)
+                    WindowSnapper.reapply(window: storedElement, key: key)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        self?.reapplying.remove(key)
+                    }
                 }
             }
         }
@@ -148,6 +215,7 @@ final class ResizeObserver {
     private func cleanup(key: SnapKey, pid: pid_t) {
         pendingReapply[key]?.cancel()
         pendingReapply.removeValue(forKey: key)
+        hideSwapOverlay()
         elements.removeValue(forKey: key)
         reapplying.remove(key)
         keysByPid[pid]?.remove(key)

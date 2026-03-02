@@ -11,7 +11,7 @@ struct SnapKey: Hashable, Sendable {
 }
 
 struct SnapEntry {
-    let slot: Int
+    var slot: Int
     var width: CGFloat
     var height: CGFloat
 }
@@ -54,6 +54,15 @@ final class SnapRegistry {
 
     func remove(_ key: SnapKey) {
         queue.async(flags: .barrier) { self.store.removeValue(forKey: key) }
+    }
+
+    func swapSlots(_ key1: SnapKey, _ key2: SnapKey) {
+        queue.sync(flags: .barrier) {
+            guard var e1 = self.store[key1], var e2 = self.store[key2] else { return }
+            swap(&e1.slot, &e2.slot)
+            self.store[key1] = e1
+            self.store[key2] = e2
+        }
     }
 
     func isTracked(_ key: SnapKey) -> Bool {
