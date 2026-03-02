@@ -23,10 +23,14 @@ struct WindowSnapper {
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let axWindow = focusedWindow as! AXUIElement
 
-        let key = snapKey(for: axWindow, pid: pid)
+        let visible = NSScreen.main?.visibleFrame ?? .zero
+        let snapHeight = visible.height - Config.gap * 2
+        let originalWidth = readSize(of: axWindow)?.width ?? visible.width * Config.fallbackWidthFraction
+
+        let key  = snapKey(for: axWindow, pid: pid)
         let slot = SnapRegistry.shared.nextSlot()
-        applyFrame(to: axWindow, slot: slot)
-        SnapRegistry.shared.register(key, slot: slot)
+        SnapRegistry.shared.register(key, slot: slot, width: originalWidth, height: snapHeight)
+        applyPosition(to: axWindow, key: key)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
     }
 
@@ -46,8 +50,16 @@ struct WindowSnapper {
     }
 
     static func reapply(window: AXUIElement, key: SnapKey) {
-        guard let slot = SnapRegistry.shared.slot(for: key) else { return }
-        applyFrame(to: window, slot: slot)
+        guard SnapRegistry.shared.entry(for: key) != nil else { return }
+        applyPosition(to: window, key: key)
+    }
+
+    static func reapplyAll() {
+        let entries = SnapRegistry.shared.allEntries()
+        for (key, _) in entries {
+            guard let axWindow = ResizeObserver.shared.window(for: key) else { continue }
+            applyPosition(to: axWindow, key: key, entries: entries)
+        }
     }
 
     static func snapKey(for window: AXUIElement, pid: pid_t) -> SnapKey {
@@ -55,24 +67,43 @@ struct WindowSnapper {
         return SnapKey(pid: pid, windowHash: UInt(bitPattern: ptr))
     }
 
+    internal static func readSize(of window: AXUIElement) -> CGSize? {
+        var sizeRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(window, kAXSizeAttribute as CFString, &sizeRef) == .success,
+              let axVal = sizeRef,
+              CFGetTypeID(axVal) == AXValueGetTypeID()
+        else { return nil }
+        var size = CGSize.zero
+        AXValueGetValue(axVal as! AXValue, .cgSize, &size)
+        return (size.width > 0 && size.height > 0) ? size : nil
+    }
+
     // MARK: - Private
 
-    private static func applyFrame(to window: AXUIElement, slot: Int) {
+    private static func applyPosition(
+        to window: AXUIElement,
+        key: SnapKey,
+        entries: [(key: SnapKey, entry: SnapEntry)]? = nil
+    ) {
         guard let screen = NSScreen.main else { return }
         let visible = screen.visibleFrame
         let primaryHeight = NSScreen.screens[0].frame.height
 
-        let gap: CGFloat = 10
-        let w = visible.width * 0.4
-        let h = visible.height - gap * 2
+        let allEntries = entries ?? SnapRegistry.shared.allEntries()
+        guard let myEntry = allEntries.first(where: { $0.key == key })?.entry else { return }
 
-        let axX = visible.minX + gap + CGFloat(slot) * (w + gap)
-        let axY = primaryHeight - visible.maxY + gap
+        // Sum widths of all windows in lower slots to compute this window's X position.
+        var xOffset = visible.minX + Config.gap
+        for item in allEntries {
+            if item.entry.slot == myEntry.slot { break }
+            xOffset += item.entry.width + Config.gap
+        }
 
-        var origin = CGPoint(x: axX, y: axY)
-        var size   = CGSize(width: w, height: h)
+        let axY = primaryHeight - visible.maxY + Config.gap
 
-        // Set position first, then size (order matters to avoid layout artifacts)
+        var origin = CGPoint(x: xOffset, y: axY)
+        var size   = CGSize(width: myEntry.width, height: myEntry.height)
+
         if let posVal = AXValueCreate(.cgPoint, &origin) {
             AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, posVal)
         }
