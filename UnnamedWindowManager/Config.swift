@@ -16,6 +16,8 @@ enum Config {
     /// Maximum height of a snapped window: full visible height minus top and bottom gaps.
     /// Expressed as a multiplier; effective cap = visible.height × maxHeightFraction − 2 × gap.
     static let maxHeightFraction: CGFloat = 1.0
+    /// Fraction of a window's width that counts as the left or right drop zone (each side).
+    static let dropZoneFraction: CGFloat = 0.10
     /// Corner radius of the swap-target overlay rectangle (points).
     static let overlayCornerRadius: CGFloat = 8
     /// Border width of the swap-target overlay rectangle (points).

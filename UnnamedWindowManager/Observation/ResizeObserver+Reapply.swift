@@ -41,8 +41,15 @@ extension ResizeObserver {
                 }
             } else {
                 // Check if the window was dropped on another snapped window's zone.
-                if let targetKey = WindowSnapper.findSwapTarget(for: key, window: storedElement) {
-                    SnapRegistry.shared.swapSlots(key, targetKey)
+                if let target = WindowSnapper.findDropTarget(for: key) {
+                    switch target.zone {
+                    case .left:
+                        SnapRegistry.shared.moveSlot(key, before: target.key)
+                    case .right:
+                        SnapRegistry.shared.moveSlot(key, after: target.key)
+                    case .center:
+                        SnapRegistry.shared.swapSlots(key, target.key)
+                    }
                     let allKeys = Set(SnapRegistry.shared.allEntries().map(\.key))
                     self.reapplying.formUnion(allKeys)
                     WindowSnapper.reapplyAll()

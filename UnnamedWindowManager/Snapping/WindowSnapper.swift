@@ -38,6 +38,67 @@ struct WindowSnapper {
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
     }
 
+    static func organize() {
+        guard AXIsProcessTrusted() else {
+            let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+            AXIsProcessTrustedWithOptions(opts as CFDictionary)
+            return
+        }
+        guard let screen = NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
+
+        // 1. Collect on-screen normal windows (layer 0, minimum size) grouped by PID.
+        guard let cgList = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
+        ) as? [[String: Any]] else { return }
+
+        var pidToWindowIDs: [pid_t: Set<CGWindowID>] = [:]
+        for info in cgList {
+            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
+                  let pid   = info[kCGWindowOwnerPID as String] as? Int,
+                  let wid   = info[kCGWindowNumber as String] as? CGWindowID,
+                  let bounds = info[kCGWindowBounds as String] as? [String: CGFloat],
+                  let w = bounds["Width"], let h = bounds["Height"],
+                  w > 100, h > 100,
+                  pid_t(pid) != ownPID
+            else { continue }
+            pidToWindowIDs[pid_t(pid), default: []].insert(wid)
+        }
+
+        // 2. Resolve CGWindowIDs back to AXUIElements; collect origin for ordering.
+        var candidates: [(window: AXUIElement, pid: pid_t, originX: CGFloat)] = []
+        for (pid, wids) in pidToWindowIDs {
+            let axApp = AXUIElementCreateApplication(pid)
+            var windowsRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+                  let axWindows = windowsRef as? [AXUIElement] else { continue }
+            for axWindow in axWindows {
+                guard let wid = windowID(of: axWindow), wids.contains(wid) else { continue }
+                var minRef: CFTypeRef?
+                if AXUIElementCopyAttributeValue(axWindow, kAXMinimizedAttribute as CFString, &minRef) == .success,
+                   (minRef as? Bool) == true { continue }
+                let originX = readOrigin(of: axWindow)?.x ?? 0
+                candidates.append((window: axWindow, pid: pid, originX: originX))
+            }
+        }
+
+        // 3. Snap in left-to-right order, skipping already-snapped windows.
+        for item in candidates.sorted(by: { $0.originX < $1.originX }) {
+            let key = snapKey(for: item.window, pid: item.pid)
+            guard !SnapRegistry.shared.isTracked(key) else { continue }
+            let rawSize = CGSize(
+                width:  readSize(of: item.window)?.width ?? visible.width * Config.fallbackWidthFraction,
+                height: visible.height - Config.gap * 2
+            )
+            let clamped = clampSize(rawSize, screen: screen)
+            let slot = SnapRegistry.shared.nextSlot()
+            SnapRegistry.shared.register(key, slot: slot, width: clamped.width, height: clamped.height)
+            applyPosition(to: item.window, key: key)
+            ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
+        }
+    }
+
     static func unsnap() {
         guard AXIsProcessTrusted() else { return }
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }

@@ -8,20 +8,34 @@ import AppKit
 extension ResizeObserver {
 
     func updateSwapOverlay(for draggedKey: SnapKey, draggedWindow: AXUIElement) {
-        guard let targetKey = WindowSnapper.findSwapTarget(for: draggedKey, window: draggedWindow),
-              let targetElement = elements[targetKey],
-              let axOrigin = WindowSnapper.readOrigin(of: targetElement),
-              let axSize   = WindowSnapper.readSize(of: targetElement) else {
+        guard let screen = NSScreen.main,
+              let target = WindowSnapper.findDropTarget(for: draggedKey) else {
             hideSwapOverlay()
             return
         }
 
-        // AX coordinates use a top-left origin; convert to AppKit's bottom-left origin.
-        let screenHeight = NSScreen.screens[0].frame.height
-        let appKitOrigin = CGPoint(x: axOrigin.x, y: screenHeight - axOrigin.y - axSize.height)
-        let frame = CGRect(origin: appKitOrigin, size: axSize)
+        let frame: CGRect?
+        switch target.zone {
+        case .left:
+            frame = WindowSnapper.leftGapFrame(for: target.key, screen: screen)
+        case .right:
+            frame = WindowSnapper.rightGapFrame(for: target.key, screen: screen)
+        case .center:
+            guard let targetElement = elements[target.key],
+                  let axOrigin = WindowSnapper.readOrigin(of: targetElement),
+                  let axSize   = WindowSnapper.readSize(of: targetElement) else {
+                hideSwapOverlay()
+                return
+            }
+            let screenHeight = NSScreen.screens[0].frame.height
+            let appKitOrigin = CGPoint(x: axOrigin.x, y: screenHeight - axOrigin.y - axSize.height)
+            frame = CGRect(origin: appKitOrigin, size: axSize)
+        }
+
+        guard let overlayFrame = frame else { hideSwapOverlay(); return }
+
         let draggedWindowNumber = WindowSnapper.windowID(of: draggedWindow).map(Int.init)
-        showSwapOverlay(frame: frame, belowWindow: draggedWindowNumber)
+        showSwapOverlay(frame: overlayFrame, belowWindow: draggedWindowNumber)
     }
 
     func showSwapOverlay(frame: CGRect, belowWindow windowNumber: Int?) {

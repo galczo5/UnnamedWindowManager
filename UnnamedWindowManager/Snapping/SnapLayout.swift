@@ -8,20 +8,71 @@ import ApplicationServices
 
 extension WindowSnapper {
 
-    /// Returns the key of the snapped window whose horizontal zone contains the mid-X of `window`,
-    /// or `nil` if the window was dropped over empty space.
-    static func findSwapTarget(for key: SnapKey, window: AXUIElement) -> SnapKey? {
-        guard let screen = NSScreen.main,
-              let droppedSize = readSize(of: window),
-              let droppedOrigin = readOrigin(of: window) else { return nil }
+    /// Returns the drop target (key + zone) for the window currently being dragged,
+    /// or `nil` if the dragged window is not over any other snapped window.
+    static func findDropTarget(for key: SnapKey) -> DropTarget? {
+        guard let screen = NSScreen.main else { return nil }
 
-        let droppedMidX = droppedOrigin.x + droppedSize.width / 2
+        // Use the live cursor X — identical to AX X (both are left-to-right).
+        let cursorX = NSEvent.mouseLocation.x
         let entries = SnapRegistry.shared.allEntries()
 
-        return entries.first(where: { item in
-            item.key != key &&
-            xRange(for: item.key, entries: entries, screen: screen)?.contains(droppedMidX) == true
-        })?.key
+        for item in entries where item.key != key {
+            guard let range = xRange(for: item.key, entries: entries, screen: screen) else { continue }
+            guard range.contains(cursorX) else { continue }
+
+            let windowWidth = range.upperBound - range.lowerBound
+            let leftEnd     = range.lowerBound + windowWidth * Config.dropZoneFraction
+            let rightStart  = range.lowerBound + windowWidth * (1 - Config.dropZoneFraction)
+
+            let zone: DropZone
+            if cursorX < leftEnd {
+                zone = .left
+            } else if cursorX > rightStart {
+                zone = .right
+            } else {
+                zone = .center
+            }
+
+            return DropTarget(key: item.key, zone: zone)
+        }
+        return nil
+    }
+
+    /// Frame of the gap to the left of `targetKey`'s window, in AppKit screen coordinates.
+    static func leftGapFrame(for targetKey: SnapKey, screen: NSScreen) -> CGRect? {
+        let entries = SnapRegistry.shared.allEntries()
+        guard let range = xRange(for: targetKey, entries: entries, screen: screen),
+              let entry = entries.first(where: { $0.key == targetKey })?.entry else { return nil }
+
+        let primaryHeight = NSScreen.screens[0].frame.height
+        let axY           = primaryHeight - screen.visibleFrame.maxY + Config.gap
+        let appKitY       = primaryHeight - axY - entry.height
+
+        return CGRect(
+            x:      range.lowerBound - Config.gap,
+            y:      appKitY,
+            width:  Config.gap,
+            height: entry.height
+        )
+    }
+
+    /// Frame of the gap to the right of `targetKey`'s window, in AppKit screen coordinates.
+    static func rightGapFrame(for targetKey: SnapKey, screen: NSScreen) -> CGRect? {
+        let entries = SnapRegistry.shared.allEntries()
+        guard let range = xRange(for: targetKey, entries: entries, screen: screen),
+              let entry = entries.first(where: { $0.key == targetKey })?.entry else { return nil }
+
+        let primaryHeight = NSScreen.screens[0].frame.height
+        let axY           = primaryHeight - screen.visibleFrame.maxY + Config.gap
+        let appKitY       = primaryHeight - axY - entry.height
+
+        return CGRect(
+            x:      range.upperBound,
+            y:      appKitY,
+            width:  Config.gap,
+            height: entry.height
+        )
     }
 
     static func applyPosition(

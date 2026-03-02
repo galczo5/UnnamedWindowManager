@@ -5,23 +5,12 @@
 
 import AppKit
 
-struct SnapKey: Hashable, Sendable {
-    let pid: pid_t
-    let windowHash: UInt
-}
-
-struct SnapEntry {
-    var slot: Int
-    var width: CGFloat
-    var height: CGFloat
-}
-
 final class SnapRegistry {
     static let shared = SnapRegistry()
     private init() {}
 
-    private var store: [SnapKey: SnapEntry] = [:]
-    private let queue = DispatchQueue(label: "snap.registry", attributes: .concurrent)
+    var store: [SnapKey: SnapEntry] = [:]
+    let queue = DispatchQueue(label: "snap.registry", attributes: .concurrent)
 
     func register(_ key: SnapKey, slot: Int, width: CGFloat, height: CGFloat) {
         queue.async(flags: .barrier) {
@@ -56,15 +45,6 @@ final class SnapRegistry {
 
     func remove(_ key: SnapKey) {
         queue.async(flags: .barrier) { self.store.removeValue(forKey: key) }
-    }
-
-    func swapSlots(_ key1: SnapKey, _ key2: SnapKey) {
-        queue.sync(flags: .barrier) {
-            guard var e1 = self.store[key1], var e2 = self.store[key2] else { return }
-            swap(&e1.slot, &e2.slot)
-            self.store[key1] = e1
-            self.store[key2] = e2
-        }
     }
 
     func isTracked(_ key: SnapKey) -> Bool {
