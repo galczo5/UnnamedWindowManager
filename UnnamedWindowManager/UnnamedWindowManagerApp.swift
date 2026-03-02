@@ -13,6 +13,7 @@ struct UnnamedWindowManagerApp: App {
         MenuBarExtra("Window Manager", systemImage: "rectangle.split.2x1") {
             Button("Snap Left")  { WindowSnapper.snap(.left)  }
             Button("Snap Right") { WindowSnapper.snap(.right) }
+            Button("Unsnap")     { WindowSnapper.unsnap()     }
             Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
         }
