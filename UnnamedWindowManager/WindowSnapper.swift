@@ -8,7 +8,7 @@ import ApplicationServices
 
 struct WindowSnapper {
 
-    static func snap(_ side: SnapSide) {
+    static func snap() {
         guard AXIsProcessTrusted() else {
             let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
             AXIsProcessTrustedWithOptions(opts as CFDictionary)
@@ -23,10 +23,10 @@ struct WindowSnapper {
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let axWindow = focusedWindow as! AXUIElement
 
-        applyFrame(to: axWindow, side: side)
-
         let key = snapKey(for: axWindow, pid: pid)
-        SnapRegistry.shared.register(key, side: side)
+        let slot = SnapRegistry.shared.nextSlot()
+        applyFrame(to: axWindow, slot: slot)
+        SnapRegistry.shared.register(key, slot: slot)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
     }
 
@@ -46,8 +46,8 @@ struct WindowSnapper {
     }
 
     static func reapply(window: AXUIElement, key: SnapKey) {
-        guard let side = SnapRegistry.shared.side(for: key) else { return }
-        applyFrame(to: window, side: side)
+        guard let slot = SnapRegistry.shared.slot(for: key) else { return }
+        applyFrame(to: window, slot: slot)
     }
 
     static func snapKey(for window: AXUIElement, pid: pid_t) -> SnapKey {
@@ -57,19 +57,16 @@ struct WindowSnapper {
 
     // MARK: - Private
 
-    private static func applyFrame(to window: AXUIElement, side: SnapSide) {
+    private static func applyFrame(to window: AXUIElement, slot: Int) {
         guard let screen = NSScreen.main else { return }
         let visible = screen.visibleFrame
         let primaryHeight = NSScreen.screens[0].frame.height
 
         let gap: CGFloat = 10
-        let w = visible.width * 0.4 - gap * 2
+        let w = visible.width * 0.4
         let h = visible.height - gap * 2
-        let appKitX: CGFloat = side == .left
-            ? visible.minX + gap
-            : visible.maxX - visible.width * 0.4 + gap
 
-        let axX = appKitX
+        let axX = visible.minX + gap + CGFloat(slot) * (w + gap)
         let axY = primaryHeight - visible.maxY + gap
 
         var origin = CGPoint(x: axX, y: axY)

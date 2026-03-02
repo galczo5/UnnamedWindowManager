@@ -5,8 +5,6 @@
 
 import Foundation
 
-enum SnapSide: Sendable { case left, right }
-
 struct SnapKey: Hashable, Sendable {
     let pid: pid_t
     let windowHash: UInt
@@ -16,15 +14,19 @@ final class SnapRegistry {
     static let shared = SnapRegistry()
     private init() {}
 
-    private var store: [SnapKey: SnapSide] = [:]
+    private var store: [SnapKey: Int] = [:]
     private let queue = DispatchQueue(label: "snap.registry", attributes: .concurrent)
 
-    func register(_ key: SnapKey, side: SnapSide) {
-        queue.async(flags: .barrier) { self.store[key] = side }
+    func register(_ key: SnapKey, slot: Int) {
+        queue.async(flags: .barrier) { self.store[key] = slot }
     }
 
-    func side(for key: SnapKey) -> SnapSide? {
+    func slot(for key: SnapKey) -> Int? {
         queue.sync { store[key] }
+    }
+
+    func nextSlot() -> Int {
+        queue.sync { (store.values.max() ?? -1) + 1 }
     }
 
     func remove(_ key: SnapKey) {
@@ -32,6 +34,6 @@ final class SnapRegistry {
     }
 
     func isTracked(_ key: SnapKey) -> Bool {
-        side(for: key) != nil
+        slot(for: key) != nil
     }
 }

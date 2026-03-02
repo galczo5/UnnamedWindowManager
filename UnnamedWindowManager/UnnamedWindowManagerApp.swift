@@ -11,8 +11,7 @@ import SwiftUI
 struct UnnamedWindowManagerApp: App {
     var body: some Scene {
         MenuBarExtra("Window Manager", systemImage: "rectangle.split.2x1") {
-            Button("Snap Left")  { WindowSnapper.snap(.left)  }
-            Button("Snap Right") { WindowSnapper.snap(.right) }
+            Button("Snap Left")  { WindowSnapper.snap() }
             Button("Unsnap")     { WindowSnapper.unsnap()     }
             Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
