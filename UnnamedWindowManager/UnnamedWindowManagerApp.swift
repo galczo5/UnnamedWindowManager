@@ -10,8 +10,12 @@ import SwiftUI
 @main
 struct UnnamedWindowManagerApp: App {
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra("Window Manager", systemImage: "rectangle.split.2x1") {
+            Button("Snap Left")  { WindowSnapper.snap(.left)  }
+            Button("Snap Right") { WindowSnapper.snap(.right) }
+            Divider()
+            Button("Quit") { NSApplication.shared.terminate(nil) }
         }
+        .menuBarExtraStyle(.menu)
     }
 }

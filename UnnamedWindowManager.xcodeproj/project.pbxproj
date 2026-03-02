@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8EE853682F55F44500645F80 /* 01_init.md in Resources */ = {isa = PBXBuildFile; fileRef = 8EE853652F55F44500645F80 /* 01_init.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		8EE853572F55F29400645F80 /* UnnamedWindowManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UnnamedWindowManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8EE853652F55F44500645F80 /* 01_init.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = 01_init.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +37,7 @@
 		8EE8534E2F55F29400645F80 = {
 			isa = PBXGroup;
 			children = (
+				8EE853672F55F44500645F80 /* docs */,
 				8EE853592F55F29400645F80 /* UnnamedWindowManager */,
 				8EE853582F55F29400645F80 /* Products */,
 			);
@@ -43,6 +49,22 @@
 				8EE853572F55F29400645F80 /* UnnamedWindowManager.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8EE853662F55F44500645F80 /* plans */ = {
+			isa = PBXGroup;
+			children = (
+				8EE853652F55F44500645F80 /* 01_init.md */,
+			);
+			path = plans;
+			sourceTree = "<group>";
+		};
+		8EE853672F55F44500645F80 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				8EE853662F55F44500645F80 /* plans */,
+			);
+			path = docs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -109,6 +131,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8EE853682F55F44500645F80 /* 01_init.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,10 +274,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
+				DEVELOPMENT_TEAM = UXRRYV6876;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -281,10 +305,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
+				DEVELOPMENT_TEAM = UXRRYV6876;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
