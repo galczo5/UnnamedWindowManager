@@ -48,13 +48,20 @@ extension ResizeObserver {
                 if let target = WindowSnapper.findDropTarget(forWindowIn: sourceSlotIndex) {
                     switch target.zone {
                     case .left:
-                        ManagedSlotRegistry.shared.moveSlot(containing: key, before: target.slotIndex)
+                        ManagedSlotRegistry.shared.insertSlotBefore(key, targetSlot: target.slotIndex, screen: screen)
                     case .right:
-                        ManagedSlotRegistry.shared.moveSlot(containing: key, after: target.slotIndex)
-                    case .center:
-                        ManagedSlotRegistry.shared.swapSlots(sourceSlotIndex, target.slotIndex)
+                        ManagedSlotRegistry.shared.insertSlotAfter(key, targetSlot: target.slotIndex, screen: screen)
+                    case .top:
+                        ManagedSlotRegistry.shared.insertWindowTop(key, intoSlot: target.slotIndex, screen: screen)
                     case .bottom:
-                        ManagedSlotRegistry.shared.splitVertical(key, intoSlot: target.slotIndex, screen: screen)
+                        ManagedSlotRegistry.shared.insertWindowBottom(key, intoSlot: target.slotIndex, screen: screen)
+                    case .center:
+                        if let src = ManagedSlotRegistry.shared.findWindow(key) {
+                            ManagedSlotRegistry.shared.swapWindows(
+                                (slotIndex: src.slotIndex, windowIndex: src.windowIndex),
+                                with: (slotIndex: target.slotIndex, windowIndex: target.windowIndex)
+                            )
+                        }
                     }
                     ManagedSlotRegistry.shared.normalizeSlots(screen: screen)
                     let allWindows = self.allTrackedWindows()

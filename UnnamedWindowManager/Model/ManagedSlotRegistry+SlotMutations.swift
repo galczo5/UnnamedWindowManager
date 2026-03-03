@@ -7,73 +7,122 @@ import AppKit
 
 extension ManagedSlotRegistry {
 
-    /// Moves the slot containing `key` to just before `targetSlotIndex`.
-    func moveSlot(containing key: ManagedWindow, before targetSlotIndex: Int) {
+    /// Extracts `draggedKey` from its slot and creates a new slot before `targetSlotIndex`.
+    /// The new slot uses the source slot's width; the window gets full screen height.
+    /// Equalizes heights of any remaining windows in the source slot.
+    func insertSlotBefore(_ draggedKey: ManagedWindow, targetSlot targetSlotIndex: Int, screen: NSScreen) {
+        let visible = screen.visibleFrame
+        let fullH = visible.height - Config.gap * 2
+
         queue.sync(flags: .barrier) {
-            guard let srcIdx = self.indexOfSlot(containing: key),
-                  srcIdx != targetSlotIndex,
-                  targetSlotIndex >= 0, targetSlotIndex <= self.slots.count else { return }
-            let slot = self.slots.remove(at: srcIdx)
-            let insertIdx = srcIdx < targetSlotIndex ? targetSlotIndex - 1 : targetSlotIndex
-            self.slots.insert(slot, at: insertIdx)
+            guard targetSlotIndex >= 0, targetSlotIndex < self.slots.count else { return }
+            guard let srcIdx = self.indexOfSlot(containing: draggedKey) else { return }
+            guard let srcWinIdx = self.slots[srcIdx].windows.firstIndex(of: draggedKey) else { return }
+
+            let sourceWidth = self.slots[srcIdx].width
+            var draggedWindow = self.slots[srcIdx].windows.remove(at: srcWinIdx)
+            draggedWindow.height = fullH
+
+            var adjustedTarget = targetSlotIndex
+            if self.slots[srcIdx].windows.isEmpty {
+                self.slots.remove(at: srcIdx)
+                if srcIdx < adjustedTarget { adjustedTarget -= 1 }
+            } else {
+                self.equalizeHeights(inSlot: srcIdx, visibleHeight: visible.height)
+            }
+
+            let newSlot = ManagedSlot(width: sourceWidth, windows: [draggedWindow])
+            self.slots.insert(newSlot, at: adjustedTarget)
         }
     }
 
-    /// Moves the slot containing `key` to just after `targetSlotIndex`.
-    func moveSlot(containing key: ManagedWindow, after targetSlotIndex: Int) {
+    /// Extracts `draggedKey` from its slot and creates a new slot after `targetSlotIndex`.
+    /// The new slot uses the source slot's width; the window gets full screen height.
+    /// Equalizes heights of any remaining windows in the source slot.
+    func insertSlotAfter(_ draggedKey: ManagedWindow, targetSlot targetSlotIndex: Int, screen: NSScreen) {
+        let visible = screen.visibleFrame
+        let fullH = visible.height - Config.gap * 2
+
         queue.sync(flags: .barrier) {
-            guard let srcIdx = self.indexOfSlot(containing: key),
-                  srcIdx != targetSlotIndex,
-                  targetSlotIndex >= 0, targetSlotIndex < self.slots.count else { return }
-            let slot = self.slots.remove(at: srcIdx)
-            let insertIdx = srcIdx < targetSlotIndex ? targetSlotIndex : targetSlotIndex + 1
-            self.slots.insert(slot, at: insertIdx)
+            guard targetSlotIndex >= 0, targetSlotIndex < self.slots.count else { return }
+            guard let srcIdx = self.indexOfSlot(containing: draggedKey) else { return }
+            guard let srcWinIdx = self.slots[srcIdx].windows.firstIndex(of: draggedKey) else { return }
+
+            let sourceWidth = self.slots[srcIdx].width
+            var draggedWindow = self.slots[srcIdx].windows.remove(at: srcWinIdx)
+            draggedWindow.height = fullH
+
+            var adjustedTarget = targetSlotIndex
+            if self.slots[srcIdx].windows.isEmpty {
+                self.slots.remove(at: srcIdx)
+                if srcIdx < adjustedTarget { adjustedTarget -= 1 }
+            } else {
+                self.equalizeHeights(inSlot: srcIdx, visibleHeight: visible.height)
+            }
+
+            let newSlot = ManagedSlot(width: sourceWidth, windows: [draggedWindow])
+            let insertIdx = adjustedTarget + 1
+            self.slots.insert(newSlot, at: min(insertIdx, self.slots.count))
         }
     }
 
-    /// Swaps two slots in the array.
-    func swapSlots(_ i: Int, _ j: Int) {
-        queue.sync(flags: .barrier) {
-            guard i != j, i >= 0, j >= 0, i < self.slots.count, j < self.slots.count else { return }
-            self.slots.swapAt(i, j)
-        }
-    }
-
-    /// Swaps two windows within a slot (vertical swap).
-    func swapWindowsInSlot(_ slotIndex: Int, _ i: Int, _ j: Int) {
-        queue.sync(flags: .barrier) {
-            guard slotIndex >= 0, slotIndex < self.slots.count,
-                  i != j, i >= 0, j >= 0,
-                  i < self.slots[slotIndex].windows.count,
-                  j < self.slots[slotIndex].windows.count else { return }
-            self.slots[slotIndex].windows.swapAt(i, j)
-        }
-    }
-
-    /// Moves `draggedKey` from its current slot into `targetIndex` slot's window list.
-    /// Removes the source slot if it becomes empty.
-    /// Recomputes heights so all windows in the target slot share the available height equally.
-    func splitVertical(_ draggedKey: ManagedWindow, intoSlot targetIndex: Int, screen: NSScreen) {
+    /// Moves `draggedKey` into `targetIndex` slot as the first window.
+    /// Equalizes heights of all windows in both source and target slots.
+    func insertWindowTop(_ draggedKey: ManagedWindow, intoSlot targetIndex: Int, screen: NSScreen) {
         let visible = screen.visibleFrame
 
         queue.sync(flags: .barrier) {
             guard targetIndex >= 0, targetIndex < self.slots.count else { return }
-
-            // Find and remove dragged from its source slot.
             guard let srcIdx = self.indexOfSlot(containing: draggedKey) else { return }
             guard let srcWinIdx = self.slots[srcIdx].windows.firstIndex(of: draggedKey) else { return }
+
             let draggedWindow = self.slots[srcIdx].windows.remove(at: srcWinIdx)
 
-            // Remove source slot if empty; adjust targetIndex if needed.
             var adjustedTarget = targetIndex
             if self.slots[srcIdx].windows.isEmpty {
                 self.slots.remove(at: srcIdx)
                 if srcIdx < adjustedTarget { adjustedTarget -= 1 }
+            } else {
+                self.equalizeHeights(inSlot: srcIdx, visibleHeight: visible.height)
             }
 
             guard adjustedTarget >= 0, adjustedTarget < self.slots.count else { return }
 
-            // Add dragged window to target slot.
+            var moved = draggedWindow
+            let windowCount = CGFloat(self.slots[adjustedTarget].windows.count + 1)
+            let perWindowH = (visible.height - Config.gap * (windowCount + 1)) / windowCount
+            moved.height = perWindowH
+
+            self.slots[adjustedTarget].windows.insert(moved, at: 0)
+
+            for wi in self.slots[adjustedTarget].windows.indices {
+                self.slots[adjustedTarget].windows[wi].height = perWindowH
+            }
+        }
+    }
+
+    /// Moves `draggedKey` into `targetIndex` slot as the last window.
+    /// Equalizes heights of all windows in both source and target slots.
+    func insertWindowBottom(_ draggedKey: ManagedWindow, intoSlot targetIndex: Int, screen: NSScreen) {
+        let visible = screen.visibleFrame
+
+        queue.sync(flags: .barrier) {
+            guard targetIndex >= 0, targetIndex < self.slots.count else { return }
+            guard let srcIdx = self.indexOfSlot(containing: draggedKey) else { return }
+            guard let srcWinIdx = self.slots[srcIdx].windows.firstIndex(of: draggedKey) else { return }
+
+            let draggedWindow = self.slots[srcIdx].windows.remove(at: srcWinIdx)
+
+            var adjustedTarget = targetIndex
+            if self.slots[srcIdx].windows.isEmpty {
+                self.slots.remove(at: srcIdx)
+                if srcIdx < adjustedTarget { adjustedTarget -= 1 }
+            } else {
+                self.equalizeHeights(inSlot: srcIdx, visibleHeight: visible.height)
+            }
+
+            guard adjustedTarget >= 0, adjustedTarget < self.slots.count else { return }
+
             var moved = draggedWindow
             let windowCount = CGFloat(self.slots[adjustedTarget].windows.count + 1)
             let perWindowH = (visible.height - Config.gap * (windowCount + 1)) / windowCount
@@ -81,10 +130,34 @@ extension ManagedSlotRegistry {
 
             self.slots[adjustedTarget].windows.append(moved)
 
-            // Equalize heights for all windows in the target slot.
             for wi in self.slots[adjustedTarget].windows.indices {
                 self.slots[adjustedTarget].windows[wi].height = perWindowH
             }
+        }
+    }
+
+    /// Swaps two individual windows. Each window moves to the other's (slot, index) position.
+    /// Heights travel with the windows (i.e. heights are swapped).
+    func swapWindows(
+        _ a: (slotIndex: Int, windowIndex: Int),
+        with b: (slotIndex: Int, windowIndex: Int)
+    ) {
+        queue.sync(flags: .barrier) {
+            guard a.slotIndex >= 0, a.slotIndex < self.slots.count,
+                  b.slotIndex >= 0, b.slotIndex < self.slots.count,
+                  a.windowIndex >= 0, a.windowIndex < self.slots[a.slotIndex].windows.count,
+                  b.windowIndex >= 0, b.windowIndex < self.slots[b.slotIndex].windows.count
+            else { return }
+
+            if a.slotIndex == b.slotIndex {
+                self.slots[a.slotIndex].windows.swapAt(a.windowIndex, b.windowIndex)
+                return
+            }
+
+            let winA = self.slots[a.slotIndex].windows[a.windowIndex]
+            let winB = self.slots[b.slotIndex].windows[b.windowIndex]
+            self.slots[a.slotIndex].windows[a.windowIndex] = winB
+            self.slots[b.slotIndex].windows[b.windowIndex] = winA
         }
     }
 
@@ -95,10 +168,8 @@ extension ManagedSlotRegistry {
         let fullH = visible.height - Config.gap * 2
 
         queue.sync(flags: .barrier) {
-            // Remove empty slots.
             self.slots.removeAll { $0.windows.isEmpty }
 
-            // Fix lone windows to full height.
             for si in self.slots.indices where self.slots[si].windows.count == 1 {
                 self.slots[si].windows[0].height = fullH
             }
@@ -109,5 +180,14 @@ extension ManagedSlotRegistry {
 
     private func indexOfSlot(containing key: ManagedWindow) -> Int? {
         slots.firstIndex { $0.windows.contains(key) }
+    }
+
+    private func equalizeHeights(inSlot slotIndex: Int, visibleHeight: CGFloat) {
+        let count = CGFloat(self.slots[slotIndex].windows.count)
+        guard count > 0 else { return }
+        let perWindowH = (visibleHeight - Config.gap * (count + 1)) / count
+        for wi in self.slots[slotIndex].windows.indices {
+            self.slots[slotIndex].windows[wi].height = perWindowH
+        }
     }
 }

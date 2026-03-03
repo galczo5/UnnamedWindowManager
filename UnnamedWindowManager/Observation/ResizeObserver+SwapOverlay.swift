@@ -22,13 +22,15 @@ extension ResizeObserver {
             frame = WindowSnapper.leftGapFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
         case .right:
             frame = WindowSnapper.rightGapFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
+        case .top:
+            frame = WindowSnapper.topSplitOverlayFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
         case .bottom:
             frame = WindowSnapper.bottomSplitOverlayFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
         case .center:
-            // Overlay over the full target slot: use live AX bounds of the first window.
+            // Overlay over the specific target window (not the whole slot).
             let targetSlot = slots[target.slotIndex]
-            guard let firstWindow = targetSlot.windows.first,
-                  let targetElement = elements[firstWindow],
+            guard target.windowIndex < targetSlot.windows.count,
+                  let targetElement = elements[targetSlot.windows[target.windowIndex]],
                   let axOrigin = WindowSnapper.readOrigin(of: targetElement),
                   let axSize   = WindowSnapper.readSize(of: targetElement) else {
                 hideSwapOverlay()

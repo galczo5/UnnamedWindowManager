@@ -27,16 +27,18 @@ struct ManagedSlot {
     var windows: [ManagedWindow]
 }
 
-/// Drop zones target a slot by index.
+/// Drop zones per slot.
 enum DropZone {
-    case left    // insert dragged slot before target
-    case center  // swap dragged and target slots
-    case right   // insert dragged slot after target
-    case bottom  // add dragged window into target slot
+    case left    // create new slot before target
+    case top     // add dragged window as first in target slot
+    case center  // swap individual windows
+    case bottom  // add dragged window as last in target slot
+    case right   // create new slot after target
 }
 
-/// A drop target: which slot and which zone the cursor is in.
+/// A drop target: which slot, which window within the slot, and which zone.
 struct DropTarget {
     let slotIndex: Int
+    let windowIndex: Int   // index of the specific window within the slot; used by .center
     let zone: DropZone
 }

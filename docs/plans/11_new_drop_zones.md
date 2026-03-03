@@ -2,16 +2,16 @@
 
 ## Checklist
 
-- [ ] Update `DropZone` enum: add `.top` case in `ManagedTypes.swift`
-- [ ] Update `DropTarget` struct: add `windowIndex` field in `ManagedTypes.swift`
-- [ ] Add `insertSlotBefore(_:targetSlot:screen:)` and `insertSlotAfter(_:targetSlot:screen:)` to `ManagedSlotRegistry+SlotMutations.swift`
-- [ ] Add `insertWindowTop(_:intoSlot:screen:)` to `ManagedSlotRegistry+SlotMutations.swift`; rename existing `splitVertical` → `insertWindowBottom`
-- [ ] Replace `swapSlots` and `swapWindowsInSlot` with `swapWindows(_:with:)` in `ManagedSlotRegistry+SlotMutations.swift`
-- [ ] Rewrite `findDropTarget` hit-test in `SnapLayout.swift` — 5 zones per slot, center zone identifies individual window
-- [ ] Add `topSplitOverlayFrame` helper in `SnapLayout.swift`
-- [ ] Update `ResizeObserver+SwapOverlay.swift` — handle `.top` zone overlay; center overlay targets individual window
-- [ ] Update `ResizeObserver+Reapply.swift` — dispatch to new mutation methods
-- [ ] Update `Config.swift` — add `dropZoneTopFraction`
+- [x] Update `DropZone` enum: add `.top` case in `ManagedTypes.swift`
+- [x] Update `DropTarget` struct: add `windowIndex` field in `ManagedTypes.swift`
+- [x] Add `insertSlotBefore(_:targetSlot:screen:)` and `insertSlotAfter(_:targetSlot:screen:)` to `ManagedSlotRegistry+SlotMutations.swift`
+- [x] Add `insertWindowTop(_:intoSlot:screen:)` to `ManagedSlotRegistry+SlotMutations.swift`; rename existing `splitVertical` → `insertWindowBottom`
+- [x] Replace `swapSlots` and `swapWindowsInSlot` with `swapWindows(_:with:)` in `ManagedSlotRegistry+SlotMutations.swift`
+- [x] Rewrite `findDropTarget` hit-test in `SnapLayout.swift` — 5 zones per slot, center zone identifies individual window
+- [x] Add `topSplitOverlayFrame` helper in `SnapLayout.swift`
+- [x] Update `ResizeObserver+SwapOverlay.swift` — handle `.top` zone overlay; center overlay targets individual window
+- [x] Update `ResizeObserver+Reapply.swift` — dispatch to new mutation methods
+- [x] Update `Config.swift` — add `dropZoneTopFraction`
 
 ---
 

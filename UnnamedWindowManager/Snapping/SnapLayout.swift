@@ -22,30 +22,50 @@ extension WindowSnapper {
             guard let range = xRange(forSlot: si, slots: slots, screen: screen) else { continue }
             guard range.contains(cursorX) else { continue }
 
-            let windowWidth = range.upperBound - range.lowerBound
-            let leftEnd     = range.lowerBound + windowWidth * Config.dropZoneFraction
-            let rightStart  = range.lowerBound + windowWidth * (1 - Config.dropZoneFraction)
+            let slotWidth  = range.upperBound - range.lowerBound
+            let leftEnd    = range.lowerBound + slotWidth * Config.dropZoneFraction
+            let rightStart = range.lowerBound + slotWidth * (1 - Config.dropZoneFraction)
 
-            // Horizontal-only zones — checked first.
-            if cursorX < leftEnd  { return DropTarget(slotIndex: si, zone: .left)  }
-            if cursorX > rightStart { return DropTarget(slotIndex: si, zone: .right) }
+            // Left / right edges — checked first.
+            if cursorX < leftEnd    { return DropTarget(slotIndex: si, windowIndex: 0, zone: .left)  }
+            if cursorX > rightStart { return DropTarget(slotIndex: si, windowIndex: 0, zone: .right) }
 
-            // Cursor is in the horizontal center — check vertical zone.
-            // Only offer .bottom if slot has fewer than 2 windows.
-            if slot.windows.count < 2 {
-                let totalHeight = slot.windows.reduce(CGFloat(0)) { $0 + $1.height }
-                let axY         = primaryHeight - screen.visibleFrame.maxY + Config.gap
-                let appKitBottom = primaryHeight - axY - totalHeight
-                let bottomZoneTop = appKitBottom + totalHeight * Config.dropZoneBottomFraction
+            // Vertical zones within the center band.
+            let totalHeight = slot.windows.reduce(CGFloat(0)) { $0 + $1.height }
+                + Config.gap * CGFloat(slot.windows.count - 1)
+            let axY         = primaryHeight - screen.visibleFrame.maxY + Config.gap
+            let appKitTop   = primaryHeight - axY
+            let appKitBottom = appKitTop - totalHeight
 
-                if cursorY <= bottomZoneTop {
-                    return DropTarget(slotIndex: si, zone: .bottom)
-                }
-            }
+            let topZoneBound    = appKitTop    - totalHeight * Config.dropZoneTopFraction
+            let bottomZoneBound = appKitBottom + totalHeight * Config.dropZoneBottomFraction
 
-            return DropTarget(slotIndex: si, zone: .center)
+            if cursorY >= topZoneBound    { return DropTarget(slotIndex: si, windowIndex: 0, zone: .top) }
+            if cursorY <= bottomZoneBound { return DropTarget(slotIndex: si, windowIndex: 0, zone: .bottom) }
+
+            // Center zone — identify the specific window under the cursor.
+            let wi = windowIndexAtCursor(cursorY: cursorY, slot: slot, slotTopAX: axY, primaryHeight: primaryHeight)
+            return DropTarget(slotIndex: si, windowIndex: wi, zone: .center)
         }
         return nil
+    }
+
+    /// Returns the index of the window under `cursorY` (AppKit coords) within the slot.
+    /// Falls back to the last window if the cursor is below all windows.
+    private static func windowIndexAtCursor(
+        cursorY: CGFloat,
+        slot: ManagedSlot,
+        slotTopAX: CGFloat,
+        primaryHeight: CGFloat
+    ) -> Int {
+        var axY = slotTopAX
+        for (wi, window) in slot.windows.enumerated() {
+            let appKitTop    = primaryHeight - axY
+            let appKitBottom = appKitTop - window.height
+            if cursorY <= appKitTop && cursorY >= appKitBottom { return wi }
+            axY += window.height + Config.gap
+        }
+        return max(slot.windows.count - 1, 0)
     }
 
     /// Frame of the gap to the left of `slotIndex`, in AppKit screen coordinates.
@@ -86,7 +106,7 @@ extension WindowSnapper {
         )
     }
 
-    /// Frame of the lower-half split rectangle, in AppKit screen coordinates.
+    /// Frame of the lower split rectangle (where the new bottom window will land), in AppKit screen coordinates.
     static func bottomSplitOverlayFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
         guard let range = xRange(forSlot: slotIndex, slots: slots, screen: screen) else { return nil }
         let slot = slots[slotIndex]
@@ -97,6 +117,26 @@ extension WindowSnapper {
         return CGRect(
             x:      range.lowerBound,
             y:      visible.minY + Config.gap,
+            width:  slot.width,
+            height: perWindowH
+        )
+    }
+
+    /// Frame of the upper split rectangle (where the new top window will land), in AppKit screen coordinates.
+    static func topSplitOverlayFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
+        guard let range = xRange(forSlot: slotIndex, slots: slots, screen: screen) else { return nil }
+        let slot = slots[slotIndex]
+        let visible = screen.visibleFrame
+        let windowCount = CGFloat(slot.windows.count + 1)
+        let perWindowH  = (visible.height - Config.gap * (windowCount + 1)) / windowCount
+
+        let primaryHeight = NSScreen.screens[0].frame.height
+        let axY       = primaryHeight - visible.maxY + Config.gap
+        let appKitTop = primaryHeight - axY
+
+        return CGRect(
+            x:      range.lowerBound,
+            y:      appKitTop - perWindowH,
             width:  slot.width,
             height: perWindowH
         )
