@@ -7,23 +7,28 @@ import AppKit
 
 extension ResizeObserver {
 
-    func updateSwapOverlay(for draggedKey: SnapKey, draggedWindow: AXUIElement) {
+    func updateSwapOverlay(for draggedKey: ManagedWindow, draggedWindow: AXUIElement) {
         guard let screen = NSScreen.main,
-              let target = WindowSnapper.findDropTarget(for: draggedKey) else {
+              let sourceSlotIndex = ManagedSlotRegistry.shared.slotIndex(for: draggedKey),
+              let target = WindowSnapper.findDropTarget(forWindowIn: sourceSlotIndex) else {
             hideSwapOverlay()
             return
         }
 
+        let slots = ManagedSlotRegistry.shared.allSlots()
         let frame: CGRect?
         switch target.zone {
         case .left:
-            frame = WindowSnapper.leftGapFrame(for: target.key, screen: screen)
+            frame = WindowSnapper.leftGapFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
         case .right:
-            frame = WindowSnapper.rightGapFrame(for: target.key, screen: screen)
+            frame = WindowSnapper.rightGapFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
         case .bottom:
-            frame = WindowSnapper.bottomSplitOverlayFrame(for: target.key, screen: screen)
+            frame = WindowSnapper.bottomSplitOverlayFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
         case .center:
-            guard let targetElement = elements[target.key],
+            // Overlay over the full target slot: use live AX bounds of the first window.
+            let targetSlot = slots[target.slotIndex]
+            guard let firstWindow = targetSlot.windows.first,
+                  let targetElement = elements[firstWindow],
                   let axOrigin = WindowSnapper.readOrigin(of: targetElement),
                   let axSize   = WindowSnapper.readSize(of: targetElement) else {
                 hideSwapOverlay()

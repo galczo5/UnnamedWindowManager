@@ -8,18 +8,18 @@ import ApplicationServices
 
 extension WindowSnapper {
 
-    /// Returns the drop target (key + zone) for the window currently being dragged,
-    /// or `nil` if the dragged window is not over any other snapped window.
-    static func findDropTarget(for key: SnapKey) -> DropTarget? {
+    /// Returns the drop target (slot index + zone) for the window currently being dragged,
+    /// or `nil` if the cursor is not over any other slot.
+    static func findDropTarget(forWindowIn sourceSlotIndex: Int) -> DropTarget? {
         guard let screen = NSScreen.main else { return nil }
 
         let cursorX       = NSEvent.mouseLocation.x
         let cursorY       = NSEvent.mouseLocation.y   // AppKit coords (bottom-left origin)
         let primaryHeight = NSScreen.screens[0].frame.height
-        let entries       = SnapRegistry.shared.allEntries()
+        let slots         = ManagedSlotRegistry.shared.allSlots()
 
-        for item in entries where item.key != key {
-            guard let range = xRange(for: item.key, entries: entries, screen: screen) else { continue }
+        for (si, slot) in slots.enumerated() where si != sourceSlotIndex {
+            guard let range = xRange(forSlot: si, slots: slots, screen: screen) else { continue }
             guard range.contains(cursorX) else { continue }
 
             let windowWidth = range.upperBound - range.lowerBound
@@ -27,99 +27,120 @@ extension WindowSnapper {
             let rightStart  = range.lowerBound + windowWidth * (1 - Config.dropZoneFraction)
 
             // Horizontal-only zones — checked first.
-            if cursorX < leftEnd  { return DropTarget(key: item.key, zone: .left)  }
-            if cursorX > rightStart { return DropTarget(key: item.key, zone: .right) }
+            if cursorX < leftEnd  { return DropTarget(slotIndex: si, zone: .left)  }
+            if cursorX > rightStart { return DropTarget(slotIndex: si, zone: .right) }
 
             // Cursor is in the horizontal center — check vertical zone.
-            // Only offer .bottom if this slot has no row-1 partner yet.
-            let slotAlreadySplit = entries.contains { $0.entry.slot == item.entry.slot && $0.entry.row == 1 }
-            if !slotAlreadySplit {
-                // AppKit Y of window's bottom edge (Y increases upward in AppKit).
-                let axY           = primaryHeight - screen.visibleFrame.maxY + Config.gap
-                let appKitBottom  = primaryHeight - axY - item.entry.height
-                let bottomZoneTop = appKitBottom + item.entry.height * Config.dropZoneBottomFraction
+            // Only offer .bottom if slot has fewer than 2 windows.
+            if slot.windows.count < 2 {
+                let totalHeight = slot.windows.reduce(CGFloat(0)) { $0 + $1.height }
+                let axY         = primaryHeight - screen.visibleFrame.maxY + Config.gap
+                let appKitBottom = primaryHeight - axY - totalHeight
+                let bottomZoneTop = appKitBottom + totalHeight * Config.dropZoneBottomFraction
 
                 if cursorY <= bottomZoneTop {
-                    return DropTarget(key: item.key, zone: .bottom)
+                    return DropTarget(slotIndex: si, zone: .bottom)
                 }
             }
 
-            return DropTarget(key: item.key, zone: .center)
+            return DropTarget(slotIndex: si, zone: .center)
         }
         return nil
     }
 
-    /// Frame of the gap to the left of `targetKey`'s window, in AppKit screen coordinates.
-    static func leftGapFrame(for targetKey: SnapKey, screen: NSScreen) -> CGRect? {
-        let entries = SnapRegistry.shared.allEntries()
-        guard let range = xRange(for: targetKey, entries: entries, screen: screen),
-              let entry = entries.first(where: { $0.key == targetKey })?.entry else { return nil }
+    /// Frame of the gap to the left of `slotIndex`, in AppKit screen coordinates.
+    static func leftGapFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
+        guard let range = xRange(forSlot: slotIndex, slots: slots, screen: screen) else { return nil }
+        let slot = slots[slotIndex]
+        let totalHeight = slot.windows.reduce(CGFloat(0)) { $0 + $1.height }
+            + Config.gap * CGFloat(slot.windows.count - 1)
 
         let primaryHeight = NSScreen.screens[0].frame.height
-        let axY           = primaryHeight - screen.visibleFrame.maxY + Config.gap
-        let appKitY       = primaryHeight - axY - entry.height
+        let axY     = primaryHeight - screen.visibleFrame.maxY + Config.gap
+        let appKitY = primaryHeight - axY - totalHeight
 
         return CGRect(
             x:      range.lowerBound - Config.gap,
             y:      appKitY,
             width:  Config.gap,
-            height: entry.height
+            height: totalHeight
         )
     }
 
-    /// Frame of the gap to the right of `targetKey`'s window, in AppKit screen coordinates.
-    static func rightGapFrame(for targetKey: SnapKey, screen: NSScreen) -> CGRect? {
-        let entries = SnapRegistry.shared.allEntries()
-        guard let range = xRange(for: targetKey, entries: entries, screen: screen),
-              let entry = entries.first(where: { $0.key == targetKey })?.entry else { return nil }
+    /// Frame of the gap to the right of `slotIndex`, in AppKit screen coordinates.
+    static func rightGapFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
+        guard let range = xRange(forSlot: slotIndex, slots: slots, screen: screen) else { return nil }
+        let slot = slots[slotIndex]
+        let totalHeight = slot.windows.reduce(CGFloat(0)) { $0 + $1.height }
+            + Config.gap * CGFloat(slot.windows.count - 1)
 
         let primaryHeight = NSScreen.screens[0].frame.height
-        let axY           = primaryHeight - screen.visibleFrame.maxY + Config.gap
-        let appKitY       = primaryHeight - axY - entry.height
+        let axY     = primaryHeight - screen.visibleFrame.maxY + Config.gap
+        let appKitY = primaryHeight - axY - totalHeight
 
         return CGRect(
             x:      range.upperBound,
             y:      appKitY,
             width:  Config.gap,
-            height: entry.height
+            height: totalHeight
+        )
+    }
+
+    /// Frame of the lower-half split rectangle, in AppKit screen coordinates.
+    static func bottomSplitOverlayFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
+        guard let range = xRange(forSlot: slotIndex, slots: slots, screen: screen) else { return nil }
+        let slot = slots[slotIndex]
+        let visible = screen.visibleFrame
+        let windowCount = CGFloat(slot.windows.count + 1)
+        let perWindowH  = (visible.height - Config.gap * (windowCount + 1)) / windowCount
+
+        return CGRect(
+            x:      range.lowerBound,
+            y:      visible.minY + Config.gap,
+            width:  slot.width,
+            height: perWindowH
         )
     }
 
     static func applyPosition(
         to window: AXUIElement,
-        key: SnapKey,
-        entries: [(key: SnapKey, entry: SnapEntry)]? = nil
+        key: ManagedWindow,
+        slots: [ManagedSlot]? = nil
     ) {
         guard let screen = NSScreen.main else { return }
         let visible       = screen.visibleFrame
         let primaryHeight = NSScreen.screens[0].frame.height
 
-        let allEntries = entries ?? SnapRegistry.shared.allEntries()
-        guard let myEntry = allEntries.first(where: { $0.key == key })?.entry else { return }
+        let allSlots = slots ?? ManagedSlotRegistry.shared.allSlots()
 
-        // Accumulate only row-0 widths: row-1 windows share a slot with their
-        // partner and must not double-count the column width.
+        // Find this window's slot and position within it.
+        var mySlotIndex: Int?
+        var myWindowIndex: Int?
+        for (si, slot) in allSlots.enumerated() {
+            if let wi = slot.windows.firstIndex(of: key) {
+                mySlotIndex = si
+                myWindowIndex = wi
+                break
+            }
+        }
+        guard let si = mySlotIndex, let wi = myWindowIndex else { return }
+        let slot = allSlots[si]
+        let myWindow = slot.windows[wi]
+
+        // X: sum widths of all slots before this one.
         var xOffset = visible.minX + Config.gap
-        for item in allEntries {
-            if item.entry.slot == myEntry.slot { break }
-            if item.entry.row == 0 { xOffset += item.entry.width + Config.gap }
+        for i in 0..<si {
+            xOffset += allSlots[i].width + Config.gap
         }
 
-        let axY: CGFloat
-        if myEntry.row == 0 {
-            axY = primaryHeight - visible.maxY + Config.gap
-        } else {
-            // Row 1: position below the row-0 partner at the same slot.
-            if let partner = allEntries.first(where: { $0.entry.slot == myEntry.slot && $0.entry.row == 0 }) {
-                let partnerAxY = primaryHeight - visible.maxY + Config.gap
-                axY = partnerAxY + partner.entry.height + Config.gap
-            } else {
-                axY = primaryHeight - visible.maxY + Config.gap
-            }
+        // Y: sum heights of all windows before this one in the same slot.
+        var axY = primaryHeight - visible.maxY + Config.gap
+        for i in 0..<wi {
+            axY += slot.windows[i].height + Config.gap
         }
 
         var origin = CGPoint(x: xOffset, y: axY)
-        var size   = CGSize(width: myEntry.width, height: myEntry.height)
+        var size   = CGSize(width: slot.width, height: myWindow.height)
 
         if let posVal = AXValueCreate(.cgPoint, &origin) {
             AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, posVal)
@@ -127,24 +148,6 @@ extension WindowSnapper {
         if let sizeVal = AXValueCreate(.cgSize, &size) {
             AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeVal)
         }
-    }
-
-    /// Frame of the lower-half split rectangle (where the dragged window will land),
-    /// in AppKit screen coordinates.
-    static func bottomSplitOverlayFrame(for targetKey: SnapKey, screen: NSScreen) -> CGRect? {
-        let entries = SnapRegistry.shared.allEntries()
-        guard let range = xRange(for: targetKey, entries: entries, screen: screen),
-              let entry = entries.first(where: { $0.key == targetKey })?.entry else { return nil }
-
-        let visible = screen.visibleFrame
-        let halfH   = (visible.height - Config.gap * 3) / 2
-
-        return CGRect(
-            x:      range.lowerBound,
-            y:      visible.minY + Config.gap,   // AppKit Y: Dock-adjusted bottom + gap
-            width:  entry.width,
-            height: halfH
-        )
     }
 
     /// Returns `size` with width and height clamped to the per-screen maximums defined in `Config`.
@@ -159,19 +162,16 @@ extension WindowSnapper {
     }
 
     private static func xRange(
-        for targetKey: SnapKey,
-        entries: [(key: SnapKey, entry: SnapEntry)],
+        forSlot slotIndex: Int,
+        slots: [ManagedSlot],
         screen: NSScreen
     ) -> ClosedRange<CGFloat>? {
-        guard let myEntry = entries.first(where: { $0.key == targetKey })?.entry else { return nil }
+        guard slotIndex >= 0, slotIndex < slots.count else { return nil }
         let visible = screen.visibleFrame
-
-        // Only row-0 entries contribute column widths; row-1 partners share a slot.
         var xOffset = visible.minX + Config.gap
-        for item in entries {
-            if item.entry.slot == myEntry.slot { break }
-            if item.entry.row == 0 { xOffset += item.entry.width + Config.gap }
+        for i in 0..<slotIndex {
+            xOffset += slots[i].width + Config.gap
         }
-        return xOffset...(xOffset + myEntry.width)
+        return xOffset...(xOffset + slots[slotIndex].width)
     }
 }

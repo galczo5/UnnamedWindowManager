@@ -17,16 +17,18 @@ struct UnnamedWindowManagerApp: App {
             Button("Organize")  { WindowSnapper.organize() }
             Divider()
             Button("Debug") {
-                let entries = SnapRegistry.shared.allEntries()
+                let slots = ManagedSlotRegistry.shared.allSlots()
                 var lines: [String] = []
-                for item in entries {
-                    lines.append(String(format: "slot %d  row %d  pid %-6d  w %6.1f  h %6.1f",
-                                        item.entry.slot, item.entry.row,
-                                        item.key.pid,
-                                        item.entry.width, item.entry.height))
+                for (si, slot) in slots.enumerated() {
+                    for (wi, window) in slot.windows.enumerated() {
+                        lines.append(String(format: "slot %d  win %d  pid %-6d  w %6.1f  h %6.1f",
+                                            si, wi,
+                                            window.pid,
+                                            slot.width, window.height))
+                    }
                 }
                 let alert = NSAlert()
-                alert.messageText = "Snapped Windows (\(entries.count))"
+                alert.messageText = "Snapped Windows (\(slots.count) slots)"
                 alert.informativeText = lines.isEmpty ? "None" : lines.joined(separator: "\n")
                 alert.alertStyle = .informational
                 alert.addButton(withTitle: "OK")

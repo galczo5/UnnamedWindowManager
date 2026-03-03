@@ -31,9 +31,8 @@ struct WindowSnapper {
         )
         let clamped = WindowSnapper.clampSize(rawSize, screen: screen)
 
-        let key  = snapKey(for: axWindow, pid: pid)
-        let slot = SnapRegistry.shared.nextSlot()
-        SnapRegistry.shared.register(key, slot: slot, width: clamped.width, height: clamped.height)
+        let key = managedWindow(for: axWindow, pid: pid)
+        ManagedSlotRegistry.shared.register(key, width: clamped.width, height: clamped.height)
         applyPosition(to: axWindow, key: key)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
     }
@@ -85,15 +84,14 @@ struct WindowSnapper {
 
         // 3. Snap in left-to-right order, skipping already-snapped windows.
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
-            let key = snapKey(for: item.window, pid: item.pid)
-            guard !SnapRegistry.shared.isTracked(key) else { continue }
+            let key = managedWindow(for: item.window, pid: item.pid)
+            guard !ManagedSlotRegistry.shared.isTracked(key) else { continue }
             let rawSize = CGSize(
                 width:  readSize(of: item.window)?.width ?? visible.width * Config.fallbackWidthFraction,
                 height: visible.height - Config.gap * 2
             )
             let clamped = clampSize(rawSize, screen: screen)
-            let slot = SnapRegistry.shared.nextSlot()
-            SnapRegistry.shared.register(key, slot: slot, width: clamped.width, height: clamped.height)
+            ManagedSlotRegistry.shared.register(key, width: clamped.width, height: clamped.height)
             applyPosition(to: item.window, key: key)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
         }
@@ -109,27 +107,29 @@ struct WindowSnapper {
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let axWindow = focusedWindow as! AXUIElement
 
-        let key = snapKey(for: axWindow, pid: pid)
-        SnapRegistry.shared.remove(key)
+        let key = managedWindow(for: axWindow, pid: pid)
+        ManagedSlotRegistry.shared.remove(key)
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
     }
 
-    static func reapply(window: AXUIElement, key: SnapKey) {
-        guard SnapRegistry.shared.entry(for: key) != nil else { return }
+    static func reapply(window: AXUIElement, key: ManagedWindow) {
+        guard ManagedSlotRegistry.shared.isTracked(key) else { return }
         applyPosition(to: window, key: key)
     }
 
     static func reapplyAll() {
-        let entries = SnapRegistry.shared.allEntries()
-        for (key, _) in entries {
-            guard let axWindow = ResizeObserver.shared.window(for: key) else { continue }
-            applyPosition(to: axWindow, key: key, entries: entries)
+        let slots = ManagedSlotRegistry.shared.allSlots()
+        for slot in slots {
+            for win in slot.windows {
+                guard let axWindow = ResizeObserver.shared.window(for: win) else { continue }
+                applyPosition(to: axWindow, key: win, slots: slots)
+            }
         }
     }
 
-    static func snapKey(for window: AXUIElement, pid: pid_t) -> SnapKey {
+    static func managedWindow(for window: AXUIElement, pid: pid_t) -> ManagedWindow {
         let hash = windowID(of: window).map(UInt.init)
                    ?? UInt(bitPattern: Unmanaged.passUnretained(window).toOpaque())
-        return SnapKey(pid: pid, windowHash: hash)
+        return ManagedWindow(pid: pid, windowHash: hash, height: 0)
     }
 }
