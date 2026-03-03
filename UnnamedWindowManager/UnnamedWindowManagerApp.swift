@@ -10,6 +10,10 @@ import AppKit
 
 @main
 struct UnnamedWindowManagerApp: App {
+    init() {
+        WindowEventMonitor.shared.start()
+    }
+
     var body: some Scene {
         MenuBarExtra("Window Manager", systemImage: "rectangle.split.2x1") {
             Button("Snap")      { WindowSnapper.snap()     }

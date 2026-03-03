@@ -62,8 +62,13 @@ final class ResizeObserver {
         }) else { return }
 
         if notification == kElementDestroyed as String {
-            ManagedSlotRegistry.shared.remove(key)
+            if let screen = NSScreen.main {
+                ManagedSlotRegistry.shared.removeAndReflow(key, screen: screen)
+            } else {
+                ManagedSlotRegistry.shared.remove(key)
+            }
             cleanup(key: key, pid: pid)
+            WindowSnapper.reapplyAll()
             return
         }
 

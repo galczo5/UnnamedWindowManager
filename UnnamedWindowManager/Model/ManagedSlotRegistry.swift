@@ -52,6 +52,14 @@ final class ManagedSlotRegistry {
         }
     }
 
+    /// Registers a new window as a new slot prepended at the left (index 0).
+    func registerFirst(_ key: ManagedWindow, width: CGFloat, height: CGFloat) {
+        queue.async(flags: .barrier) {
+            let window = ManagedWindow(pid: key.pid, windowHash: key.windowHash, height: height)
+            self.slots.insert(ManagedSlot(width: width, windows: [window]), at: 0)
+        }
+    }
+
     /// Removes a window from its slot. Removes the slot if it becomes empty.
     func remove(_ key: ManagedWindow) {
         queue.async(flags: .barrier) {
@@ -63,6 +71,30 @@ final class ManagedSlotRegistry {
                     }
                     return
                 }
+            }
+        }
+    }
+
+    /// Removes a window from its slot on window close, then equalizes heights of any
+    /// remaining windows in the slot. Uses a synchronous barrier so the caller can
+    /// immediately call `reapplyAll()` on the updated layout.
+    func removeAndReflow(_ key: ManagedWindow, screen: NSScreen) {
+        let visibleHeight = screen.visibleFrame.height
+
+        queue.sync(flags: .barrier) {
+            for si in self.slots.indices {
+                guard let wi = self.slots[si].windows.firstIndex(of: key) else { continue }
+                self.slots[si].windows.remove(at: wi)
+                if self.slots[si].windows.isEmpty {
+                    self.slots.remove(at: si)
+                } else {
+                    let count = CGFloat(self.slots[si].windows.count)
+                    let perWindowH = (visibleHeight - Config.gap * (count + 1)) / count
+                    for wi in self.slots[si].windows.indices {
+                        self.slots[si].windows[wi].height = perWindowH
+                    }
+                }
+                return
             }
         }
     }

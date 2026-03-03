@@ -112,6 +112,34 @@ struct WindowSnapper {
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
     }
 
+    /// Snaps `window` as a new slot at position 0 (leftmost).
+    /// Skips windows that are already tracked, minimized, or too small.
+    static func snapLeft(window: AXUIElement, pid: pid_t) {
+        guard AXIsProcessTrusted() else { return }
+        guard let screen = NSScreen.main else { return }
+
+        let key = managedWindow(for: window, pid: pid)
+        guard !ManagedSlotRegistry.shared.isTracked(key) else { return }
+
+        var minRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minRef) == .success,
+           (minRef as? Bool) == true { return }
+
+        if let sz = readSize(of: window), sz.width < 100 || sz.height < 100 { return }
+
+        let visible = screen.visibleFrame
+        let rawSize = CGSize(
+            width:  readSize(of: window)?.width ?? visible.width * Config.fallbackWidthFraction,
+            height: visible.height - Config.gap * 2
+        )
+        let clamped = clampSize(rawSize, screen: screen)
+
+        ManagedSlotRegistry.shared.registerFirst(key, width: clamped.width, height: clamped.height)
+        applyPosition(to: window, key: key)
+        ResizeObserver.shared.observe(window: window, pid: pid, key: key)
+        reapplyAll()
+    }
+
     static func reapply(window: AXUIElement, key: ManagedWindow) {
         guard ManagedSlotRegistry.shared.isTracked(key) else { return }
         applyPosition(to: window, key: key)
