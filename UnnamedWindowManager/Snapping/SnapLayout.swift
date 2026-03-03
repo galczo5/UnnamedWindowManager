@@ -18,30 +18,35 @@ extension WindowSnapper {
         let primaryHeight = NSScreen.screens[0].frame.height
         let slots         = ManagedSlotRegistry.shared.allSlots()
 
-        for (si, slot) in slots.enumerated() where si != sourceSlotIndex {
+        for (si, slot) in slots.enumerated() {
             guard let range = xRange(forSlot: si, slots: slots, screen: screen) else { continue }
             guard range.contains(cursorX) else { continue }
+
+            let axY          = primaryHeight - screen.visibleFrame.maxY + Config.gap
+            let totalHeight  = slot.windows.reduce(CGFloat(0)) { $0 + $1.height }
+                + Config.gap * CGFloat(slot.windows.count - 1)
+            let appKitTop    = primaryHeight - axY
+            let appKitBottom = appKitTop - totalHeight
 
             let slotWidth  = range.upperBound - range.lowerBound
             let leftEnd    = range.lowerBound + slotWidth * Config.dropZoneFraction
             let rightStart = range.lowerBound + slotWidth * (1 - Config.dropZoneFraction)
 
-            // Left / right edges — checked first.
+            // Left / right always valid — even for the source slot (extracts window into new slot).
             if cursorX < leftEnd    { return DropTarget(slotIndex: si, windowIndex: 0, zone: .left)  }
             if cursorX > rightStart { return DropTarget(slotIndex: si, windowIndex: 0, zone: .right) }
 
-            // Vertical zones within the center band.
-            let totalHeight = slot.windows.reduce(CGFloat(0)) { $0 + $1.height }
-                + Config.gap * CGFloat(slot.windows.count - 1)
-            let axY         = primaryHeight - screen.visibleFrame.maxY + Config.gap
-            let appKitTop   = primaryHeight - axY
-            let appKitBottom = appKitTop - totalHeight
+            // Cursor is in horizontal center — only proceed if within the slot's Y bounds.
+            guard cursorY <= appKitTop && cursorY >= appKitBottom else { continue }
 
-            let topZoneBound    = appKitTop    - totalHeight * Config.dropZoneTopFraction
-            let bottomZoneBound = appKitBottom + totalHeight * Config.dropZoneBottomFraction
+            // Top / bottom only valid for other slots (adding a window to its own slot is a no-op).
+            if si != sourceSlotIndex {
+                let topZoneBound    = appKitTop    - totalHeight * Config.dropZoneTopFraction
+                let bottomZoneBound = appKitBottom + totalHeight * Config.dropZoneBottomFraction
 
-            if cursorY >= topZoneBound    { return DropTarget(slotIndex: si, windowIndex: 0, zone: .top) }
-            if cursorY <= bottomZoneBound { return DropTarget(slotIndex: si, windowIndex: 0, zone: .bottom) }
+                if cursorY >= topZoneBound    { return DropTarget(slotIndex: si, windowIndex: 0, zone: .top) }
+                if cursorY <= bottomZoneBound { return DropTarget(slotIndex: si, windowIndex: 0, zone: .bottom) }
+            }
 
             // Center zone — identify the specific window under the cursor.
             let wi = windowIndexAtCursor(cursorY: cursorY, slot: slot, slotTopAX: axY, primaryHeight: primaryHeight)
