@@ -11,15 +11,17 @@ struct SnapKey: Hashable, Sendable {
 }
 
 struct SnapEntry {
-    var slot: Int
-    var width: CGFloat
+    var slot:   Int
+    var width:  CGFloat
     var height: CGFloat
+    var row:    Int = 0   // 0 = primary row; 1 = stacked below slot partner
 }
 
 enum DropZone {
     case left    // insert dragged window before target
     case center  // swap dragged and target
     case right   // insert dragged window after target
+    case bottom  // vertical split — stack dragged window below target
 }
 
 struct DropTarget {

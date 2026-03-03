@@ -31,16 +31,36 @@ final class SnapRegistry {
         }
     }
 
-    /// Returns a snapshot of all entries sorted ascending by slot.
+    /// Copies the stored width of `key` to every other window in the same slot.
+    func syncColumnWidth(for key: SnapKey) {
+        queue.sync(flags: .barrier) {
+            guard let entry = self.store[key] else { return }
+            let slot  = entry.slot
+            let width = entry.width
+            for k in self.store.keys where k != key && self.store[k]?.slot == slot {
+                self.store[k]?.width = width
+            }
+        }
+    }
+
+    /// Returns a snapshot of all entries sorted ascending by (slot, row).
     func allEntries() -> [(key: SnapKey, entry: SnapEntry)] {
         queue.sync {
             store.map { (key: $0.key, entry: $0.value) }
-                 .sorted { $0.entry.slot < $1.entry.slot }
+                 .sorted { lhs, rhs in
+                     if lhs.entry.slot != rhs.entry.slot { return lhs.entry.slot < rhs.entry.slot }
+                     return lhs.entry.row < rhs.entry.row
+                 }
         }
     }
 
     func nextSlot() -> Int {
-        queue.sync { (store.values.map(\.slot).max() ?? -1) + 1 }
+        // Row-1 windows share a slot with their row-0 partner; exclude them so
+        // newly snapped windows always get a fresh horizontal column.
+        queue.sync {
+            let maxSlot = store.values.filter { $0.row == 0 }.map { $0.slot }.max() ?? -1
+            return maxSlot + 1
+        }
     }
 
     func remove(_ key: SnapKey) {

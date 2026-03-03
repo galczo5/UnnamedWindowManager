@@ -32,6 +32,7 @@ extension ResizeObserver {
                 // Accept the new size, then reflow all snapped windows.
                 if let newSize = WindowSnapper.readSize(of: storedElement) {
                     SnapRegistry.shared.setSize(width: newSize.width, height: newSize.height, for: key)
+                    SnapRegistry.shared.syncColumnWidth(for: key)
                 }
                 let allKeys = Set(SnapRegistry.shared.allEntries().map(\.key))
                 self.reapplying.formUnion(allKeys)
@@ -42,6 +43,7 @@ extension ResizeObserver {
             } else {
                 // Check if the window was dropped on another snapped window's zone.
                 if let target = WindowSnapper.findDropTarget(for: key) {
+                    guard let screen = NSScreen.main else { return }
                     switch target.zone {
                     case .left:
                         SnapRegistry.shared.moveSlot(key, before: target.key)
@@ -49,7 +51,10 @@ extension ResizeObserver {
                         SnapRegistry.shared.moveSlot(key, after: target.key)
                     case .center:
                         SnapRegistry.shared.swapSlots(key, target.key)
+                    case .bottom:
+                        SnapRegistry.shared.splitVertical(key, below: target.key, screen: screen)
                     }
+                    SnapRegistry.shared.normalizeHeights(screen: screen)
                     let allKeys = Set(SnapRegistry.shared.allEntries().map(\.key))
                     self.reapplying.formUnion(allKeys)
                     WindowSnapper.reapplyAll()
@@ -58,6 +63,7 @@ extension ResizeObserver {
                     }
                 } else {
                     // Restore position (and stored size) of the moved window only.
+                    if let screen = NSScreen.main { SnapRegistry.shared.normalizeHeights(screen: screen) }
                     self.reapplying.insert(key)
                     WindowSnapper.reapply(window: storedElement, key: key)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in

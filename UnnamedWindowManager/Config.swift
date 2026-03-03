@@ -18,6 +18,8 @@ enum Config {
     static let maxHeightFraction: CGFloat = 1.0
     /// Fraction of a window's width that counts as the left or right drop zone (each side).
     static let dropZoneFraction: CGFloat = 0.10
+    /// Fraction of a window's height (from the bottom) that activates the vertical-split drop zone.
+    static let dropZoneBottomFraction: CGFloat = 0.20
     /// Corner radius of the swap-target overlay rectangle (points).
     static let overlayCornerRadius: CGFloat = 8
     /// Border width of the swap-target overlay rectangle (points).

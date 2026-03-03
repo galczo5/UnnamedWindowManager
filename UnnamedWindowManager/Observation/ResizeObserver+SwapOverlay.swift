@@ -20,6 +20,8 @@ extension ResizeObserver {
             frame = WindowSnapper.leftGapFrame(for: target.key, screen: screen)
         case .right:
             frame = WindowSnapper.rightGapFrame(for: target.key, screen: screen)
+        case .bottom:
+            frame = WindowSnapper.bottomSplitOverlayFrame(for: target.key, screen: screen)
         case .center:
             guard let targetElement = elements[target.key],
                   let axOrigin = WindowSnapper.readOrigin(of: targetElement),
