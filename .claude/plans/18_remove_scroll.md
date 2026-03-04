@@ -19,6 +19,10 @@
 
 Plans 14–16 added a horizontal scroll feature: `CurrentOffset` singleton, "Scroll Left/Right" menu actions, focus-triggered auto-scroll, and `hidden` slot tracking. The feature is being removed entirely. `Logger.swift` and all logging calls must remain intact.
 
+### Why scroll is being removed — pivot to traditional tiling
+
+The scrollable workspace model (à la Niri / PaperWM) is being abandoned in favour of more traditional tiling window management. macOS is fundamentally hostile to this approach: the Accessibility and window-management APIs were not designed for scrollable infinite canvases, and working around the platform's assumptions (Space switching, Mission Control, window animations, focus handling) produces fragile, unreliable behaviour. The effort required to make it feel native would almost certainly end with a result that is still not usable day-to-day. The project is therefore pivoting to a layout model closer to conventional tiling WMs — fixed slots, no horizontal scroll — which works *with* macOS rather than against it.
+
 ---
 
 ## Files to create / modify
