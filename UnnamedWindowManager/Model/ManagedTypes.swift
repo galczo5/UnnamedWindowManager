@@ -28,7 +28,6 @@ struct ManagedSlot {
     var order: Int = 0
     var width: CGFloat
     var windows: [ManagedWindow]
-    var hidden: Bool = false
 }
 
 /// Drop zones per slot.

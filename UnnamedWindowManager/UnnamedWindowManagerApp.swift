@@ -22,8 +22,6 @@ struct UnnamedWindowManagerApp: App {
             Button("Unsnap")    { WindowSnapper.unsnap()   }
             Button("Organize")  { WindowSnapper.organize() }
             Divider()
-            Button("Scroll Left")  { CurrentOffset.shared.scrollLeft()  }
-            Button("Scroll Right") { CurrentOffset.shared.scrollRight() }
             Button("Debug") {
                 let slots = ManagedSlotRegistry.shared.allSlots()
                 let screen = NSScreen.main
@@ -33,10 +31,9 @@ struct UnnamedWindowManagerApp: App {
                     lines.append(String(format: "Screen visible  x %.1f  y %.1f  w %.1f  h %.1f", v.minX, v.minY, v.width, v.height))
                     lines.append("")
                 }
-                var xOffset = (visible?.minX ?? 0) + Config.gap - CGFloat(CurrentOffset.shared.value)
+                var xOffset = (visible?.minX ?? 0) + Config.gap
                 for (si, slot) in slots.enumerated() {
-                    let hiddenTag = slot.hidden ? "  (hidden)" : ""
-                    lines.append(String(format: "── Slot %d  x %.1f  width %.1f\(hiddenTag) ──", si, xOffset, slot.width))
+                    lines.append(String(format: "── Slot %d  x %.1f  width %.1f ──", si, xOffset, slot.width))
                     xOffset += slot.width + Config.gap
                     for (wi, window) in slot.windows.enumerated() {
                         var title = "<unknown>"

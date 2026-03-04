@@ -19,12 +19,9 @@ final class WindowVisibilityManager {
         guard let screen = NSScreen.main else { return }
         let visible = screen.visibleFrame
 
-        var xOffset = visible.minX + Config.gap - CGFloat(CurrentOffset.shared.value)
-        for (si, slot) in slots.enumerated() {
+        var xOffset = visible.minX + Config.gap
+        for slot in slots {
             let isOffScreen = xOffset >= visible.maxX
-            if slot.hidden != isOffScreen {
-                ManagedSlotRegistry.shared.setHidden(isOffScreen, forSlotAt: si)
-            }
             for win in slot.windows {
                 guard let axWindow = ResizeObserver.shared.window(for: win) else { continue }
                 if isOffScreen {

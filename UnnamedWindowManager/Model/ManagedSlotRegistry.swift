@@ -118,14 +118,6 @@ final class ManagedSlotRegistry {
         }
     }
 
-    /// Marks a slot as hidden (off-screen) or visible.
-    func setHidden(_ hidden: Bool, forSlotAt index: Int) {
-        queue.async(flags: .barrier) {
-            guard self.slots.indices.contains(index) else { return }
-            self.slots[index].hidden = hidden
-        }
-    }
-
     /// Reassigns `order` = array index for every slot. Must be called inside a barrier.
     func renumberOrders() {
         for i in slots.indices { slots[i].order = i }
