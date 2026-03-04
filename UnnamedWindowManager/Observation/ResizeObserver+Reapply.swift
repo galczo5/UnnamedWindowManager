@@ -38,8 +38,10 @@ extension ResizeObserver {
                 let allWindows = self.allTrackedWindows()
                 self.reapplying.formUnion(allWindows)
                 WindowSnapper.reapplyAll()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.reapplying.subtract(allWindows)
+                // After 100 ms, verify each slot's actual width. If an app enforced a
+                // minimum and rejected the assigned width, reconcile all slots to that width.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    self?.verifyWidthsAfterResize(allWindows: allWindows)
                 }
             } else {
                 guard let screen = NSScreen.main else { return }
@@ -67,8 +69,8 @@ extension ResizeObserver {
                     let allWindows = self.allTrackedWindows()
                     self.reapplying.formUnion(allWindows)
                     WindowSnapper.reapplyAll()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                        self?.reapplying.subtract(allWindows)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                        self?.verifyWidthsAfterResize(allWindows: allWindows)
                     }
                 } else {
                     // Restore position (and stored size) of the moved window only.
@@ -84,6 +86,43 @@ extension ResizeObserver {
 
         pendingReapply[key] = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
+    }
+
+    /// After reapplying widths, checks whether any app enforced a minimum width
+    /// and rejected the assigned value. If so, updates the slot to the actual width
+    /// and reapplies all windows so every slot in the layout is consistent.
+    private func verifyWidthsAfterResize(allWindows: Set<ManagedWindow>) {
+        guard let screen = NSScreen.main else {
+            reapplying.subtract(allWindows)
+            return
+        }
+        let slots = ManagedSlotRegistry.shared.allSlots()
+        var needsReapply = false
+
+        for slot in slots {
+            for window in slot.windows {
+                guard let axElement = elements[window],
+                      let actualWidth = WindowSnapper.readSize(of: axElement)?.width else { continue }
+
+                if abs(actualWidth - slot.width) > 1.0 {
+                    var titleRef: CFTypeRef?
+                    let title = AXUIElementCopyAttributeValue(axElement, kAXTitleAttribute as CFString, &titleRef) == .success
+                        ? (titleRef as? String ?? "<unknown>")
+                        : "<unknown>"
+                    print("[WidthVerify] \"\(title)\": stored=\(slot.width) actual=\(actualWidth)")
+                    ManagedSlotRegistry.shared.setWidth(actualWidth, forSlotContaining: window, screen: screen)
+                    needsReapply = true
+                    break  // All windows in the slot share the same width; one correction is enough
+                }
+            }
+        }
+
+        if needsReapply {
+            WindowSnapper.reapplyAll()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.reapplying.subtract(allWindows)
+        }
     }
 
     /// Collects all tracked ManagedWindow keys from the current slots.
