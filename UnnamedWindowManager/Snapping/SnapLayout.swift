@@ -14,9 +14,8 @@ extension WindowSnapper {
     static func applyLayout(screen: NSScreen) {
         let visible       = screen.visibleFrame
         let primaryHeight = NSScreen.screens[0].frame.height
-        // Subtract Config.gap so the first container level adds it back, giving the
-        // correct (visible.minX + gap, axTop + gap) position for the first leaf.
-        let origin = CGPoint(x: visible.minX, y: primaryHeight - visible.maxY)
+        // Shift the root origin inward by one gap so the outer gap equals the inner gap (2×Config.gap).
+        let origin = CGPoint(x: visible.minX + Config.gap, y: primaryHeight - visible.maxY + Config.gap)
         let elements = ResizeObserver.shared.elements
         let root = ManagedSlotRegistry.shared.snapshotRoot()
         applyLayout(root, origin: origin, elements: elements)
@@ -30,9 +29,10 @@ extension WindowSnapper {
         switch slot.content {
         case .window(let w):
             guard let ax = elements[w] else { return }
-            var pos  = origin
-            var size = CGSize(width: slot.width, height: slot.height)
-            Logger.shared.log("key=\(w.windowHash) origin=(\(Int(origin.x)),\(Int(origin.y))) size=(\(Int(size.width))×\(Int(size.height)))")
+            let g = slot.gaps ? Config.gap : 0
+            var pos  = CGPoint(x: origin.x + g, y: origin.y + g)
+            var size = CGSize(width: slot.width - g * 2, height: slot.height - g * 2)
+            Logger.shared.log("key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
             if let posVal = AXValueCreate(.cgPoint, &pos) {
                 AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal)
             }
@@ -41,17 +41,42 @@ extension WindowSnapper {
             }
 
         case .slots(let children):
-            // Each container level adds the initial gap before placing its first child.
-            var cursor = CGPoint(x: origin.x + Config.gap, y: origin.y + Config.gap)
+            // Containers pass their full allocated space to children — no gap offset.
+            var cursor = origin
             for child in children {
                 applyLayout(child, origin: cursor, elements: elements)
                 if slot.orientation == .horizontal {
-                    cursor.x += child.width + Config.gap
+                    cursor.x += child.width
                 } else {
-                    cursor.y += child.height + Config.gap
+                    cursor.y += child.height
                 }
             }
         }
+    }
+
+    // MARK: - Swap target (center drop zone)
+
+    /// Returns the tracked window under the cursor, excluding the dragged window itself.
+    static func findSwapTarget(forKey draggedKey: ManagedWindow) -> ManagedWindow? {
+        let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
+        let screenHeight = NSScreen.screens[0].frame.height
+        let leaves = ManagedSlotRegistry.shared.allLeaves()
+        let elements = ResizeObserver.shared.elements
+
+        for leaf in leaves {
+            guard case .window(let w) = leaf.content, w != draggedKey else { continue }
+            guard let axElement = elements[w],
+                  let axOrigin = readOrigin(of: axElement),
+                  let axSize   = readSize(of: axElement) else { continue }
+
+            // AX coords: top-left origin, y increases downward.
+            // AppKit coords: bottom-left origin, y increases upward.
+            let appKitY = screenHeight - axOrigin.y - axSize.height
+            let frame = CGRect(x: axOrigin.x, y: appKitY, width: axSize.width, height: axSize.height)
+
+            if frame.contains(cursor) { return w }
+        }
+        return nil
     }
 
     // MARK: - Drop zones (disabled — TODO: redesign for tree model)

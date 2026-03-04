@@ -8,44 +8,17 @@ import AppKit
 extension ResizeObserver {
 
     func updateSwapOverlay(for draggedKey: ManagedWindow, draggedWindow: AXUIElement) {
-        hideSwapOverlay()
-        return  // TODO: redesign for tree model
-
-        guard let screen = NSScreen.main,
-              let sourceSlotIndex = ManagedSlotRegistry.shared.slotIndex(for: draggedKey),
-              let target = WindowSnapper.findDropTarget(forWindowIn: sourceSlotIndex) else {
+        guard let targetWindow = WindowSnapper.findSwapTarget(forKey: draggedKey),
+              let targetElement = elements[targetWindow],
+              let axOrigin = WindowSnapper.readOrigin(of: targetElement),
+              let axSize   = WindowSnapper.readSize(of: targetElement) else {
             hideSwapOverlay()
             return
         }
 
-        let slots = ManagedSlotRegistry.shared.allLeaves()
-        let frame: CGRect?
-        switch target.zone {
-        case .left:
-            frame = WindowSnapper.leftGapFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
-        case .right:
-            frame = WindowSnapper.rightGapFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
-        case .top:
-            frame = WindowSnapper.topSplitOverlayFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
-        case .bottom:
-            frame = WindowSnapper.bottomSplitOverlayFrame(forSlot: target.slotIndex, slots: slots, screen: screen)
-        case .center:
-            // Overlay over the specific target window (not the whole slot).
-            let targetSlot = slots[target.slotIndex]
-            guard case .window(let targetWindow) = targetSlot.content,
-                  let targetElement = elements[targetWindow],
-                  let axOrigin = WindowSnapper.readOrigin(of: targetElement),
-                  let axSize   = WindowSnapper.readSize(of: targetElement) else {
-                hideSwapOverlay()
-                return
-            }
-            let screenHeight = NSScreen.screens[0].frame.height
-            let appKitOrigin = CGPoint(x: axOrigin.x, y: screenHeight - axOrigin.y - axSize.height)
-            frame = CGRect(origin: appKitOrigin, size: axSize)
-        }
-
-        guard let overlayFrame = frame else { hideSwapOverlay(); return }
-
+        let screenHeight = NSScreen.screens[0].frame.height
+        let appKitY = screenHeight - axOrigin.y - axSize.height
+        let overlayFrame = CGRect(x: axOrigin.x, y: appKitY, width: axSize.width, height: axSize.height)
         let draggedWindowNumber = WindowSnapper.windowID(of: draggedWindow).map(Int.init)
         showSwapOverlay(frame: overlayFrame, belowWindow: draggedWindowNumber)
     }

@@ -8,7 +8,7 @@ import AppKit
 
 enum Config {
     /// Gap between snapped windows and screen edges (points).
-    static let gap: CGFloat = 10
+    static let gap: CGFloat = 5
     /// Fallback width fraction of the visible screen when a window's size cannot be read.
     static let fallbackWidthFraction: CGFloat = 0.4
     /// Maximum width of a snapped window as a fraction of the visible screen width.

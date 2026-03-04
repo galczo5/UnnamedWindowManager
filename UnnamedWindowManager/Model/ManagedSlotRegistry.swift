@@ -9,8 +9,12 @@ final class ManagedSlotRegistry {
     static let shared = ManagedSlotRegistry()
     private init() {
         // Placeholder root; call initialize(screen:) before any snapping.
-        root = ManagedSlot(order: 0, width: 0, height: 0,
-                           orientation: .vertical, content: .slots([]))
+        root = ManagedSlot(order: 0,
+                           width: 0,
+                           height: 0,
+                           orientation: .vertical,
+                           content: .slots([]),
+                           gaps: true)
     }
 
     var root: ManagedSlot
@@ -25,7 +29,7 @@ final class ManagedSlotRegistry {
         let f = screen.visibleFrame
         queue.sync(flags: .barrier) {
             self.root = ManagedSlot(order: 0, width: f.width, height: f.height,
-                                    orientation: .horizontal, content: .slots([]))
+                                    orientation: .horizontal, content: .slots([]), gaps: true)
             self.windowCount = 0
         }
     }
@@ -40,7 +44,8 @@ final class ManagedSlotRegistry {
                 width: 0, height: 0,
                 orientation: .horizontal,
                 content: .window(ManagedWindow(pid: key.pid, windowHash: key.windowHash,
-                                               height: 0, width: 0))
+                                               height: 0, width: 0)),
+                gaps: true
             )
 
             if case .slots(let children) = self.root.content, children.isEmpty {
@@ -52,8 +57,8 @@ final class ManagedSlotRegistry {
                                     newLeaf: newLeaf, orientation: orientation)
             }
             self.recomputeSizes(&self.root,
-                                width: screen.visibleFrame.width,
-                                height: screen.visibleFrame.height)
+                                width: screen.visibleFrame.width  - Config.gap * 2,
+                                height: screen.visibleFrame.height - Config.gap * 2)
         }
     }
 
@@ -98,8 +103,8 @@ final class ManagedSlotRegistry {
         queue.sync(flags: .barrier) {
             self.removeLeaf(key, from: &self.root)
             self.recomputeSizes(&self.root,
-                                width: screen.visibleFrame.width,
-                                height: screen.visibleFrame.height)
+                                width: screen.visibleFrame.width  - Config.gap * 2,
+                                height: screen.visibleFrame.height - Config.gap * 2)
         }
     }
 
@@ -141,12 +146,13 @@ final class ManagedSlotRegistry {
         let n = CGFloat(children.count)
         let cw: CGFloat
         let ch: CGFloat
+        // Containers divide their full space equally — gap is applied only at window leaves.
         if slot.orientation == .horizontal {
-            cw = (width  - Config.gap * (n + 1)) / n
-            ch =  height - Config.gap * 2
+            cw = width  / n
+            ch = height
         } else {
-            cw =  width  - Config.gap * 2
-            ch = (height - Config.gap * (n + 1)) / n
+            cw = width
+            ch = height / n
         }
         for i in children.indices {
             recomputeSizes(&children[i], width: cw, height: ch)
@@ -237,7 +243,7 @@ final class ManagedSlotRegistry {
         }
     }
 
-    private func findLeafSlot(_ key: ManagedWindow, in slot: ManagedSlot) -> ManagedSlot? {
+    func findLeafSlot(_ key: ManagedWindow, in slot: ManagedSlot) -> ManagedSlot? {
         switch slot.content {
         case .window(let w):
             return w == key ? slot : nil

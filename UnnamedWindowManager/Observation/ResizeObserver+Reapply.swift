@@ -36,11 +36,21 @@ extension ResizeObserver {
                     self?.verifyWidthsAfterResize(allWindows: allWindows)
                 }
             } else {
-                // Move: restore position. Drop zones disabled — redesign pending.
-                self.reapplying.insert(key)
-                WindowSnapper.reapply(window: storedElement, key: key)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.reapplying.remove(key)
+                // Move: swap if dragged onto another managed window, otherwise restore.
+                if let swapTarget = WindowSnapper.findSwapTarget(forKey: key) {
+                    let allWindows = self.allTrackedWindows()
+                    self.reapplying.formUnion(allWindows)
+                    ManagedSlotRegistry.shared.swap(key, swapTarget)
+                    WindowSnapper.reapplyAll()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        self?.reapplying.subtract(allWindows)
+                    }
+                } else {
+                    self.reapplying.insert(key)
+                    WindowSnapper.reapply(window: storedElement, key: key)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        self?.reapplying.remove(key)
+                    }
                 }
             }
         }

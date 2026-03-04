@@ -40,6 +40,8 @@ struct ManagedSlot {
     var height: CGFloat
     var orientation: Orientation
     var content: SlotContent
+    /// When true, gap is applied when rendering this slot. True for window leaves and root; false for intermediate containers.
+    var gaps: Bool = false
 }
 
 /// Drop zones per slot.
