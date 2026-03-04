@@ -35,6 +35,7 @@ struct WindowSnapper {
         ManagedSlotRegistry.shared.register(key, width: clamped.width, height: clamped.height)
         applyPosition(to: axWindow, key: key)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
+        reapplyAll()
     }
 
     static func organize() {
@@ -95,6 +96,7 @@ struct WindowSnapper {
             applyPosition(to: item.window, key: key)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
         }
+        reapplyAll()
     }
 
     static func unsnap() {
@@ -108,6 +110,7 @@ struct WindowSnapper {
         let axWindow = focusedWindow as! AXUIElement
 
         let key = managedWindow(for: axWindow, pid: pid)
+        WindowVisibilityManager.shared.restoreAndForget(key)
         ManagedSlotRegistry.shared.remove(key)
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
     }
@@ -153,6 +156,7 @@ struct WindowSnapper {
                 applyPosition(to: axWindow, key: win, slots: slots)
             }
         }
+        WindowVisibilityManager.shared.applyVisibility(slots: slots)
     }
 
     static func managedWindow(for window: AXUIElement, pid: pid_t) -> ManagedWindow {

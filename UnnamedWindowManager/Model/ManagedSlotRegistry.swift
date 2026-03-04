@@ -113,6 +113,14 @@ final class ManagedSlotRegistry {
         }
     }
 
+    /// Marks a slot as hidden (off-screen) or visible.
+    func setHidden(_ hidden: Bool, forSlotAt index: Int) {
+        queue.async(flags: .barrier) {
+            guard self.slots.indices.contains(index) else { return }
+            self.slots[index].hidden = hidden
+        }
+    }
+
     /// Updates the width of the slot containing this window (clamped).
     func setWidth(_ width: CGFloat, forSlotContaining key: ManagedWindow, screen: NSScreen) {
         let maxW = screen.visibleFrame.width * Config.maxWidthFraction

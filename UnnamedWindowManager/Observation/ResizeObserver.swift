@@ -68,6 +68,7 @@ final class ResizeObserver {
                 ManagedSlotRegistry.shared.remove(key)
             }
             cleanup(key: key, pid: pid)
+            WindowVisibilityManager.shared.windowRemoved(key)
             WindowSnapper.reapplyAll()
             return
         }

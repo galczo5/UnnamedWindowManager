@@ -25,6 +25,7 @@ struct ManagedWindow: Hashable, Sendable {
 struct ManagedSlot {
     var width: CGFloat
     var windows: [ManagedWindow]
+    var hidden: Bool = false
 }
 
 /// Drop zones per slot.
