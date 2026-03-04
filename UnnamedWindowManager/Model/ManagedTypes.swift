@@ -5,11 +5,22 @@
 
 import Foundation
 
-/// A tracked window — identity (pid + windowHash) plus its allocated height.
+enum Orientation {
+    case horizontal
+    case vertical
+}
+
+indirect enum SlotContent {
+    case window(ManagedWindow)
+    case slots([ManagedSlot])
+}
+
+/// A tracked window — identity (pid + windowHash) plus its allocated size.
 struct ManagedWindow: Hashable, Sendable {
     let pid: pid_t
     let windowHash: UInt
     var height: CGFloat
+    var width: CGFloat
 
     // Hashable/Equatable by identity only (pid + windowHash).
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -21,13 +32,14 @@ struct ManagedWindow: Hashable, Sendable {
     }
 }
 
-/// A vertical column — owns its width, holds ordered windows top-to-bottom.
+/// A slot in the layout tree — either a leaf holding one window, or a container holding child slots.
 struct ManagedSlot {
-    /// Stable display order. `allSlots()` always returns slots sorted by this value.
-    /// Renumbered (0, 1, 2 …) after every mutation so it always equals the array index.
+    /// Leaf insertion counter. Used to identify the last-added leaf. 0 on container nodes.
     var order: Int = 0
     var width: CGFloat
-    var windows: [ManagedWindow]
+    var height: CGFloat
+    var orientation: Orientation
+    var content: SlotContent
 }
 
 /// Drop zones per slot.

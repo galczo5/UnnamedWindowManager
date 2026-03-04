@@ -24,16 +24,11 @@ struct WindowSnapper {
         let axWindow = focusedWindow as! AXUIElement
 
         guard let screen = NSScreen.main else { return }
-        let visible = screen.visibleFrame
-        let rawSize = CGSize(
-            width:  readSize(of: axWindow)?.width ?? visible.width * Config.fallbackWidthFraction,
-            height: visible.height - Config.gap * 2
-        )
-        let clamped = WindowSnapper.clampSize(rawSize, screen: screen)
 
         let key = managedWindow(for: axWindow, pid: pid)
-        ManagedSlotRegistry.shared.register(key, width: clamped.width, height: clamped.height)
-        applyPosition(to: axWindow, key: key)
+        guard !ManagedSlotRegistry.shared.isTracked(key) else { return }
+
+        ManagedSlotRegistry.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         reapplyAll()
     }
@@ -45,10 +40,8 @@ struct WindowSnapper {
             return
         }
         guard let screen = NSScreen.main else { return }
-        let visible = screen.visibleFrame
         let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
 
-        // 1. Collect on-screen normal windows (layer 0, minimum size) grouped by PID.
         guard let cgList = CGWindowListCopyWindowInfo(
             [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
         ) as? [[String: Any]] else { return }
@@ -66,7 +59,6 @@ struct WindowSnapper {
             pidToWindowIDs[pid_t(pid), default: []].insert(wid)
         }
 
-        // 2. Resolve CGWindowIDs back to AXUIElements; collect origin for ordering.
         var candidates: [(window: AXUIElement, pid: pid_t, originX: CGFloat)] = []
         for (pid, wids) in pidToWindowIDs {
             let axApp = AXUIElementCreateApplication(pid)
@@ -83,17 +75,10 @@ struct WindowSnapper {
             }
         }
 
-        // 3. Snap in left-to-right order, skipping already-snapped windows.
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
             let key = managedWindow(for: item.window, pid: item.pid)
             guard !ManagedSlotRegistry.shared.isTracked(key) else { continue }
-            let rawSize = CGSize(
-                width:  readSize(of: item.window)?.width ?? visible.width * Config.fallbackWidthFraction,
-                height: visible.height - Config.gap * 2
-            )
-            let clamped = clampSize(rawSize, screen: screen)
-            ManagedSlotRegistry.shared.register(key, width: clamped.width, height: clamped.height)
-            applyPosition(to: item.window, key: key)
+            ManagedSlotRegistry.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
         }
         reapplyAll()
@@ -109,14 +94,15 @@ struct WindowSnapper {
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let axWindow = focusedWindow as! AXUIElement
 
+        guard let screen = NSScreen.main else { return }
         let key = managedWindow(for: axWindow, pid: pid)
         WindowVisibilityManager.shared.restoreAndForget(key)
-        ManagedSlotRegistry.shared.remove(key)
+        ManagedSlotRegistry.shared.removeAndReflow(key, screen: screen)
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
+        reapplyAll()
     }
 
-    /// Snaps `window` as a new slot at position 0 (leftmost).
-    /// Skips windows that are already tracked, minimized, or too small.
+    /// Snaps `window` as a new leaf. Skips windows already tracked, minimized, or too small.
     static func snapLeft(window: AXUIElement, pid: pid_t) {
         guard AXIsProcessTrusted() else { return }
         guard let screen = NSScreen.main else { return }
@@ -127,41 +113,29 @@ struct WindowSnapper {
         var minRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minRef) == .success,
            (minRef as? Bool) == true { return }
-
         if let sz = readSize(of: window), sz.width < 100 || sz.height < 100 { return }
 
-        let visible = screen.visibleFrame
-        let rawSize = CGSize(
-            width:  readSize(of: window)?.width ?? visible.width * Config.fallbackWidthFraction,
-            height: visible.height - Config.gap * 2
-        )
-        let clamped = clampSize(rawSize, screen: screen)
-
-        ManagedSlotRegistry.shared.registerFirst(key, width: clamped.width, height: clamped.height)
-        applyPosition(to: window, key: key)
+        ManagedSlotRegistry.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)
         reapplyAll()
     }
 
     static func reapply(window: AXUIElement, key: ManagedWindow) {
         guard ManagedSlotRegistry.shared.isTracked(key) else { return }
-        applyPosition(to: window, key: key)
+        guard let screen = NSScreen.main else { return }
+        applyLayout(screen: screen)
     }
 
     static func reapplyAll() {
-        let slots = ManagedSlotRegistry.shared.allSlots()
-        // Suppress move notifications fired by our own programmatic repositioning.
-        let allWindows: Set<ManagedWindow> = slots.reduce(into: []) { set, slot in
-            slot.windows.forEach { set.insert($0) }
-        }
+        guard let screen = NSScreen.main else { return }
+        let leaves = ManagedSlotRegistry.shared.allLeaves()
+        let allWindows = Set(leaves.compactMap { leaf -> ManagedWindow? in
+            if case .window(let w) = leaf.content { return w }
+            return nil
+        })
         ResizeObserver.shared.reapplying.formUnion(allWindows)
-        for slot in slots {
-            for win in slot.windows {
-                guard let axWindow = ResizeObserver.shared.window(for: win) else { continue }
-                applyPosition(to: axWindow, key: win, slots: slots)
-            }
-        }
-        WindowVisibilityManager.shared.applyVisibility(slots: slots)
+        applyLayout(screen: screen)
+        WindowVisibilityManager.shared.applyVisibility()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             ResizeObserver.shared.reapplying.subtract(allWindows)
         }
@@ -170,6 +144,6 @@ struct WindowSnapper {
     static func managedWindow(for window: AXUIElement, pid: pid_t) -> ManagedWindow {
         let hash = windowID(of: window).map(UInt.init)
                    ?? UInt(bitPattern: Unmanaged.passUnretained(window).toOpaque())
-        return ManagedWindow(pid: pid, windowHash: hash, height: 0)
+        return ManagedWindow(pid: pid, windowHash: hash, height: 0, width: 0)
     }
 }

@@ -10,35 +10,17 @@ final class WindowVisibilityManager {
     static let shared = WindowVisibilityManager()
     private init() {}
 
-    /// Windows minimized automatically because their slot is off-screen.
     private var autoMinimized: Set<ManagedWindow> = []
 
-    /// Call after every reapplyAll(). Minimizes windows in off-screen slots;
-    /// restores windows whose slots have come back on-screen.
-    func applyVisibility(slots: [ManagedSlot]) {
-        guard let screen = NSScreen.main else { return }
-        let visible = screen.visibleFrame
-
-        var xOffset = visible.minX + Config.gap
-        for slot in slots {
-            let isOffScreen = xOffset >= visible.maxX
-            for win in slot.windows {
-                guard let axWindow = ResizeObserver.shared.window(for: win) else { continue }
-                if isOffScreen {
-                    if !autoMinimized.contains(win) {
-                        setMinimized(true, window: axWindow)
-                        autoMinimized.insert(win)
-                    }
-                } else {
-                    if autoMinimized.contains(win) {
-                        setMinimized(false, window: axWindow)
-                        WindowSnapper.applyPosition(to: axWindow, key: win, slots: slots)
-                        autoMinimized.remove(win)
-                    }
-                }
+    /// Called after every `reapplyAll()`. With the tree layout all leaves fit on screen,
+    /// so any previously auto-minimized windows are restored.
+    func applyVisibility() {
+        for key in autoMinimized {
+            if let axWindow = ResizeObserver.shared.window(for: key) {
+                setMinimized(false, window: axWindow)
             }
-            xOffset += slot.width + Config.gap
         }
+        autoMinimized.removeAll()
     }
 
     /// Restores a window if it was auto-minimized, then removes it from tracking.
@@ -52,7 +34,6 @@ final class WindowVisibilityManager {
     }
 
     /// Removes a closed window from the tracking set without attempting to restore it.
-    /// Call from the destroy handler after the AX element is no longer valid.
     func windowRemoved(_ key: ManagedWindow) {
         autoMinimized.remove(key)
     }

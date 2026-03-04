@@ -8,6 +8,9 @@ import AppKit
 extension ResizeObserver {
 
     func updateSwapOverlay(for draggedKey: ManagedWindow, draggedWindow: AXUIElement) {
+        hideSwapOverlay()
+        return  // TODO: redesign for tree model
+
         guard let screen = NSScreen.main,
               let sourceSlotIndex = ManagedSlotRegistry.shared.slotIndex(for: draggedKey),
               let target = WindowSnapper.findDropTarget(forWindowIn: sourceSlotIndex) else {
@@ -15,7 +18,7 @@ extension ResizeObserver {
             return
         }
 
-        let slots = ManagedSlotRegistry.shared.allSlots()
+        let slots = ManagedSlotRegistry.shared.allLeaves()
         let frame: CGRect?
         switch target.zone {
         case .left:
@@ -29,8 +32,8 @@ extension ResizeObserver {
         case .center:
             // Overlay over the specific target window (not the whole slot).
             let targetSlot = slots[target.slotIndex]
-            guard target.windowIndex < targetSlot.windows.count,
-                  let targetElement = elements[targetSlot.windows[target.windowIndex]],
+            guard case .window(let targetWindow) = targetSlot.content,
+                  let targetElement = elements[targetWindow],
                   let axOrigin = WindowSnapper.readOrigin(of: targetElement),
                   let axSize   = WindowSnapper.readSize(of: targetElement) else {
                 hideSwapOverlay()
