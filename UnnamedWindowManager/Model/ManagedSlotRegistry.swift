@@ -156,22 +156,45 @@ final class ManagedSlotRegistry {
 
     // MARK: - Private tree helpers (must be called inside a barrier)
 
+    /// Functional removal. Returns the updated subtree, or nil if this slot should be excised.
+    /// Automatically collapses single-child containers and prunes empty containers.
+    private func removeFromTree(_ key: ManagedWindow, slot: ManagedSlot) -> (slot: ManagedSlot?, found: Bool) {
+        switch slot.content {
+        case .window(let w):
+            return w == key ? (nil, true) : (slot, false)
+        case .slots(let children):
+            var found = false
+            let newChildren: [ManagedSlot] = children.compactMap {
+                let (newSlot, wasFound) = removeFromTree(key, slot: $0)
+                if wasFound { found = true }
+                return newSlot
+            }
+            guard found else { return (slot, false) }
+            if newChildren.isEmpty { return (nil, true) }       // empty: excise
+            if newChildren.count == 1 { return (newChildren[0], true) } // collapse
+            var updated = slot
+            updated.content = .slots(newChildren)
+            return (updated, true)
+        }
+    }
+
+    /// Entry-point removal: always keeps root as a container (.slots).
     @discardableResult
     private func removeLeaf(_ key: ManagedWindow, from slot: inout ManagedSlot) -> Bool {
-        if case .window(let w) = slot.content, w == key { return true }
-        guard case .slots(var children) = slot.content else { return false }
-        for i in children.indices {
-            if removeLeaf(key, from: &children[i]) {
-                children.remove(at: i)
-                if children.count == 1 {
-                    slot = children[0]   // collapse single-child container
-                } else {
-                    slot.content = .slots(children)
-                }
-                return true
+        switch slot.content {
+        case .window(let w):
+            if w == key { slot.content = .slots([]); return true }
+            return false
+        case .slots(let children):
+            var found = false
+            let newChildren: [ManagedSlot] = children.compactMap {
+                let (newSlot, wasFound) = removeFromTree(key, slot: $0)
+                if wasFound { found = true }
+                return newSlot
             }
+            if found { slot.content = .slots(newChildren) }
+            return found
         }
-        return false
     }
 
     @discardableResult

@@ -29,11 +29,6 @@ extension ResizeObserver {
                   let storedElement = self.elements[key] else { return }
 
             if isResize {
-                if let screen = NSScreen.main,
-                   let newSize = WindowSnapper.readSize(of: storedElement) {
-                    let clamped = WindowSnapper.clampSize(newSize, screen: screen)
-                    ManagedSlotRegistry.shared.setWidth(clamped.width, forSlotContaining: key, screen: screen)
-                }
                 let allWindows = self.allTrackedWindows()
                 self.reapplying.formUnion(allWindows)
                 WindowSnapper.reapplyAll()
