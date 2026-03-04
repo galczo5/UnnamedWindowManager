@@ -16,9 +16,9 @@
 			path = UnnamedWindowManager;
 			sourceTree = "<group>";
 		};
-		8EE8537B2F55F7AE00645F80 /* docs */ = {
+		8EE853D42F58B37000645F80 /* .claude */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = docs;
+			path = .claude;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,7 +39,7 @@
 			children = (
 				8EE853592F55F29400645F80 /* UnnamedWindowManager */,
 				8EE853582F55F29400645F80 /* Products */,
-				8EE8537B2F55F7AE00645F80 /* docs */,
+				8EE853D42F58B37000645F80 /* .claude */,
 			);
 			sourceTree = "<group>";
 		};
@@ -68,7 +68,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				8EE853592F55F29400645F80 /* UnnamedWindowManager */,
-				8EE8537B2F55F7AE00645F80 /* docs */,
+				8EE853D42F58B37000645F80 /* .claude */,
 			);
 			name = UnnamedWindowManager;
 			packageProductDependencies = (
