@@ -14,9 +14,9 @@ final class ManagedSlotRegistry {
 
     // MARK: - Reads
 
-    /// Returns a snapshot copy of all slots.
+    /// Returns a snapshot copy of all slots, sorted by their stable `order` property.
     func allSlots() -> [ManagedSlot] {
-        queue.sync { slots }
+        queue.sync { slots.sorted { $0.order < $1.order } }
     }
 
     /// Returns the slot index containing this window, or nil.
@@ -47,16 +47,19 @@ final class ManagedSlotRegistry {
     /// Registers a new window as a new slot appended to the right.
     func register(_ key: ManagedWindow, width: CGFloat, height: CGFloat) {
         queue.async(flags: .barrier) {
+            let order = (self.slots.map(\.order).max() ?? -1) + 1
             let window = ManagedWindow(pid: key.pid, windowHash: key.windowHash, height: height)
-            self.slots.append(ManagedSlot(width: width, windows: [window]))
+            self.slots.append(ManagedSlot(order: order, width: width, windows: [window]))
         }
     }
 
     /// Registers a new window as a new slot prepended at the left (index 0).
     func registerFirst(_ key: ManagedWindow, width: CGFloat, height: CGFloat) {
         queue.async(flags: .barrier) {
+            let order = (self.slots.map(\.order).min() ?? 1) - 1
             let window = ManagedWindow(pid: key.pid, windowHash: key.windowHash, height: height)
-            self.slots.insert(ManagedSlot(width: width, windows: [window]), at: 0)
+            self.slots.insert(ManagedSlot(order: order, width: width, windows: [window]), at: 0)
+            self.renumberOrders()
         }
     }
 
@@ -69,6 +72,7 @@ final class ManagedSlotRegistry {
                     if self.slots[si].windows.isEmpty {
                         self.slots.remove(at: si)
                     }
+                    self.renumberOrders()
                     return
                 }
             }
@@ -94,6 +98,7 @@ final class ManagedSlotRegistry {
                         self.slots[si].windows[wi].height = perWindowH
                     }
                 }
+                self.renumberOrders()
                 return
             }
         }
@@ -119,6 +124,11 @@ final class ManagedSlotRegistry {
             guard self.slots.indices.contains(index) else { return }
             self.slots[index].hidden = hidden
         }
+    }
+
+    /// Reassigns `order` = array index for every slot. Must be called inside a barrier.
+    func renumberOrders() {
+        for i in slots.indices { slots[i].order = i }
     }
 
     /// Updates the width of the slot containing this window (clamped).

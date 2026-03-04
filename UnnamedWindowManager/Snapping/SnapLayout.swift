@@ -172,8 +172,8 @@ extension WindowSnapper {
         let slot = allSlots[si]
         let myWindow = slot.windows[wi]
 
-        // X: sum widths of all slots before this one.
-        var xOffset = visible.minX + Config.gap
+        // X: sum widths of all slots before this one, shifted by scroll offset.
+        var xOffset = visible.minX + Config.gap - CGFloat(CurrentOffset.shared.value)
         for i in 0..<si {
             xOffset += allSlots[i].width + Config.gap
         }
@@ -213,7 +213,7 @@ extension WindowSnapper {
     ) -> ClosedRange<CGFloat>? {
         guard slotIndex >= 0, slotIndex < slots.count else { return nil }
         let visible = screen.visibleFrame
-        var xOffset = visible.minX + Config.gap
+        var xOffset = visible.minX + Config.gap - CGFloat(CurrentOffset.shared.value)
         for i in 0..<slotIndex {
             xOffset += slots[i].width + Config.gap
         }

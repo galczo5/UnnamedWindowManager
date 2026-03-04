@@ -33,6 +33,7 @@ extension ManagedSlotRegistry {
 
             let newSlot = ManagedSlot(width: sourceWidth, windows: [draggedWindow])
             self.slots.insert(newSlot, at: adjustedTarget)
+            self.renumberOrders()
         }
     }
 
@@ -63,6 +64,7 @@ extension ManagedSlotRegistry {
             let newSlot = ManagedSlot(width: sourceWidth, windows: [draggedWindow])
             let insertIdx = adjustedTarget + 1
             self.slots.insert(newSlot, at: min(insertIdx, self.slots.count))
+            self.renumberOrders()
         }
     }
 
@@ -173,6 +175,7 @@ extension ManagedSlotRegistry {
             for si in self.slots.indices where self.slots[si].windows.count == 1 {
                 self.slots[si].windows[0].height = fullH
             }
+            self.renumberOrders()
         }
     }
 

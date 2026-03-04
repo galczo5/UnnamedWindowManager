@@ -19,7 +19,7 @@ final class WindowVisibilityManager {
         guard let screen = NSScreen.main else { return }
         let visible = screen.visibleFrame
 
-        var xOffset = visible.minX + Config.gap
+        var xOffset = visible.minX + Config.gap - CGFloat(CurrentOffset.shared.value)
         for (si, slot) in slots.enumerated() {
             let isOffScreen = xOffset >= visible.maxX
             if slot.hidden != isOffScreen {

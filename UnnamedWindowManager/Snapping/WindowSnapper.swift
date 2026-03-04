@@ -150,6 +150,11 @@ struct WindowSnapper {
 
     static func reapplyAll() {
         let slots = ManagedSlotRegistry.shared.allSlots()
+        // Suppress move notifications fired by our own programmatic repositioning.
+        let allWindows: Set<ManagedWindow> = slots.reduce(into: []) { set, slot in
+            slot.windows.forEach { set.insert($0) }
+        }
+        ResizeObserver.shared.reapplying.formUnion(allWindows)
         for slot in slots {
             for win in slot.windows {
                 guard let axWindow = ResizeObserver.shared.window(for: win) else { continue }
@@ -157,6 +162,9 @@ struct WindowSnapper {
             }
         }
         WindowVisibilityManager.shared.applyVisibility(slots: slots)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            ResizeObserver.shared.reapplying.subtract(allWindows)
+        }
     }
 
     static func managedWindow(for window: AXUIElement, pid: pid_t) -> ManagedWindow {

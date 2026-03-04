@@ -23,6 +23,9 @@ struct ManagedWindow: Hashable, Sendable {
 
 /// A vertical column — owns its width, holds ordered windows top-to-bottom.
 struct ManagedSlot {
+    /// Stable display order. `allSlots()` always returns slots sorted by this value.
+    /// Renumbered (0, 1, 2 …) after every mutation so it always equals the array index.
+    var order: Int = 0
     var width: CGFloat
     var windows: [ManagedWindow]
     var hidden: Bool = false
