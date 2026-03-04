@@ -18,7 +18,9 @@ final class CurrentOffset {
     func scrollLeft()  { setOffset(value - 100) }
 
     func setOffset(_ newValue: Int) {
-        value = max(0, newValue)
+        let clamped = max(0, newValue)
+        Logger.shared.log("offset \(value) → \(clamped)")
+        value = clamped
         suppressFocusScroll(for: 0.6)
         WindowSnapper.reapplyAll()
     }

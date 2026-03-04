@@ -61,6 +61,9 @@ final class ResizeObserver {
             elements[$0].map { CFEqual($0, element) } == true
         }) else { return }
 
+        let eventLabel = notification == (kAXWindowResizedNotification as String) ? "resize" : "move"
+        Logger.shared.log("[\(eventLabel)] key=\(key.windowHash) pid=\(pid)")
+
         if notification == kElementDestroyed as String {
             if let screen = NSScreen.main {
                 ManagedSlotRegistry.shared.removeAndReflow(key, screen: screen)

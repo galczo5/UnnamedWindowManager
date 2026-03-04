@@ -30,4 +30,6 @@ enum Config {
     static let overlayFillColor: NSColor = .systemBlue.withAlphaComponent(0.2)
     /// Border color of the swap-target overlay rectangle.
     static let overlayBorderColor: NSColor = .systemBlue.withAlphaComponent(0.8)
+    /// Absolute path of the log file written by Logger.
+    static let logFilePath: String = NSHomeDirectory() + "/.unnamed.log"
 }

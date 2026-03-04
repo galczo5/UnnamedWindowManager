@@ -12,6 +12,7 @@ import ApplicationServices
 @main
 struct UnnamedWindowManagerApp: App {
     init() {
+        Logger.shared.log("=== UnnamedWindowManager started ===")
         WindowEventMonitor.shared.start()
     }
 

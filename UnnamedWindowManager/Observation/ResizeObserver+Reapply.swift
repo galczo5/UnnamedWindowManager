@@ -109,7 +109,7 @@ extension ResizeObserver {
                     let title = AXUIElementCopyAttributeValue(axElement, kAXTitleAttribute as CFString, &titleRef) == .success
                         ? (titleRef as? String ?? "<unknown>")
                         : "<unknown>"
-                    print("[WidthVerify] \"\(title)\": stored=\(slot.width) actual=\(actualWidth)")
+                    Logger.shared.log("[WidthVerify] \"\(title)\": stored=\(slot.width) actual=\(actualWidth)")
                     ManagedSlotRegistry.shared.setWidth(actualWidth, forSlotContaining: window, screen: screen)
                     needsReapply = true
                     break  // All windows in the slot share the same width; one correction is enough

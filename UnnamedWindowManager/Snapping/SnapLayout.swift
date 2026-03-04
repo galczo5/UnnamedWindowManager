@@ -187,6 +187,8 @@ extension WindowSnapper {
         var origin = CGPoint(x: xOffset, y: axY)
         var size   = CGSize(width: slot.width, height: myWindow.height)
 
+        Logger.shared.log("key=\(key.windowHash) origin=(\(Int(origin.x)),\(Int(origin.y))) size=(\(Int(size.width))×\(Int(size.height)))")
+
         if let posVal = AXValueCreate(.cgPoint, &origin) {
             AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, posVal)
         }

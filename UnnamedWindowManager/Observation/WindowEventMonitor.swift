@@ -89,6 +89,41 @@ final class WindowEventMonitor {
             CFEqual($0.value, axWindow)
         })?.key else { return }
         guard let slotIndex = ManagedSlotRegistry.shared.slotIndex(for: key) else { return }
+
+        var titleRef: CFTypeRef?
+        let title = AXUIElementCopyAttributeValue(axWindow, kAXTitleAttribute as CFString, &titleRef) == .success
+            ? (titleRef as? String ?? "<unknown>") : "<unknown>"
+
+        var actualOrigin = CGPoint.zero
+        var actualSize   = CGSize.zero
+        if let screen = NSScreen.main {
+            let primaryH = NSScreen.screens[0].frame.height
+
+            var posRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axWindow, kAXPositionAttribute as CFString, &posRef) == .success,
+               let posVal = posRef {
+                AXValueGetValue(posVal as! AXValue, .cgPoint, &actualOrigin)
+            }
+            var sizeRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axWindow, kAXSizeAttribute as CFString, &sizeRef) == .success,
+               let sizeVal = sizeRef {
+                AXValueGetValue(sizeVal as! AXValue, .cgSize, &actualSize)
+            }
+
+            let slots   = ManagedSlotRegistry.shared.allSlots()
+            let visible = screen.visibleFrame
+            var calcX   = visible.minX + Config.gap - CGFloat(CurrentOffset.shared.value)
+            for i in 0..<slotIndex { calcX += slots[i].width + Config.gap }
+            let calcY   = primaryH - visible.maxY + Config.gap
+
+            Logger.shared.log(
+                "[focus] id=\(key.windowHash) name=\"\(title)\" slot=\(slotIndex)" +
+                " calc=(\(Int(calcX)),\(Int(calcY)))" +
+                " actual=(\(Int(actualOrigin.x)),\(Int(actualOrigin.y)))" +
+                " size=(\(Int(actualSize.width))×\(Int(actualSize.height)))"
+            )
+        }
+
         CurrentOffset.shared.scheduleOffsetUpdate(forSlot: slotIndex)
     }
 
