@@ -17,7 +17,7 @@ enum Config {
     /// Expressed as a multiplier; effective cap = visible.height × maxHeightFraction − 2 × gap.
     static let maxHeightFraction: CGFloat = 1.0
     /// Fraction of a window's width that counts as the left or right drop zone (each side).
-    static let dropZoneFraction: CGFloat = 0.10
+    static let dropZoneFraction: CGFloat = 0.20
     /// Fraction of a slot's height (from the bottom) that activates the bottom drop zone.
     static let dropZoneBottomFraction: CGFloat = 0.20
     /// Fraction of a slot's height (from the top) that activates the top drop zone.
