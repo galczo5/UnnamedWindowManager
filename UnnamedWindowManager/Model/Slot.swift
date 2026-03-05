@@ -22,6 +22,8 @@ struct WindowSlot: Hashable, Sendable {
     var width: CGFloat
     var height: CGFloat
     var gaps: Bool = true
+    /// Share of the parent container's space in the split direction. Siblings sum to 1.0.
+    var fraction: CGFloat = 1.0
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.pid == rhs.pid && lhs.windowHash == rhs.windowHash
@@ -40,6 +42,8 @@ struct HorizontalSlot {
     var height: CGFloat
     var children: [Slot]
     var gaps: Bool = false
+    /// Share of the parent container's space in the split direction. Siblings sum to 1.0.
+    var fraction: CGFloat = 1.0
 }
 
 /// A container slot whose children are stacked top-to-bottom.
@@ -50,6 +54,8 @@ struct VerticalSlot {
     var height: CGFloat
     var children: [Slot]
     var gaps: Bool = false
+    /// Share of the parent container's space in the split direction. Siblings sum to 1.0.
+    var fraction: CGFloat = 1.0
 }
 
 /// Unified slot type for tree traversal.
@@ -99,6 +105,23 @@ extension Slot {
         case .window(let w):     return w.height
         case .horizontal(let h): return h.height
         case .vertical(let v):   return v.height
+        }
+    }
+
+    var fraction: CGFloat {
+        get {
+            switch self {
+            case .window(let w):     return w.fraction
+            case .horizontal(let h): return h.fraction
+            case .vertical(let v):   return v.fraction
+            }
+        }
+        set {
+            switch self {
+            case .window(var w):     w.fraction = newValue; self = .window(w)
+            case .horizontal(var h): h.fraction = newValue; self = .horizontal(h)
+            case .vertical(var v):   v.fraction = newValue; self = .vertical(v)
+            }
         }
     }
 }

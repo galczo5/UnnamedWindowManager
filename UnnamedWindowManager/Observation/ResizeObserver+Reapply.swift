@@ -29,11 +29,16 @@ extension ResizeObserver {
                   let storedElement = self.elements[key] else { return }
 
             if isResize {
+                guard let screen = NSScreen.main,
+                      let axElement = self.elements[key],
+                      let actualSize = readSize(of: axElement) else { return }
+
                 let allWindows = self.allTrackedWindows()
                 self.reapplying.formUnion(allWindows)
+                SnapService.shared.resize(key: key, actualSize: actualSize, screen: screen)
                 ReapplyHandler.reapplyAll()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                    self?.verifyWidthsAfterResize(allWindows: allWindows)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.reapplying.subtract(allWindows)
                 }
             } else {
                 // Move: swap if dragged onto another managed window, otherwise restore.
@@ -57,40 +62,6 @@ extension ResizeObserver {
 
         pendingReapply[key] = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
-    }
-
-    /// After reapplying widths, checks whether any app enforced a minimum width
-    /// and rejected the assigned value. If so, updates the slot and reapplies all windows.
-    private func verifyWidthsAfterResize(allWindows: Set<WindowSlot>) {
-        guard let screen = NSScreen.main else {
-            reapplying.subtract(allWindows)
-            return
-        }
-        let leaves = SnapService.shared.allLeaves()
-        var needsReapply = false
-
-        for leaf in leaves {
-            guard case .window(let w) = leaf,
-                  let axElement = elements[w],
-                  let actualWidth = readSize(of: axElement)?.width else { continue }
-
-            if abs(actualWidth - leaf.width) > 1.0 {
-                var titleRef: CFTypeRef?
-                let title = AXUIElementCopyAttributeValue(axElement, kAXTitleAttribute as CFString, &titleRef) == .success
-                    ? (titleRef as? String ?? "<unknown>")
-                    : "<unknown>"
-                Logger.shared.log("[WidthVerify] \"\(title)\": stored=\(leaf.width) actual=\(actualWidth)")
-                SnapService.shared.setWidth(actualWidth, forSlotContaining: w, screen: screen)
-                needsReapply = true
-            }
-        }
-
-        if needsReapply {
-            ReapplyHandler.reapplyAll()
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            self?.reapplying.subtract(allWindows)
-        }
     }
 
     private func allTrackedWindows() -> Set<WindowSlot> {

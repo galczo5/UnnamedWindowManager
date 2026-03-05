@@ -12,6 +12,7 @@ final class SnapService {
     private let store    = SharedRootStore.shared
     private let tree     = SlotTreeService()
     private let position = PositionService()
+    private let resizer  = ResizeService()
 
     // MARK: - Queries
 
@@ -68,10 +69,12 @@ final class SnapService {
         }
     }
 
-    func setWidth(_ width: CGFloat, forSlotContaining key: WindowSlot, screen: NSScreen) {
-        let clamped = position.clampedWidth(width, screen: screen)
-        store.queue.async(flags: .barrier) {
-            self.tree.updateLeaf(key, in: &self.store.root) { w in w.width = clamped }
+    func resize(key: WindowSlot, actualSize: CGSize, screen: NSScreen) {
+        store.queue.sync(flags: .barrier) {
+            resizer.applyResize(key: key, actualSize: actualSize, root: &store.root)
+            position.recomputeSizes(&store.root,
+                                    width: screen.visibleFrame.width  - Config.gap * 2,
+                                    height: screen.visibleFrame.height - Config.gap * 2)
         }
     }
 

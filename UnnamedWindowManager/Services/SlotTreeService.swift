@@ -115,10 +115,10 @@ struct SlotTreeService {
             guard found else { return (slot, false) }
             if newChildren.isEmpty { return (nil, true) }
             if newChildren.count == 1 {
-                var child = newChildren[0]; child.parentId = h.parentId
+                var child = newChildren[0]; child.parentId = h.parentId; child.fraction = h.fraction
                 return (child, true)
             }
-            var updated = h; updated.children = newChildren
+            var updated = h; updated.children = redistributed(newChildren)
             return (.horizontal(updated), true)
         case .vertical(let v):
             var found = false
@@ -130,10 +130,10 @@ struct SlotTreeService {
             guard found else { return (slot, false) }
             if newChildren.isEmpty { return (nil, true) }
             if newChildren.count == 1 {
-                var child = newChildren[0]; child.parentId = v.parentId
+                var child = newChildren[0]; child.parentId = v.parentId; child.fraction = v.fraction
                 return (child, true)
             }
-            var updated = v; updated.children = newChildren
+            var updated = v; updated.children = redistributed(newChildren)
             return (.vertical(updated), true)
         }
     }
@@ -148,13 +148,16 @@ struct SlotTreeService {
         if case .window(let w) = slot, w.order == targetOrder {
             let containerId = UUID()
             let containerParentId = slot.parentId
-            var existing = slot;  existing.parentId = containerId
-            var wrapped  = newLeaf; wrapped.parentId = containerId
+            let containerFraction = slot.fraction
+            var existing = slot;  existing.parentId = containerId; existing.fraction = 0.5
+            var wrapped  = newLeaf; wrapped.parentId = containerId; wrapped.fraction = 0.5
             slot = orientation == .horizontal
                 ? .horizontal(HorizontalSlot(id: containerId, parentId: containerParentId,
-                                             width: 0, height: 0, children: [existing, wrapped]))
+                                             width: 0, height: 0, children: [existing, wrapped],
+                                             fraction: containerFraction))
                 : .vertical(VerticalSlot(id: containerId, parentId: containerParentId,
-                                         width: 0, height: 0, children: [existing, wrapped]))
+                                         width: 0, height: 0, children: [existing, wrapped],
+                                         fraction: containerFraction))
             return true
         }
         switch slot {
@@ -211,6 +214,16 @@ struct SlotTreeService {
             }
             return false
         }
+    }
+
+    /// Distributes the fraction freed by a removed sibling equally among `children`.
+    /// Assumes the removed child's fraction was already excluded (compactMap filtered it out),
+    /// so the existing fractions sum to less than 1.0 and the deficit is spread evenly.
+    private func redistributed(_ children: [Slot]) -> [Slot] {
+        let freed = 1.0 - children.map(\.fraction).reduce(0, +)
+        guard freed > 0, !children.isEmpty else { return children }
+        let bonus = freed / CGFloat(children.count)
+        return children.map { var s = $0; s.fraction += bonus; return s }
     }
 
     @discardableResult

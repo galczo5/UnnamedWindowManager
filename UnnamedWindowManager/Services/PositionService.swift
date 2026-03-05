@@ -11,10 +11,9 @@ struct PositionService {
         root.width = width
         root.height = height
         guard !root.children.isEmpty else { return }
-        let n = CGFloat(root.children.count)
-        let cw = root.orientation == .horizontal ? width / n : width
-        let ch = root.orientation == .horizontal ? height : height / n
         for i in root.children.indices {
+            let cw = root.orientation == .horizontal ? width * root.children[i].fraction : width
+            let ch = root.orientation == .horizontal ? height : height * root.children[i].fraction
             recomputeSizes(&root.children[i], width: cw, height: ch)
         }
     }
@@ -26,24 +25,19 @@ struct PositionService {
             slot = .window(w)
         case .horizontal(var h):
             h.width = width; h.height = height
-            let n = CGFloat(h.children.count)
-            guard n > 0 else { slot = .horizontal(h); return }
+            guard !h.children.isEmpty else { slot = .horizontal(h); return }
             for i in h.children.indices {
-                recomputeSizes(&h.children[i], width: width / n, height: height)
+                recomputeSizes(&h.children[i], width: width * h.children[i].fraction, height: height)
             }
             slot = .horizontal(h)
         case .vertical(var v):
             v.width = width; v.height = height
-            let n = CGFloat(v.children.count)
-            guard n > 0 else { slot = .vertical(v); return }
+            guard !v.children.isEmpty else { slot = .vertical(v); return }
             for i in v.children.indices {
-                recomputeSizes(&v.children[i], width: width, height: height / n)
+                recomputeSizes(&v.children[i], width: width, height: height * v.children[i].fraction)
             }
             slot = .vertical(v)
         }
     }
 
-    func clampedWidth(_ width: CGFloat, screen: NSScreen) -> CGFloat {
-        min(width, screen.visibleFrame.width * Config.maxWidthFraction)
-    }
 }
