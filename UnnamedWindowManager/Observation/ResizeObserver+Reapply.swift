@@ -42,20 +42,15 @@ extension ResizeObserver {
                 }
             } else {
                 // Move: directional insert, center swap, or restore.
-                if let drop = ReapplyHandler.findDropTarget(forKey: key),
-                   let screen = NSScreen.main {
+                if let drop = ReapplyHandler.findDropTarget(forKey: key) {
                     let allWindows = self.allTrackedWindows()
                     self.reapplying.formUnion(allWindows)
-                    SnapService.shared.insertAdjacent(dragged: key, target: drop.window,
-                                                      zone: drop.zone, screen: screen)
-                    ReapplyHandler.reapplyAll()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                        self?.reapplying.subtract(allWindows)
+                    if drop.zone == .center {
+                        SnapService.shared.swap(key, drop.window)
+                    } else if let screen = NSScreen.main {
+                        SnapService.shared.insertAdjacent(dragged: key, target: drop.window,
+                                                          zone: drop.zone, screen: screen)
                     }
-                } else if let swapTarget = ReapplyHandler.findSwapTarget(forKey: key) {
-                    let allWindows = self.allTrackedWindows()
-                    self.reapplying.formUnion(allWindows)
-                    SnapService.shared.swap(key, swapTarget)
                     ReapplyHandler.reapplyAll()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                         self?.reapplying.subtract(allWindows)

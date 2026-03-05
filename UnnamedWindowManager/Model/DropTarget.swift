@@ -6,7 +6,7 @@
 import Foundation
 
 enum DropZone {
-    case left, right, top, bottom
+    case left, right, top, bottom, center
 }
 
 struct DropTarget {

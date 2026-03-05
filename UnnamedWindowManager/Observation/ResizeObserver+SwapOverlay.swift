@@ -38,6 +38,8 @@ extension ResizeObserver {
         case .bottom:
             return CGRect(x: full.minX, y: full.minY,
                           width: full.width, height: full.height / 2)
+        case .center:
+            return full
         }
     }
 
