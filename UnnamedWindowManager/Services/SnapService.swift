@@ -83,4 +83,27 @@ final class SnapService {
             tree.swap(keyA, keyB, in: &store.root)
         }
     }
+
+    func insertAdjacent(dragged: WindowSlot, target: WindowSlot,
+                        zone: DropZone, screen: NSScreen) {
+        store.queue.sync(flags: .barrier) {
+            guard let draggedSlot = tree.findLeafSlot(dragged, in: store.root),
+                  case .window(let draggedWindow) = draggedSlot else { return }
+
+            tree.removeLeaf(dragged, from: &store.root)
+
+            let newLeaf = Slot.window(WindowSlot(
+                pid: draggedWindow.pid, windowHash: draggedWindow.windowHash,
+                id: UUID(), parentId: store.root.id,
+                order: draggedWindow.order,
+                width: 0, height: 0, gaps: true
+            ))
+
+            tree.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &store.root)
+
+            position.recomputeSizes(&store.root,
+                                    width: screen.visibleFrame.width  - Config.gap * 2,
+                                    height: screen.visibleFrame.height - Config.gap * 2)
+        }
+    }
 }

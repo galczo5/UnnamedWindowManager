@@ -63,6 +63,43 @@ struct SlotTreeService {
         return false
     }
 
+    /// Inserts `dragged` adjacent to the window identified by `targetKey`, honouring
+    /// the directional `zone`. If the target's parent already has the matching orientation
+    /// the dragged slot is inserted directly into that container; otherwise the target is
+    /// wrapped in a new container of the needed orientation.
+    /// The dragged window must have been removed from the tree before calling this.
+    func insertAdjacentTo(
+        _ dragged: Slot,
+        adjacentTo targetKey: WindowSlot,
+        zone: DropZone,
+        in root: inout RootSlot
+    ) {
+        let needed: Orientation = (zone == .left || zone == .right) ? .horizontal : .vertical
+        let draggedFirst = (zone == .left || zone == .top)
+
+        // Check root-level children first.
+        if let idx = root.children.firstIndex(where: {
+            if case .window(let w) = $0 { return w == targetKey }
+            return false
+        }) {
+            if root.orientation == needed {
+                insertIntoChildren(&root.children, parentId: root.id,
+                                   dragged: dragged, at: idx, draggedFirst: draggedFirst)
+            } else {
+                root.children[idx] = makeWrapper(target: root.children[idx],
+                                                 dragged: dragged, orientation: needed,
+                                                 draggedFirst: draggedFirst)
+            }
+            return
+        }
+
+        for i in root.children.indices {
+            if insertAdjacentInSlot(&root.children[i], targetKey: targetKey,
+                                    dragged: dragged, needed: needed,
+                                    draggedFirst: draggedFirst) { return }
+        }
+    }
+
     func swap(_ keyA: WindowSlot, _ keyB: WindowSlot, in root: inout RootSlot) {
         guard findLeafSlot(keyA, in: root) != nil,
               findLeafSlot(keyB, in: root) != nil else { return }
@@ -209,6 +246,101 @@ struct SlotTreeService {
         case .vertical(var v):
             for i in v.children.indices {
                 if updateLeaf(key, in: &v.children[i], update: update) {
+                    slot = .vertical(v); return true
+                }
+            }
+            return false
+        }
+    }
+
+    /// Inserts `dragged` into `children` at the correct position relative to `targetIdx`,
+    /// splitting the target's fraction equally with the new sibling.
+    private func insertIntoChildren(
+        _ children: inout [Slot],
+        parentId: UUID,
+        dragged: Slot,
+        at targetIdx: Int,
+        draggedFirst: Bool
+    ) {
+        let half = children[targetIdx].fraction / 2
+        var d = dragged; d.parentId = parentId; d.fraction = half
+        var t = children[targetIdx]; t.fraction = half
+        children[targetIdx] = t
+        children.insert(d, at: draggedFirst ? targetIdx : targetIdx + 1)
+    }
+
+    /// Wraps `target` and `dragged` in a new container of `orientation`.
+    /// The container inherits the target's fraction and parentId.
+    private func makeWrapper(
+        target: Slot,
+        dragged: Slot,
+        orientation: Orientation,
+        draggedFirst: Bool
+    ) -> Slot {
+        let containerId = UUID()
+        var d = dragged; d.parentId = containerId; d.fraction = 0.5
+        var t = target;  t.parentId = containerId; t.fraction = 0.5
+        let kids: [Slot] = draggedFirst ? [d, t] : [t, d]
+        return orientation == .horizontal
+            ? .horizontal(HorizontalSlot(id: containerId, parentId: target.parentId,
+                                         width: 0, height: 0, children: kids,
+                                         fraction: target.fraction))
+            : .vertical(VerticalSlot(id: containerId, parentId: target.parentId,
+                                     width: 0, height: 0, children: kids,
+                                     fraction: target.fraction))
+    }
+
+    /// Recursively searches `slot` for `targetKey` and inserts `dragged` adjacent to it.
+    /// Returns `true` when the insertion was performed.
+    @discardableResult
+    private func insertAdjacentInSlot(
+        _ slot: inout Slot,
+        targetKey: WindowSlot,
+        dragged: Slot,
+        needed: Orientation,
+        draggedFirst: Bool
+    ) -> Bool {
+        switch slot {
+        case .window:
+            return false
+        case .horizontal(var h):
+            if let idx = h.children.firstIndex(where: {
+                if case .window(let w) = $0 { return w == targetKey }; return false
+            }) {
+                if needed == .horizontal {
+                    insertIntoChildren(&h.children, parentId: h.id,
+                                       dragged: dragged, at: idx, draggedFirst: draggedFirst)
+                } else {
+                    h.children[idx] = makeWrapper(target: h.children[idx], dragged: dragged,
+                                                  orientation: needed, draggedFirst: draggedFirst)
+                }
+                slot = .horizontal(h); return true
+            }
+            for i in h.children.indices {
+                if insertAdjacentInSlot(&h.children[i], targetKey: targetKey,
+                                        dragged: dragged, needed: needed,
+                                        draggedFirst: draggedFirst) {
+                    slot = .horizontal(h); return true
+                }
+            }
+            return false
+        case .vertical(var v):
+            if let idx = v.children.firstIndex(where: {
+                if case .window(let w) = $0 { return w == targetKey }; return false
+            }) {
+                if needed == .vertical {
+                    insertIntoChildren(&v.children, parentId: v.id,
+                                       dragged: dragged, at: idx, draggedFirst: draggedFirst)
+                } else {
+                    v.children[idx] = makeWrapper(target: v.children[idx], dragged: dragged,
+                                                  orientation: needed, draggedFirst: draggedFirst)
+                }
+                slot = .vertical(v); return true
+            }
+            for i in v.children.indices {
+                if insertAdjacentInSlot(&v.children[i], targetKey: targetKey,
+                                        dragged: dragged, needed: needed,
+                                        draggedFirst: draggedFirst) {
                     slot = .vertical(v); return true
                 }
             }

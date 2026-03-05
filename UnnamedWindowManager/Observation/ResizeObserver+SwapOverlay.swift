@@ -7,9 +7,9 @@ import AppKit
 
 extension ResizeObserver {
 
-    func updateSwapOverlay(for draggedKey: WindowSlot, draggedWindow: AXUIElement) {
-        guard let targetWindow = ReapplyHandler.findSwapTarget(forKey: draggedKey),
-              let targetElement = elements[targetWindow],
+    func updateSwapOverlay(dropTarget: DropTarget?, draggedWindow: AXUIElement) {
+        guard let drop = dropTarget,
+              let targetElement = elements[drop.window],
               let axOrigin = readOrigin(of: targetElement),
               let axSize   = readSize(of: targetElement) else {
             hideSwapOverlay()
@@ -18,9 +18,27 @@ extension ResizeObserver {
 
         let screenHeight = NSScreen.screens[0].frame.height
         let appKitY = screenHeight - axOrigin.y - axSize.height
-        let overlayFrame = CGRect(x: axOrigin.x, y: appKitY, width: axSize.width, height: axSize.height)
+        let fullFrame = CGRect(x: axOrigin.x, y: appKitY, width: axSize.width, height: axSize.height)
+        let overlayFrame = zoneFrame(for: drop.zone, in: fullFrame)
         let draggedWindowNumber = windowID(of: draggedWindow).map(Int.init)
         showSwapOverlay(frame: overlayFrame, belowWindow: draggedWindowNumber)
+    }
+
+    private func zoneFrame(for zone: DropZone, in full: CGRect) -> CGRect {
+        switch zone {
+        case .left:
+            return CGRect(x: full.minX, y: full.minY,
+                          width: full.width / 2, height: full.height)
+        case .right:
+            return CGRect(x: full.minX + full.width / 2, y: full.minY,
+                          width: full.width / 2, height: full.height)
+        case .top:   // AppKit y↑: top of window = high y values
+            return CGRect(x: full.minX, y: full.minY + full.height / 2,
+                          width: full.width, height: full.height / 2)
+        case .bottom:
+            return CGRect(x: full.minX, y: full.minY,
+                          width: full.width, height: full.height / 2)
+        }
     }
 
     func showSwapOverlay(frame: CGRect, belowWindow windowNumber: Int?) {

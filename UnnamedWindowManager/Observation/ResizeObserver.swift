@@ -81,9 +81,10 @@ final class ResizeObserver {
 
         let isResize = notification == (kAXWindowResizedNotification as String)
 
-        // While a drag is in progress, update the swap-target overlay in real time.
+        // While a drag is in progress, update the drop-zone overlay in real time.
         if !isResize && NSEvent.pressedMouseButtons != 0 {
-            updateSwapOverlay(for: key, draggedWindow: element)
+            let drop = ReapplyHandler.findDropTarget(forKey: key)
+            updateSwapOverlay(dropTarget: drop, draggedWindow: element)
         }
 
         scheduleReapplyWhenMouseUp(key: key, isResize: isResize)
