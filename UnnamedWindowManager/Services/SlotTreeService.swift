@@ -103,12 +103,16 @@ struct SlotTreeService {
     func swap(_ keyA: WindowSlot, _ keyB: WindowSlot, in root: inout RootSlot) {
         guard findLeafSlot(keyA, in: root) != nil,
               findLeafSlot(keyB, in: root) != nil else { return }
-        for i in root.children.indices {
-            replaceWindowInLeaf(&root.children[i], target: keyA, with: keyB)
-        }
-        for i in root.children.indices {
-            replaceWindowInLeaf(&root.children[i], target: keyB, with: keyA)
-        }
+        // Two-pass replacement collides when the windows are in different subtrees:
+        // pass 1 places keyB at keyA's position, then pass 2 finds that new keyB first
+        // and swaps it back, never reaching the original keyB. Fix: three passes with a
+        // sentinel that is guaranteed not to match any real window (pid=0, hash=.max).
+        let sentinel = WindowSlot(pid: 0, windowHash: .max,
+                                  id: UUID(), parentId: UUID(),
+                                  order: -1, width: 0, height: 0)
+        for i in root.children.indices { replaceWindowInLeaf(&root.children[i], target: keyA, with: sentinel) }
+        for i in root.children.indices { replaceWindowInLeaf(&root.children[i], target: keyB, with: keyA) }
+        for i in root.children.indices { replaceWindowInLeaf(&root.children[i], target: sentinel, with: keyB) }
     }
 
     // MARK: - Private recursive helpers
