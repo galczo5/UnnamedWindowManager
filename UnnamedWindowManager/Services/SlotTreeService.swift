@@ -238,7 +238,7 @@ struct SlotTreeService {
             let swapped = WindowSlot(
                 pid: replacement.pid, windowHash: replacement.windowHash,
                 id: w.id, parentId: w.parentId, order: w.order,
-                width: w.width, height: w.height, gaps: w.gaps
+                width: w.width, height: w.height, gaps: w.gaps, fraction: w.fraction
             )
             slot = .window(swapped); return true
         case .horizontal(var h):
