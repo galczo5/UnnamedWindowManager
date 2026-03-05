@@ -68,7 +68,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				8EE853592F55F29400645F80 /* UnnamedWindowManager */,
-				8EE853D42F58B37000645F80 /* .claude */,
 			);
 			name = UnnamedWindowManager;
 			packageProductDependencies = (

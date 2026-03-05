@@ -25,6 +25,8 @@ struct UnnamedWindowManagerApp: App {
             Button("Unsnap")    { WindowSnapper.unsnap()   }
             Button("Organize")  { WindowSnapper.organize() }
             Divider()
+            Button("Debug")     { WindowLister.logAllWindows() }
+            Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
         }
         .menuBarExtraStyle(.menu)
