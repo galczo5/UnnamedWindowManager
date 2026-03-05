@@ -48,7 +48,7 @@ struct WindowLister {
                   let axWindows = windowsRef as? [AXUIElement] else { continue }
 
             for axWindow in axWindows {
-                guard let wid = WindowSnapper.windowID(of: axWindow), wids.contains(wid) else { continue }
+                guard let wid = windowID(of: axWindow), wids.contains(wid) else { continue }
 
                 var titleRef: CFTypeRef?
                 let title: String

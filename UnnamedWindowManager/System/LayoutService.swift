@@ -1,27 +1,32 @@
 //
-//  SnapLayout.swift
+//  LayoutService.swift
 //  UnnamedWindowManager
 //
 
 import AppKit
 import ApplicationServices
 
-extension WindowSnapper {
+final class LayoutService {
+    static let shared = LayoutService()
+    private init() {}
 
-    // MARK: - Tree layout
-
-    /// Positions all snapped windows by walking the slot tree from the root.
-    static func applyLayout(screen: NSScreen) {
+    /// Positions all snapped windows on `screen` by walking the current slot tree.
+    /// Reads the tree snapshot from `SharedRootStore` and the live AX element map from
+    /// `ResizeObserver`. The root origin is shifted inward by one gap so the outer margin
+    /// equals the inter-window gap (both equal `Config.gap`).
+    func applyLayout(screen: NSScreen) {
         let visible       = screen.visibleFrame
         let primaryHeight = NSScreen.screens[0].frame.height
-        // Shift the root origin inward by one gap so the outer gap equals the inner gap (2×Config.gap).
+        // y is flipped: AX uses top-left origin, AppKit uses bottom-left.
         let origin = CGPoint(x: visible.minX + Config.gap, y: primaryHeight - visible.maxY + Config.gap)
         let elements = ResizeObserver.shared.elements
         let root = SharedRootStore.shared.snapshotRoot()
         applyLayout(root, origin: origin, elements: elements)
     }
 
-    private static func applyLayout(
+    /// Walks the root's direct children in order, advancing the cursor after each child
+    /// by the child's width (horizontal root) or height (vertical root).
+    private func applyLayout(
         _ root: RootSlot,
         origin: CGPoint,
         elements: [WindowSlot: AXUIElement]
@@ -37,7 +42,11 @@ extension WindowSnapper {
         }
     }
 
-    private static func applyLayout(
+    /// Recursively positions a slot subtree starting at `origin`.
+    /// - Window leaf: applies gap insets, then writes position and size via AX.
+    /// - Horizontal container: tiles children left-to-right.
+    /// - Vertical container: tiles children top-to-bottom.
+    private func applyLayout(
         _ slot: Slot,
         origin: CGPoint,
         elements: [WindowSlot: AXUIElement]
@@ -69,43 +78,4 @@ extension WindowSnapper {
             }
         }
     }
-
-    // MARK: - Swap target (center drop zone)
-
-    /// Returns the tracked window under the cursor, excluding the dragged window itself.
-    static func findSwapTarget(forKey draggedKey: WindowSlot) -> WindowSlot? {
-        let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
-        let screenHeight = NSScreen.screens[0].frame.height
-        let leaves = SnapService.shared.allLeaves()
-        let elements = ResizeObserver.shared.elements
-
-        for leaf in leaves {
-            guard case .window(let w) = leaf, w != draggedKey else { continue }
-            guard let axElement = elements[w],
-                  let axOrigin = readOrigin(of: axElement),
-                  let axSize   = readSize(of: axElement) else { continue }
-
-            // AX coords: top-left origin, y increases downward.
-            // AppKit coords: bottom-left origin, y increases upward.
-            let appKitY = screenHeight - axOrigin.y - axSize.height
-            let frame = CGRect(x: axOrigin.x, y: appKitY, width: axSize.width, height: axSize.height)
-
-            if frame.contains(cursor) { return w }
-        }
-        return nil
-    }
-
-    // MARK: - Size helpers
-
-    /// Returns `size` with width and height clamped to the per-screen maximums defined in `Config`.
-    static func clampSize(_ size: CGSize, screen: NSScreen) -> CGSize {
-        let visible = screen.visibleFrame
-        let maxW = visible.width  * Config.maxWidthFraction
-        let maxH = visible.height * Config.maxHeightFraction - Config.gap * 2
-        return CGSize(
-            width:  min(size.width,  maxW),
-            height: min(size.height, maxH)
-        )
-    }
-
 }

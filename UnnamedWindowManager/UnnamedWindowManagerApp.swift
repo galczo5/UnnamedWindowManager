@@ -21,9 +21,9 @@ struct UnnamedWindowManagerApp: App {
 
     var body: some Scene {
         MenuBarExtra("Window Manager", systemImage: "rectangle.split.2x1") {
-            Button("Snap")      { WindowSnapper.snap()     }
-            Button("Unsnap")    { WindowSnapper.unsnap()   }
-            Button("Organize")  { WindowSnapper.organize() }
+            Button("Snap")      { SnapHandler.snap()       }
+            Button("Unsnap")    { UnsnapHandler.unsnap()   }
+            Button("Organize")  { OrganizeHandler.organize() }
             Divider()
             Button("Debug")     { WindowLister.logAllWindows() }
             Divider()

@@ -72,7 +72,7 @@ final class ResizeObserver {
             }
             cleanup(key: key, pid: pid)
             WindowVisibilityManager.shared.windowRemoved(key)
-            WindowSnapper.reapplyAll()
+            ReapplyHandler.reapplyAll()
             return
         }
 

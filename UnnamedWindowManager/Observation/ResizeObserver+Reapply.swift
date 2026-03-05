@@ -31,23 +31,23 @@ extension ResizeObserver {
             if isResize {
                 let allWindows = self.allTrackedWindows()
                 self.reapplying.formUnion(allWindows)
-                WindowSnapper.reapplyAll()
+                ReapplyHandler.reapplyAll()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     self?.verifyWidthsAfterResize(allWindows: allWindows)
                 }
             } else {
                 // Move: swap if dragged onto another managed window, otherwise restore.
-                if let swapTarget = WindowSnapper.findSwapTarget(forKey: key) {
+                if let swapTarget = ReapplyHandler.findSwapTarget(forKey: key) {
                     let allWindows = self.allTrackedWindows()
                     self.reapplying.formUnion(allWindows)
                     SnapService.shared.swap(key, swapTarget)
-                    WindowSnapper.reapplyAll()
+                    ReapplyHandler.reapplyAll()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                         self?.reapplying.subtract(allWindows)
                     }
                 } else {
                     self.reapplying.insert(key)
-                    WindowSnapper.reapply(window: storedElement, key: key)
+                    ReapplyHandler.reapply(window: storedElement, key: key)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                         self?.reapplying.remove(key)
                     }
@@ -72,7 +72,7 @@ extension ResizeObserver {
         for leaf in leaves {
             guard case .window(let w) = leaf,
                   let axElement = elements[w],
-                  let actualWidth = WindowSnapper.readSize(of: axElement)?.width else { continue }
+                  let actualWidth = readSize(of: axElement)?.width else { continue }
 
             if abs(actualWidth - leaf.width) > 1.0 {
                 var titleRef: CFTypeRef?
@@ -86,7 +86,7 @@ extension ResizeObserver {
         }
 
         if needsReapply {
-            WindowSnapper.reapplyAll()
+            ReapplyHandler.reapplyAll()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.reapplying.subtract(allWindows)

@@ -8,10 +8,10 @@ import AppKit
 extension ResizeObserver {
 
     func updateSwapOverlay(for draggedKey: WindowSlot, draggedWindow: AXUIElement) {
-        guard let targetWindow = WindowSnapper.findSwapTarget(forKey: draggedKey),
+        guard let targetWindow = ReapplyHandler.findSwapTarget(forKey: draggedKey),
               let targetElement = elements[targetWindow],
-              let axOrigin = WindowSnapper.readOrigin(of: targetElement),
-              let axSize   = WindowSnapper.readSize(of: targetElement) else {
+              let axOrigin = readOrigin(of: targetElement),
+              let axSize   = readSize(of: targetElement) else {
             hideSwapOverlay()
             return
         }
@@ -19,7 +19,7 @@ extension ResizeObserver {
         let screenHeight = NSScreen.screens[0].frame.height
         let appKitY = screenHeight - axOrigin.y - axSize.height
         let overlayFrame = CGRect(x: axOrigin.x, y: appKitY, width: axSize.width, height: axSize.height)
-        let draggedWindowNumber = WindowSnapper.windowID(of: draggedWindow).map(Int.init)
+        let draggedWindowNumber = windowID(of: draggedWindow).map(Int.init)
         showSwapOverlay(frame: overlayFrame, belowWindow: draggedWindowNumber)
     }
 
