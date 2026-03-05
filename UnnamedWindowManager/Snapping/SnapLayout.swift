@@ -22,16 +22,32 @@ extension WindowSnapper {
     }
 
     private static func applyLayout(
-        _ slot: ManagedSlot,
+        _ root: RootSlot,
         origin: CGPoint,
-        elements: [ManagedWindow: AXUIElement]
+        elements: [WindowSlot: AXUIElement]
     ) {
-        switch slot.content {
+        var cursor = origin
+        for child in root.children {
+            applyLayout(child, origin: cursor, elements: elements)
+            if root.orientation == .horizontal {
+                cursor.x += child.width
+            } else {
+                cursor.y += child.height
+            }
+        }
+    }
+
+    private static func applyLayout(
+        _ slot: Slot,
+        origin: CGPoint,
+        elements: [WindowSlot: AXUIElement]
+    ) {
+        switch slot {
         case .window(let w):
             guard let ax = elements[w] else { return }
-            let g = slot.gaps ? Config.gap : 0
+            let g = w.gaps ? Config.gap : 0
             var pos  = CGPoint(x: origin.x + g, y: origin.y + g)
-            var size = CGSize(width: slot.width - g * 2, height: slot.height - g * 2)
+            var size = CGSize(width: w.width - g * 2, height: w.height - g * 2)
             Logger.shared.log("key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
             if let posVal = AXValueCreate(.cgPoint, &pos) {
                 AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal)
@@ -39,17 +55,17 @@ extension WindowSnapper {
             if let sizeVal = AXValueCreate(.cgSize, &size) {
                 AXUIElementSetAttributeValue(ax, kAXSizeAttribute as CFString, sizeVal)
             }
-
-        case .slots(let children):
-            // Containers pass their full allocated space to children — no gap offset.
+        case .horizontal(let h):
             var cursor = origin
-            for child in children {
+            for child in h.children {
                 applyLayout(child, origin: cursor, elements: elements)
-                if slot.orientation == .horizontal {
-                    cursor.x += child.width
-                } else {
-                    cursor.y += child.height
-                }
+                cursor.x += child.width
+            }
+        case .vertical(let v):
+            var cursor = origin
+            for child in v.children {
+                applyLayout(child, origin: cursor, elements: elements)
+                cursor.y += child.height
             }
         }
     }
@@ -57,14 +73,14 @@ extension WindowSnapper {
     // MARK: - Swap target (center drop zone)
 
     /// Returns the tracked window under the cursor, excluding the dragged window itself.
-    static func findSwapTarget(forKey draggedKey: ManagedWindow) -> ManagedWindow? {
+    static func findSwapTarget(forKey draggedKey: WindowSlot) -> WindowSlot? {
         let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
         let screenHeight = NSScreen.screens[0].frame.height
         let leaves = ManagedSlotRegistry.shared.allLeaves()
         let elements = ResizeObserver.shared.elements
 
         for leaf in leaves {
-            guard case .window(let w) = leaf.content, w != draggedKey else { continue }
+            guard case .window(let w) = leaf, w != draggedKey else { continue }
             guard let axElement = elements[w],
                   let axOrigin = readOrigin(of: axElement),
                   let axSize   = readSize(of: axElement) else { continue }

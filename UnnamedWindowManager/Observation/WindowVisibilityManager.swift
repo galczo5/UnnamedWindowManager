@@ -10,7 +10,7 @@ final class WindowVisibilityManager {
     static let shared = WindowVisibilityManager()
     private init() {}
 
-    private var autoMinimized: Set<ManagedWindow> = []
+    private var autoMinimized: Set<WindowSlot> = []
 
     /// Called after every `reapplyAll()`. With the tree layout all leaves fit on screen,
     /// so any previously auto-minimized windows are restored.
@@ -25,7 +25,7 @@ final class WindowVisibilityManager {
 
     /// Restores a window if it was auto-minimized, then removes it from tracking.
     /// Call before releasing a window from the registry (e.g. unsnap).
-    func restoreAndForget(_ key: ManagedWindow) {
+    func restoreAndForget(_ key: WindowSlot) {
         guard autoMinimized.contains(key) else { return }
         if let axWindow = ResizeObserver.shared.window(for: key) {
             setMinimized(false, window: axWindow)
@@ -34,7 +34,7 @@ final class WindowVisibilityManager {
     }
 
     /// Removes a closed window from the tracking set without attempting to restore it.
-    func windowRemoved(_ key: ManagedWindow) {
+    func windowRemoved(_ key: WindowSlot) {
         autoMinimized.remove(key)
     }
 

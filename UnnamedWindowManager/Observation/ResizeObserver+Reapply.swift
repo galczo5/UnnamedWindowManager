@@ -11,7 +11,7 @@ extension ResizeObserver {
     /// Any in-progress poll for the same key is cancelled before scheduling a new one.
     /// - Parameter isResize: true when triggered by a resize notification — accepts the
     ///   new size and reflows all snapped windows; false for move — restores position only.
-    func scheduleReapplyWhenMouseUp(key: ManagedWindow, isResize: Bool) {
+    func scheduleReapplyWhenMouseUp(key: WindowSlot, isResize: Bool) {
         pendingReapply[key]?.cancel()
 
         let work = DispatchWorkItem { [weak self] in
@@ -61,7 +61,7 @@ extension ResizeObserver {
 
     /// After reapplying widths, checks whether any app enforced a minimum width
     /// and rejected the assigned value. If so, updates the slot and reapplies all windows.
-    private func verifyWidthsAfterResize(allWindows: Set<ManagedWindow>) {
+    private func verifyWidthsAfterResize(allWindows: Set<WindowSlot>) {
         guard let screen = NSScreen.main else {
             reapplying.subtract(allWindows)
             return
@@ -70,7 +70,7 @@ extension ResizeObserver {
         var needsReapply = false
 
         for leaf in leaves {
-            guard case .window(let w) = leaf.content,
+            guard case .window(let w) = leaf,
                   let axElement = elements[w],
                   let actualWidth = WindowSnapper.readSize(of: axElement)?.width else { continue }
 
@@ -93,10 +93,10 @@ extension ResizeObserver {
         }
     }
 
-    private func allTrackedWindows() -> Set<ManagedWindow> {
+    private func allTrackedWindows() -> Set<WindowSlot> {
         let leaves = ManagedSlotRegistry.shared.allLeaves()
-        return Set(leaves.compactMap { leaf -> ManagedWindow? in
-            if case .window(let w) = leaf.content { return w }
+        return Set(leaves.compactMap { leaf -> WindowSlot? in
+            if case .window(let w) = leaf { return w }
             return nil
         })
     }

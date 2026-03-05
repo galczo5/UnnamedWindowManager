@@ -9,17 +9,13 @@ final class ManagedSlotRegistry {
     static let shared = ManagedSlotRegistry()
     private init() {
         // Placeholder root; call initialize(screen:) before any snapping.
-        root = ManagedSlot(order: 0,
-                           width: 0,
-                           height: 0,
-                           orientation: .vertical,
-                           content: .slots([]),
-                           gaps: true)
+        root = RootSlot(id: UUID(), width: 0, height: 0,
+                        orientation: .vertical, children: [])
     }
 
-    var root: ManagedSlot
+    var root: RootSlot
     /// Global snap counter. Increments on every snap; never decremented.
-    /// Leaf slots carry their insertion index as `order`; container nodes carry 0.
+    /// Leaf slots carry their insertion index as `order`; container nodes have no order.
     var windowCount: Int = 0
     let queue = DispatchQueue(label: "snap.registry", attributes: .concurrent)
 
@@ -28,32 +24,30 @@ final class ManagedSlotRegistry {
     func initialize(screen: NSScreen) {
         let f = screen.visibleFrame
         queue.sync(flags: .barrier) {
-            self.root = ManagedSlot(order: 0, width: f.width, height: f.height,
-                                    orientation: .horizontal, content: .slots([]), gaps: true)
+            self.root = RootSlot(id: UUID(), width: f.width, height: f.height,
+                                 orientation: .horizontal, children: [])
             self.windowCount = 0
         }
     }
 
     // MARK: - Snap
 
-    func snap(_ key: ManagedWindow, screen: NSScreen) {
+    func snap(_ key: WindowSlot, screen: NSScreen) {
         queue.sync(flags: .barrier) {
             self.windowCount += 1
-            let newLeaf = ManagedSlot(
+            let newLeaf = Slot.window(WindowSlot(
+                pid: key.pid, windowHash: key.windowHash,
+                id: UUID(), parentId: self.root.id,
                 order: self.windowCount,
-                width: 0, height: 0,
-                orientation: .horizontal,
-                content: .window(ManagedWindow(pid: key.pid, windowHash: key.windowHash,
-                                               height: 0, width: 0)),
-                gaps: true
-            )
+                width: 0, height: 0, gaps: true
+            ))
 
-            if case .slots(let children) = self.root.content, children.isEmpty {
-                self.root.content = .slots([newLeaf])
+            if self.root.children.isEmpty {
+                self.root.children = [newLeaf]
             } else {
                 let lastOrder = self.maxLeafOrder(in: self.root)
                 let orientation: Orientation = self.windowCount % 2 == 0 ? .horizontal : .vertical
-                self.extractAndWrap(&self.root, targetOrder: lastOrder,
+                self.extractAndWrap(in: &self.root, targetOrder: lastOrder,
                                     newLeaf: newLeaf, orientation: orientation)
             }
             self.recomputeSizes(&self.root,
@@ -64,29 +58,34 @@ final class ManagedSlotRegistry {
 
     // MARK: - Reads
 
-    func isTracked(_ key: ManagedWindow) -> Bool {
+    func isTracked(_ key: WindowSlot) -> Bool {
         queue.sync { findLeafSlot(key, in: root) != nil }
     }
 
     /// Returns all leaf slots sorted by insertion order.
-    func allLeaves() -> [ManagedSlot] {
-        queue.sync { collectLeaves(in: root).sorted { $0.order < $1.order } }
+    func allLeaves() -> [Slot] {
+        queue.sync {
+            collectLeaves(in: root).sorted { a, b in
+                if case .window(let wa) = a, case .window(let wb) = b { return wa.order < wb.order }
+                return false
+            }
+        }
     }
 
-    /// Returns a snapshot of the root slot for layout passes.
-    func snapshotRoot() -> ManagedSlot {
+    /// Returns a snapshot of the root for layout passes.
+    func snapshotRoot() -> RootSlot {
         queue.sync { root }
     }
 
     // MARK: - Writes
 
-    func remove(_ key: ManagedWindow) {
+    func remove(_ key: WindowSlot) {
         queue.async(flags: .barrier) {
             self.removeLeaf(key, from: &self.root)
         }
     }
 
-    func removeAndReflow(_ key: ManagedWindow, screen: NSScreen) {
+    func removeAndReflow(_ key: WindowSlot, screen: NSScreen) {
         queue.sync(flags: .barrier) {
             self.removeLeaf(key, from: &self.root)
             self.recomputeSizes(&self.root,
@@ -95,157 +94,236 @@ final class ManagedSlotRegistry {
         }
     }
 
-    func setWidth(_ width: CGFloat, forSlotContaining key: ManagedWindow, screen: NSScreen) {
+    func setWidth(_ width: CGFloat, forSlotContaining key: WindowSlot, screen: NSScreen) {
         let maxW = screen.visibleFrame.width * Config.maxWidthFraction
         let clamped = min(width, maxW)
         queue.async(flags: .barrier) {
-            self.updateLeaf(key, in: &self.root) { slot in
-                slot.width = clamped
-                if case .window(var w) = slot.content {
-                    w.width = clamped
-                    slot.content = .window(w)
-                }
+            self.updateLeaf(key, in: &self.root) { w in
+                w.width = clamped
             }
         }
     }
 
     // MARK: - Layout
 
-    func recomputeSizes(_ slot: inout ManagedSlot, width: CGFloat, height: CGFloat) {
-        slot.width  = width
-        slot.height = height
-        guard case .slots(var children) = slot.content, !children.isEmpty else { return }
+    func recomputeSizes(_ root: inout RootSlot, width: CGFloat, height: CGFloat) {
+        root.width = width
+        root.height = height
+        guard !root.children.isEmpty else { return }
+        let n = CGFloat(root.children.count)
+        let cw = root.orientation == .horizontal ? width / n : width
+        let ch = root.orientation == .horizontal ? height : height / n
+        for i in root.children.indices {
+            recomputeSizes(&root.children[i], width: cw, height: ch)
+        }
+    }
 
-        let n = CGFloat(children.count)
-        let cw: CGFloat
-        let ch: CGFloat
-        // Containers divide their full space equally — gap is applied only at window leaves.
-        if slot.orientation == .horizontal {
-            cw = width  / n
-            ch = height
-        } else {
-            cw = width
-            ch = height / n
+    func recomputeSizes(_ slot: inout Slot, width: CGFloat, height: CGFloat) {
+        switch slot {
+        case .window(var w):
+            w.width = width; w.height = height
+            slot = .window(w)
+        case .horizontal(var h):
+            h.width = width; h.height = height
+            let n = CGFloat(h.children.count)
+            guard n > 0 else { slot = .horizontal(h); return }
+            for i in h.children.indices {
+                recomputeSizes(&h.children[i], width: width / n, height: height)
+            }
+            slot = .horizontal(h)
+        case .vertical(var v):
+            v.width = width; v.height = height
+            let n = CGFloat(v.children.count)
+            guard n > 0 else { slot = .vertical(v); return }
+            for i in v.children.indices {
+                recomputeSizes(&v.children[i], width: width, height: height / n)
+            }
+            slot = .vertical(v)
         }
-        for i in children.indices {
-            recomputeSizes(&children[i], width: cw, height: ch)
-        }
-        slot.content = .slots(children)
     }
 
     // MARK: - Private tree helpers (must be called inside a barrier)
 
     /// Functional removal. Returns the updated subtree, or nil if this slot should be excised.
-    /// Automatically collapses single-child containers and prunes empty containers.
-    private func removeFromTree(_ key: ManagedWindow, slot: ManagedSlot) -> (slot: ManagedSlot?, found: Bool) {
-        switch slot.content {
+    /// Collapses single-child containers, propagating parentId to the survivor.
+    private func removeFromTree(_ key: WindowSlot, slot: Slot) -> (slot: Slot?, found: Bool) {
+        switch slot {
         case .window(let w):
             return w == key ? (nil, true) : (slot, false)
-        case .slots(let children):
+        case .horizontal(let h):
             var found = false
-            let newChildren: [ManagedSlot] = children.compactMap {
-                let (newSlot, wasFound) = removeFromTree(key, slot: $0)
+            let newChildren: [Slot] = h.children.compactMap {
+                let (s, wasFound) = removeFromTree(key, slot: $0)
                 if wasFound { found = true }
-                return newSlot
+                return s
             }
             guard found else { return (slot, false) }
-            if newChildren.isEmpty { return (nil, true) }       // empty: excise
-            if newChildren.count == 1 { return (newChildren[0], true) } // collapse
-            var updated = slot
-            updated.content = .slots(newChildren)
-            return (updated, true)
+            if newChildren.isEmpty { return (nil, true) }
+            if newChildren.count == 1 {
+                var child = newChildren[0]; child.parentId = h.parentId
+                return (child, true)
+            }
+            var updated = h; updated.children = newChildren
+            return (.horizontal(updated), true)
+        case .vertical(let v):
+            var found = false
+            let newChildren: [Slot] = v.children.compactMap {
+                let (s, wasFound) = removeFromTree(key, slot: $0)
+                if wasFound { found = true }
+                return s
+            }
+            guard found else { return (slot, false) }
+            if newChildren.isEmpty { return (nil, true) }
+            if newChildren.count == 1 {
+                var child = newChildren[0]; child.parentId = v.parentId
+                return (child, true)
+            }
+            var updated = v; updated.children = newChildren
+            return (.vertical(updated), true)
         }
     }
 
-    /// Entry-point removal: always keeps root as a container (.slots).
     @discardableResult
-    private func removeLeaf(_ key: ManagedWindow, from slot: inout ManagedSlot) -> Bool {
-        switch slot.content {
-        case .window(let w):
-            if w == key { slot.content = .slots([]); return true }
-            return false
-        case .slots(let children):
-            var found = false
-            let newChildren: [ManagedSlot] = children.compactMap {
-                let (newSlot, wasFound) = removeFromTree(key, slot: $0)
-                if wasFound { found = true }
-                return newSlot
-            }
-            if found { slot.content = .slots(newChildren) }
-            return found
+    private func removeLeaf(_ key: WindowSlot, from root: inout RootSlot) -> Bool {
+        var found = false
+        let newChildren: [Slot] = root.children.compactMap {
+            let (newSlot, wasFound) = removeFromTree(key, slot: $0)
+            if wasFound { found = true }
+            return newSlot
         }
+        if found { root.children = newChildren }
+        return found
     }
 
     @discardableResult
     private func extractAndWrap(
-        _ slot: inout ManagedSlot,
+        _ slot: inout Slot,
         targetOrder: Int,
-        newLeaf: ManagedSlot,
+        newLeaf: Slot,
         orientation: Orientation
     ) -> Bool {
-        if case .window = slot.content, slot.order == targetOrder {
-            let existing = slot
-            slot = ManagedSlot(order: 0, width: 0, height: 0,
-                               orientation: orientation,
-                               content: .slots([existing, newLeaf]))
+        if case .window(let w) = slot, w.order == targetOrder {
+            let containerId = UUID()
+            let containerParentId = slot.parentId
+            var existing = slot;  existing.parentId = containerId
+            var wrapped  = newLeaf; wrapped.parentId = containerId
+            slot = orientation == .horizontal
+                ? .horizontal(HorizontalSlot(id: containerId, parentId: containerParentId,
+                                             width: 0, height: 0, children: [existing, wrapped]))
+                : .vertical(VerticalSlot(id: containerId, parentId: containerParentId,
+                                         width: 0, height: 0, children: [existing, wrapped]))
             return true
         }
-        if case .slots(var children) = slot.content {
-            for i in children.indices {
-                if extractAndWrap(&children[i], targetOrder: targetOrder,
+        switch slot {
+        case .window: return false
+        case .horizontal(var h):
+            for i in h.children.indices {
+                if extractAndWrap(&h.children[i], targetOrder: targetOrder,
                                   newLeaf: newLeaf, orientation: orientation) {
-                    slot.content = .slots(children)
-                    return true
+                    slot = .horizontal(h); return true
                 }
             }
-        }
-        return false
-    }
-
-    private func maxLeafOrder(in slot: ManagedSlot) -> Int {
-        switch slot.content {
-        case .window:             return slot.order
-        case .slots(let children): return children.map { maxLeafOrder(in: $0) }.max() ?? 0
-        }
-    }
-
-    private func collectLeaves(in slot: ManagedSlot) -> [ManagedSlot] {
-        switch slot.content {
-        case .window:              return [slot]
-        case .slots(let children): return children.flatMap { collectLeaves(in: $0) }
+            return false
+        case .vertical(var v):
+            for i in v.children.indices {
+                if extractAndWrap(&v.children[i], targetOrder: targetOrder,
+                                  newLeaf: newLeaf, orientation: orientation) {
+                    slot = .vertical(v); return true
+                }
+            }
+            return false
         }
     }
 
-    func findLeafSlot(_ key: ManagedWindow, in slot: ManagedSlot) -> ManagedSlot? {
-        switch slot.content {
+    private func extractAndWrap(
+        in root: inout RootSlot,
+        targetOrder: Int,
+        newLeaf: Slot,
+        orientation: Orientation
+    ) {
+        for i in root.children.indices {
+            if extractAndWrap(&root.children[i], targetOrder: targetOrder,
+                              newLeaf: newLeaf, orientation: orientation) { return }
+        }
+    }
+
+    private func maxLeafOrder(in slot: Slot) -> Int {
+        switch slot {
+        case .window(let w):     return w.order
+        case .horizontal(let h): return h.children.map { maxLeafOrder(in: $0) }.max() ?? 0
+        case .vertical(let v):   return v.children.map { maxLeafOrder(in: $0) }.max() ?? 0
+        }
+    }
+
+    private func maxLeafOrder(in root: RootSlot) -> Int {
+        root.children.map { maxLeafOrder(in: $0) }.max() ?? 0
+    }
+
+    private func collectLeaves(in slot: Slot) -> [Slot] {
+        switch slot {
+        case .window:            return [slot]
+        case .horizontal(let h): return h.children.flatMap { collectLeaves(in: $0) }
+        case .vertical(let v):   return v.children.flatMap { collectLeaves(in: $0) }
+        }
+    }
+
+    private func collectLeaves(in root: RootSlot) -> [Slot] {
+        root.children.flatMap { collectLeaves(in: $0) }
+    }
+
+    func findLeafSlot(_ key: WindowSlot, in slot: Slot) -> Slot? {
+        switch slot {
         case .window(let w):
             return w == key ? slot : nil
-        case .slots(let children):
-            for child in children {
-                if let found = findLeafSlot(key, in: child) { return found }
-            }
+        case .horizontal(let h):
+            for child in h.children { if let f = findLeafSlot(key, in: child) { return f } }
+            return nil
+        case .vertical(let v):
+            for child in v.children { if let f = findLeafSlot(key, in: child) { return f } }
             return nil
         }
     }
 
+    func findLeafSlot(_ key: WindowSlot, in root: RootSlot) -> Slot? {
+        root.children.compactMap { findLeafSlot(key, in: $0) }.first
+    }
+
     @discardableResult
     private func updateLeaf(
-        _ key: ManagedWindow,
-        in slot: inout ManagedSlot,
-        update: (inout ManagedSlot) -> Void
+        _ key: WindowSlot,
+        in root: inout RootSlot,
+        update: (inout WindowSlot) -> Void
     ) -> Bool {
-        if case .window(let w) = slot.content, w == key {
-            update(&slot)
-            return true
-        }
-        if case .slots(var children) = slot.content {
-            for i in children.indices {
-                if updateLeaf(key, in: &children[i], update: update) {
-                    slot.content = .slots(children)
-                    return true
-                }
-            }
+        for i in root.children.indices {
+            if updateLeaf(key, in: &root.children[i], update: update) { return true }
         }
         return false
+    }
+
+    @discardableResult
+    private func updateLeaf(
+        _ key: WindowSlot,
+        in slot: inout Slot,
+        update: (inout WindowSlot) -> Void
+    ) -> Bool {
+        switch slot {
+        case .window(var w):
+            guard w == key else { return false }
+            update(&w); slot = .window(w); return true
+        case .horizontal(var h):
+            for i in h.children.indices {
+                if updateLeaf(key, in: &h.children[i], update: update) {
+                    slot = .horizontal(h); return true
+                }
+            }
+            return false
+        case .vertical(var v):
+            for i in v.children.indices {
+                if updateLeaf(key, in: &v.children[i], update: update) {
+                    slot = .vertical(v); return true
+                }
+            }
+            return false
+        }
     }
 }

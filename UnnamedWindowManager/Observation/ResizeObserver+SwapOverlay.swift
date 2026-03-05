@@ -7,7 +7,7 @@ import AppKit
 
 extension ResizeObserver {
 
-    func updateSwapOverlay(for draggedKey: ManagedWindow, draggedWindow: AXUIElement) {
+    func updateSwapOverlay(for draggedKey: WindowSlot, draggedWindow: AXUIElement) {
         guard let targetWindow = WindowSnapper.findSwapTarget(forKey: draggedKey),
               let targetElement = elements[targetWindow],
               let axOrigin = WindowSnapper.readOrigin(of: targetElement),

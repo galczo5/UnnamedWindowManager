@@ -25,7 +25,7 @@ struct WindowSnapper {
 
         guard let screen = NSScreen.main else { return }
 
-        let key = managedWindow(for: axWindow, pid: pid)
+        let key = windowSlot(for: axWindow, pid: pid)
         guard !ManagedSlotRegistry.shared.isTracked(key) else { return }
 
         ManagedSlotRegistry.shared.snap(key, screen: screen)
@@ -76,7 +76,7 @@ struct WindowSnapper {
         }
 
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
-            let key = managedWindow(for: item.window, pid: item.pid)
+            let key = windowSlot(for: item.window, pid: item.pid)
             guard !ManagedSlotRegistry.shared.isTracked(key) else { continue }
             ManagedSlotRegistry.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
@@ -95,7 +95,7 @@ struct WindowSnapper {
         let axWindow = focusedWindow as! AXUIElement
 
         guard let screen = NSScreen.main else { return }
-        let key = managedWindow(for: axWindow, pid: pid)
+        let key = windowSlot(for: axWindow, pid: pid)
         WindowVisibilityManager.shared.restoreAndForget(key)
         ManagedSlotRegistry.shared.removeAndReflow(key, screen: screen)
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
@@ -107,7 +107,7 @@ struct WindowSnapper {
         guard AXIsProcessTrusted() else { return }
         guard let screen = NSScreen.main else { return }
 
-        let key = managedWindow(for: window, pid: pid)
+        let key = windowSlot(for: window, pid: pid)
         guard !ManagedSlotRegistry.shared.isTracked(key) else { return }
 
         var minRef: CFTypeRef?
@@ -120,7 +120,7 @@ struct WindowSnapper {
         reapplyAll()
     }
 
-    static func reapply(window: AXUIElement, key: ManagedWindow) {
+    static func reapply(window: AXUIElement, key: WindowSlot) {
         guard ManagedSlotRegistry.shared.isTracked(key) else { return }
         guard let screen = NSScreen.main else { return }
         applyLayout(screen: screen)
@@ -129,8 +129,8 @@ struct WindowSnapper {
     static func reapplyAll() {
         guard let screen = NSScreen.main else { return }
         let leaves = ManagedSlotRegistry.shared.allLeaves()
-        let allWindows = Set(leaves.compactMap { leaf -> ManagedWindow? in
-            if case .window(let w) = leaf.content { return w }
+        let allWindows = Set(leaves.compactMap { leaf -> WindowSlot? in
+            if case .window(let w) = leaf { return w }
             return nil
         })
         ResizeObserver.shared.reapplying.formUnion(allWindows)
@@ -141,9 +141,9 @@ struct WindowSnapper {
         }
     }
 
-    static func managedWindow(for window: AXUIElement, pid: pid_t) -> ManagedWindow {
+    static func windowSlot(for window: AXUIElement, pid: pid_t) -> WindowSlot {
         let hash = windowID(of: window).map(UInt.init)
                    ?? UInt(bitPattern: Unmanaged.passUnretained(window).toOpaque())
-        return ManagedWindow(pid: pid, windowHash: hash, height: 0, width: 0)
+        return WindowSlot(pid: pid, windowHash: hash, id: UUID(), parentId: UUID(), order: 0, width: 0, height: 0)
     }
 }

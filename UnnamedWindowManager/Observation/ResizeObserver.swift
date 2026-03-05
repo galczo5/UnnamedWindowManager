@@ -15,18 +15,18 @@ final class ResizeObserver {
 
     // All mutable state is accessed only on the main thread.
     var observers:  [pid_t: AXObserver]                  = [:]
-    var elements:   [ManagedWindow: AXUIElement]          = [:]
-    var keysByPid:  [pid_t: Set<ManagedWindow>]           = [:]
+    var elements:   [WindowSlot: AXUIElement]             = [:]
+    var keysByPid:  [pid_t: Set<WindowSlot>]              = [:]
     /// Keys whose reapply is in-flight; prevents re-entrancy from the resulting AX notification.
-    var reapplying: Set<ManagedWindow>                    = []
-    /// Pending mouse-up poll work items, keyed by ManagedWindow.
-    var pendingReapply: [ManagedWindow: DispatchWorkItem] = [:]
+    var reapplying: Set<WindowSlot>                       = []
+    /// Pending mouse-up poll work items, keyed by WindowSlot.
+    var pendingReapply: [WindowSlot: DispatchWorkItem]    = [:]
     /// Translucent overlay shown over the current swap target while dragging.
     var swapOverlay: NSWindow?
 
     // MARK: – Public
 
-    func observe(window: AXUIElement, pid: pid_t, key: ManagedWindow) {
+    func observe(window: AXUIElement, pid: pid_t, key: WindowSlot) {
         guard elements[key] == nil else { return }
 
         elements[key] = window
@@ -39,7 +39,7 @@ final class ResizeObserver {
         AXObserverAddNotification(axObs, window, kElementDestroyed,                        refcon)
     }
 
-    func stopObserving(key: ManagedWindow, pid: pid_t) {
+    func stopObserving(key: WindowSlot, pid: pid_t) {
         guard let window = elements[key], let axObs = observers[pid] else { return }
         AXObserverRemoveNotification(axObs, window, kAXWindowMovedNotification   as CFString)
         AXObserverRemoveNotification(axObs, window, kAXWindowResizedNotification as CFString)
@@ -47,7 +47,7 @@ final class ResizeObserver {
         cleanup(key: key, pid: pid)
     }
 
-    func window(for key: ManagedWindow) -> AXUIElement? {
+    func window(for key: WindowSlot) -> AXUIElement? {
         elements[key]
     }
 
@@ -102,7 +102,7 @@ final class ResizeObserver {
         return axObs
     }
 
-    func cleanup(key: ManagedWindow, pid: pid_t) {
+    func cleanup(key: WindowSlot, pid: pid_t) {
         pendingReapply[key]?.cancel()
         pendingReapply.removeValue(forKey: key)
         hideSwapOverlay()
