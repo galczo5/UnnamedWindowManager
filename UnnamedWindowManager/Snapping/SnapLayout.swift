@@ -17,7 +17,7 @@ extension WindowSnapper {
         // Shift the root origin inward by one gap so the outer gap equals the inner gap (2×Config.gap).
         let origin = CGPoint(x: visible.minX + Config.gap, y: primaryHeight - visible.maxY + Config.gap)
         let elements = ResizeObserver.shared.elements
-        let root = ManagedSlotRegistry.shared.snapshotRoot()
+        let root = SharedRootStore.shared.snapshotRoot()
         applyLayout(root, origin: origin, elements: elements)
     }
 
@@ -76,7 +76,7 @@ extension WindowSnapper {
     static func findSwapTarget(forKey draggedKey: WindowSlot) -> WindowSlot? {
         let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
         let screenHeight = NSScreen.screens[0].frame.height
-        let leaves = ManagedSlotRegistry.shared.allLeaves()
+        let leaves = SnapService.shared.allLeaves()
         let elements = ResizeObserver.shared.elements
 
         for leaf in leaves {

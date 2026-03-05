@@ -40,7 +40,7 @@ extension ResizeObserver {
                 if let swapTarget = WindowSnapper.findSwapTarget(forKey: key) {
                     let allWindows = self.allTrackedWindows()
                     self.reapplying.formUnion(allWindows)
-                    ManagedSlotRegistry.shared.swap(key, swapTarget)
+                    SnapService.shared.swap(key, swapTarget)
                     WindowSnapper.reapplyAll()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                         self?.reapplying.subtract(allWindows)
@@ -66,7 +66,7 @@ extension ResizeObserver {
             reapplying.subtract(allWindows)
             return
         }
-        let leaves = ManagedSlotRegistry.shared.allLeaves()
+        let leaves = SnapService.shared.allLeaves()
         var needsReapply = false
 
         for leaf in leaves {
@@ -80,7 +80,7 @@ extension ResizeObserver {
                     ? (titleRef as? String ?? "<unknown>")
                     : "<unknown>"
                 Logger.shared.log("[WidthVerify] \"\(title)\": stored=\(leaf.width) actual=\(actualWidth)")
-                ManagedSlotRegistry.shared.setWidth(actualWidth, forSlotContaining: w, screen: screen)
+                SnapService.shared.setWidth(actualWidth, forSlotContaining: w, screen: screen)
                 needsReapply = true
             }
         }
@@ -94,7 +94,7 @@ extension ResizeObserver {
     }
 
     private func allTrackedWindows() -> Set<WindowSlot> {
-        let leaves = ManagedSlotRegistry.shared.allLeaves()
+        let leaves = SnapService.shared.allLeaves()
         return Set(leaves.compactMap { leaf -> WindowSlot? in
             if case .window(let w) = leaf { return w }
             return nil

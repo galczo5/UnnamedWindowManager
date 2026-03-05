@@ -26,9 +26,9 @@ struct WindowSnapper {
         guard let screen = NSScreen.main else { return }
 
         let key = windowSlot(for: axWindow, pid: pid)
-        guard !ManagedSlotRegistry.shared.isTracked(key) else { return }
+        guard !SnapService.shared.isTracked(key) else { return }
 
-        ManagedSlotRegistry.shared.snap(key, screen: screen)
+        SnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         reapplyAll()
     }
@@ -77,8 +77,8 @@ struct WindowSnapper {
 
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
             let key = windowSlot(for: item.window, pid: item.pid)
-            guard !ManagedSlotRegistry.shared.isTracked(key) else { continue }
-            ManagedSlotRegistry.shared.snap(key, screen: screen)
+            guard !SnapService.shared.isTracked(key) else { continue }
+            SnapService.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
         }
         reapplyAll()
@@ -97,7 +97,7 @@ struct WindowSnapper {
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
         WindowVisibilityManager.shared.restoreAndForget(key)
-        ManagedSlotRegistry.shared.removeAndReflow(key, screen: screen)
+        SnapService.shared.removeAndReflow(key, screen: screen)
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
         reapplyAll()
     }
@@ -108,27 +108,27 @@ struct WindowSnapper {
         guard let screen = NSScreen.main else { return }
 
         let key = windowSlot(for: window, pid: pid)
-        guard !ManagedSlotRegistry.shared.isTracked(key) else { return }
+        guard !SnapService.shared.isTracked(key) else { return }
 
         var minRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minRef) == .success,
            (minRef as? Bool) == true { return }
         if let sz = readSize(of: window), sz.width < 100 || sz.height < 100 { return }
 
-        ManagedSlotRegistry.shared.snap(key, screen: screen)
+        SnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)
         reapplyAll()
     }
 
     static func reapply(window: AXUIElement, key: WindowSlot) {
-        guard ManagedSlotRegistry.shared.isTracked(key) else { return }
+        guard SnapService.shared.isTracked(key) else { return }
         guard let screen = NSScreen.main else { return }
         applyLayout(screen: screen)
     }
 
     static func reapplyAll() {
         guard let screen = NSScreen.main else { return }
-        let leaves = ManagedSlotRegistry.shared.allLeaves()
+        let leaves = SnapService.shared.allLeaves()
         let allWindows = Set(leaves.compactMap { leaf -> WindowSlot? in
             if case .window(let w) = leaf { return w }
             return nil

@@ -14,7 +14,7 @@ struct UnnamedWindowManagerApp: App {
     init() {
         Logger.shared.log("=== UnnamedWindowManager started ===")
         if let screen = NSScreen.main {
-            ManagedSlotRegistry.shared.initialize(screen: screen)
+            SharedRootStore.shared.initialize(screen: screen)
         }
 
     }

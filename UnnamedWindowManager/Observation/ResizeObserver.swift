@@ -66,9 +66,9 @@ final class ResizeObserver {
 
         if notification == kElementDestroyed as String {
             if let screen = NSScreen.main {
-                ManagedSlotRegistry.shared.removeAndReflow(key, screen: screen)
+                SnapService.shared.removeAndReflow(key, screen: screen)
             } else {
-                ManagedSlotRegistry.shared.remove(key)
+                SnapService.shared.remove(key)
             }
             cleanup(key: key, pid: pid)
             WindowVisibilityManager.shared.windowRemoved(key)
@@ -76,7 +76,7 @@ final class ResizeObserver {
             return
         }
 
-        guard ManagedSlotRegistry.shared.isTracked(key) else { return }
+        guard SnapService.shared.isTracked(key) else { return }
         guard !reapplying.contains(key) else { return }
 
         let isResize = notification == (kAXWindowResizedNotification as String)
