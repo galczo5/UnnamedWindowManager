@@ -2,10 +2,10 @@
 
 ## Checklist
 
-- [ ] Add `swap(_:_:)` to `ManagedSlotRegistry+SlotMutations.swift`
-- [ ] Add `findSwapTarget(forKey:)` to `SnapLayout.swift`; remove disabled `findDropTarget` early-return
-- [ ] Update `ResizeObserver+SwapOverlay.swift` — rewrite `updateSwapOverlay` for tree model
-- [ ] Update `ResizeObserver+Reapply.swift` — perform swap on mouse-up when target found
+- [x] Add `swap(_:_:)` to `ManagedSlotRegistry+SlotMutations.swift`
+- [x] Add `findSwapTarget(forKey:)` to `SnapLayout.swift`; remove disabled `findDropTarget` early-return
+- [x] Update `ResizeObserver+SwapOverlay.swift` — rewrite `updateSwapOverlay` for tree model
+- [x] Update `ResizeObserver+Reapply.swift` — perform swap on mouse-up when target found
 
 ---
 
