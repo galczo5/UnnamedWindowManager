@@ -16,7 +16,7 @@ struct UnnamedWindowManagerApp: App {
         if let screen = NSScreen.main {
             ManagedSlotRegistry.shared.initialize(screen: screen)
         }
-        WindowEventMonitor.shared.start()
+
     }
 
     var body: some Scene {

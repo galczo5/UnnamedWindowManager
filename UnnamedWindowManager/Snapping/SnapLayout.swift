@@ -79,67 +79,6 @@ extension WindowSnapper {
         return nil
     }
 
-    // MARK: - Drop zones (disabled — TODO: redesign for tree model)
-
-    /// Returns the drop target for the window currently being dragged.
-    /// Disabled until drop zones are redesigned for the tree model.
-    static func findDropTarget(forWindowIn sourceSlotIndex: Int) -> DropTarget? {
-        return nil  // TODO: redesign for tree model
-
-        // ---- original flat-array code preserved below ----
-        guard let screen = NSScreen.main else { return nil }
-
-        let cursorX       = NSEvent.mouseLocation.x
-        let cursorY       = NSEvent.mouseLocation.y
-        let primaryHeight = NSScreen.screens[0].frame.height
-        let slots         = ManagedSlotRegistry.shared.allLeaves()
-
-        for (si, slot) in slots.enumerated() {
-            guard let range = xRange(forSlot: si, slots: slots, screen: screen) else { continue }
-            guard range.contains(cursorX) else { continue }
-
-            let axY          = primaryHeight - screen.visibleFrame.maxY + Config.gap
-            let appKitTop    = primaryHeight - axY
-            let appKitBottom = appKitTop - slot.height
-
-            let slotWidth  = range.upperBound - range.lowerBound
-            let leftEnd    = range.lowerBound + slotWidth * Config.dropZoneFraction
-            let rightStart = range.lowerBound + slotWidth * (1 - Config.dropZoneFraction)
-
-            if cursorX < leftEnd    { return DropTarget(slotIndex: si, windowIndex: 0, zone: .left)  }
-            if cursorX > rightStart { return DropTarget(slotIndex: si, windowIndex: 0, zone: .right) }
-
-            guard cursorY <= appKitTop && cursorY >= appKitBottom else { continue }
-
-            if si != sourceSlotIndex {
-                let topZoneBound    = appKitTop    - slot.height * Config.dropZoneTopFraction
-                let bottomZoneBound = appKitBottom + slot.height * Config.dropZoneBottomFraction
-                if cursorY >= topZoneBound    { return DropTarget(slotIndex: si, windowIndex: 0, zone: .top) }
-                if cursorY <= bottomZoneBound { return DropTarget(slotIndex: si, windowIndex: 0, zone: .bottom) }
-            }
-            return DropTarget(slotIndex: si, windowIndex: 0, zone: .center)
-        }
-        return nil
-    }
-
-    // MARK: - Overlay frame helpers (disabled — TODO: redesign for tree model)
-
-    static func leftGapFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
-        return nil  // TODO: redesign for tree model
-    }
-
-    static func rightGapFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
-        return nil  // TODO: redesign for tree model
-    }
-
-    static func bottomSplitOverlayFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
-        return nil  // TODO: redesign for tree model
-    }
-
-    static func topSplitOverlayFrame(forSlot slotIndex: Int, slots: [ManagedSlot], screen: NSScreen) -> CGRect? {
-        return nil  // TODO: redesign for tree model
-    }
-
     // MARK: - Size helpers
 
     /// Returns `size` with width and height clamped to the per-screen maximums defined in `Config`.
@@ -153,17 +92,4 @@ extension WindowSnapper {
         )
     }
 
-    private static func xRange(
-        forSlot slotIndex: Int,
-        slots: [ManagedSlot],
-        screen: NSScreen
-    ) -> ClosedRange<CGFloat>? {
-        guard slotIndex >= 0, slotIndex < slots.count else { return nil }
-        let visible = screen.visibleFrame
-        var xOffset = visible.minX + Config.gap
-        for i in 0..<slotIndex {
-            xOffset += slots[i].width + Config.gap
-        }
-        return xOffset...(xOffset + slots[slotIndex].width)
-    }
 }

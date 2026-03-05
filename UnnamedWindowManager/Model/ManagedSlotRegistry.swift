@@ -68,19 +68,6 @@ final class ManagedSlotRegistry {
         queue.sync { findLeafSlot(key, in: root) != nil }
     }
 
-    /// Returns the leaf slot's `order` (insertion index), or nil if not found.
-    func slotIndex(for key: ManagedWindow) -> Int? {
-        queue.sync { findLeafSlot(key, in: root)?.order }
-    }
-
-    /// Returns (order, 0) for the leaf holding this window. windowIndex is always 0.
-    func findWindow(_ key: ManagedWindow) -> (slotIndex: Int, windowIndex: Int)? {
-        queue.sync {
-            guard let leaf = findLeafSlot(key, in: root) else { return nil }
-            return (leaf.order, 0)
-        }
-    }
-
     /// Returns all leaf slots sorted by insertion order.
     func allLeaves() -> [ManagedSlot] {
         queue.sync { collectLeaves(in: root).sorted { $0.order < $1.order } }
@@ -105,20 +92,6 @@ final class ManagedSlotRegistry {
             self.recomputeSizes(&self.root,
                                 width: screen.visibleFrame.width  - Config.gap * 2,
                                 height: screen.visibleFrame.height - Config.gap * 2)
-        }
-    }
-
-    func setHeight(_ height: CGFloat, for key: ManagedWindow, screen: NSScreen) {
-        let maxH = screen.visibleFrame.height * Config.maxHeightFraction - Config.gap * 2
-        let clamped = min(height, maxH)
-        queue.async(flags: .barrier) {
-            self.updateLeaf(key, in: &self.root) { slot in
-                slot.height = clamped
-                if case .window(var w) = slot.content {
-                    w.height = clamped
-                    slot.content = .window(w)
-                }
-            }
         }
     }
 
