@@ -16,7 +16,7 @@ enum PostResizeValidator {
 
         let observer = ResizeObserver.shared
         var refusals: [Refusal] = []
-        let leaves = SnapService.shared.allLeaves()
+        let leaves = SnapService.shared.leavesInVisibleRoot()
 
         for leaf in leaves {
             guard case .window(let w) = leaf, windows.contains(w) else { continue }

@@ -20,15 +20,6 @@ final class SnapService {
         store.queue.sync { store.roots.values.contains { tree.isTracked(key, in: $0) } }
     }
 
-    func allLeaves() -> [Slot] {
-        store.queue.sync {
-            store.roots.values.flatMap { tree.allLeaves(in: $0) }.sorted { a, b in
-                if case .window(let wa) = a, case .window(let wb) = b { return wa.order < wb.order }
-                return false
-            }
-        }
-    }
-
     /// Returns leaves from the root that currently has a window visible on screen.
     /// Falls back to an empty array if no root is active (no snapped windows on screen).
     func leavesInVisibleRoot() -> [Slot] {
@@ -38,6 +29,14 @@ final class SnapService {
                 if case .window(let wa) = a, case .window(let wb) = b { return wa.order < wb.order }
                 return false
             }
+        }
+    }
+
+    /// Returns a snapshot of the root whose windows are currently visible on screen, or `nil`.
+    func snapshotVisibleRoot() -> RootSlot? {
+        store.queue.sync {
+            guard let id = visibleRootID() else { return nil }
+            return store.roots[id]
         }
     }
 

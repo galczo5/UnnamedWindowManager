@@ -20,7 +20,7 @@ struct ReapplyHandler {
     /// Marks all windows as reapplying for 200 ms to suppress re-entrant AX notifications.
     static func reapplyAll() {
         guard let screen = NSScreen.main else { return }
-        let leaves = SnapService.shared.allLeaves()
+        let leaves = SnapService.shared.leavesInVisibleRoot()
         let allWindows = Set(leaves.compactMap { leaf -> WindowSlot? in
             if case .window(let w) = leaf { return w }
             return nil

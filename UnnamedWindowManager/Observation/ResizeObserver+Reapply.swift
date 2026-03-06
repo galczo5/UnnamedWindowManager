@@ -74,7 +74,7 @@ extension ResizeObserver {
     }
 
     private func allTrackedWindows() -> Set<WindowSlot> {
-        let leaves = SnapService.shared.allLeaves()
+        let leaves = SnapService.shared.leavesInVisibleRoot()
         return Set(leaves.compactMap { leaf -> WindowSlot? in
             if case .window(let w) = leaf { return w }
             return nil
