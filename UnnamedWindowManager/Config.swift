@@ -30,6 +30,9 @@ enum Config {
     static let overlayFillColor: NSColor = .systemBlue.withAlphaComponent(0.2)
     /// Border color of the swap-target overlay rectangle.
     static let overlayBorderColor: NSColor = .systemBlue.withAlphaComponent(0.8)
+    /// When true, automatically snap new windows into the layout — but only while at
+    /// least one window is already snapped and visible on the current screen.
+    static let autoSnap: Bool = true
     /// Absolute path of the log file written by Logger.
     static let logFilePath: String = NSHomeDirectory() + "/.unnamed.log"
 }

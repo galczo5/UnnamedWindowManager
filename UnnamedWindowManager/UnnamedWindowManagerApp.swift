@@ -31,6 +31,9 @@ struct UnnamedWindowManagerApp: App {
     init() {
         Logger.shared.log("=== UnnamedWindowManager started ===")
         NotificationService.shared.requestAuthorization()
+        if Config.autoSnap {
+            AutoSnapObserver.shared.start()
+        }
     }
 
     var body: some Scene {
