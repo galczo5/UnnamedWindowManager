@@ -39,7 +39,7 @@ struct ReapplyHandler {
     static func findDropTarget(forKey draggedKey: WindowSlot) -> DropTarget? {
         let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
         let screenHeight = NSScreen.screens[0].frame.height
-        let leaves = SnapService.shared.allLeaves()
+        let leaves = SnapService.shared.leavesInVisibleRoot()
         let elements = ResizeObserver.shared.elements
 
         for leaf in leaves {

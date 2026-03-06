@@ -57,7 +57,6 @@ struct OrganizeHandler {
         // Snap candidates in left-to-right order, then reapply layout once.
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
             let key = windowSlot(for: item.window, pid: item.pid)
-            guard !SnapService.shared.isTracked(key) else { continue }
             SnapService.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
         }

@@ -66,13 +66,13 @@ struct WindowLister {
     }
 
     static func logSlotTree() {
-        let root = SharedRootStore.shared.snapshotRoot()
-        Logger.shared.log("=== Slot tree ===")
-        Logger.shared.log("root  size=\(root.width)x\(root.height)  orientation=\(root.orientation)  children=\(root.children.count)")
-        for child in root.children {
-            logSlot(child, depth: 1)
+        let roots = SharedRootStore.shared.snapshotAllRoots()
+        Logger.shared.log("=== Slot trees (\(roots.count) roots) ===")
+        for (id, root) in roots.sorted(by: { $0.key.uuidString < $1.key.uuidString }) {
+            Logger.shared.log("root \(id.uuidString.prefix(8))  size=\(Int(root.width))x\(Int(root.height))  orientation=\(root.orientation)  children=\(root.children.count)")
+            for child in root.children { logSlot(child, depth: 1) }
         }
-        Logger.shared.log("=== End of slot tree ===")
+        Logger.shared.log("=== End of slot trees ===")
     }
 
     private static func logSlot(_ slot: Slot, depth: Int) {

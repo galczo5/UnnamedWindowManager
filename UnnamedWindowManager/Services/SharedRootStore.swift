@@ -7,25 +7,18 @@ import AppKit
 
 final class SharedRootStore {
     static let shared = SharedRootStore()
-    private init() {
-        root = RootSlot(id: UUID(), width: 0, height: 0,
-                        orientation: .vertical, children: [])
-    }
+    private init() {}
 
-    var root: RootSlot
-    var windowCount: Int = 0
+    var roots: [UUID: RootSlot] = [:]
+    /// Per-root insertion counter used to assign `WindowSlot.order`.
+    var windowCounts: [UUID: Int] = [:]
     let queue = DispatchQueue(label: "snap.registry", attributes: .concurrent)
 
-    func initialize(screen: NSScreen) {
-        let f = screen.visibleFrame
-        queue.sync(flags: .barrier) {
-            self.root = RootSlot(id: UUID(), width: f.width, height: f.height,
-                                 orientation: .horizontal, children: [])
-            self.windowCount = 0
-        }
+    func snapshotAllRoots() -> [UUID: RootSlot] {
+        queue.sync { roots }
     }
 
-    func snapshotRoot() -> RootSlot {
-        queue.sync { root }
+    func snapshotRoot(id: UUID) -> RootSlot? {
+        queue.sync { roots[id] }
     }
 }

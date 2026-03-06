@@ -14,8 +14,7 @@ struct OrientFlipHandler {
     /// which is unreliable when a menu bar extra menu is open (the menu activates our process).
     static func parentOrientation() -> Orientation? {
         guard let key = focusedTrackedKey() else { return nil }
-        let store = SharedRootStore.shared
-        return store.queue.sync { SlotTreeService().findParentOrientation(of: key, in: store.root) }
+        return SnapService.shared.parentOrientation(of: key)
     }
 
     /// Flips the orientation of the focused tracked window's parent container and reapplies layout.

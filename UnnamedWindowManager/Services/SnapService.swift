@@ -17,38 +17,85 @@ final class SnapService {
     // MARK: - Queries
 
     func isTracked(_ key: WindowSlot) -> Bool {
-        store.queue.sync { tree.isTracked(key, in: store.root) }
+        store.queue.sync { store.roots.values.contains { tree.isTracked(key, in: $0) } }
     }
 
     func allLeaves() -> [Slot] {
         store.queue.sync {
-            tree.allLeaves(in: store.root).sorted { a, b in
+            store.roots.values.flatMap { tree.allLeaves(in: $0) }.sorted { a, b in
                 if case .window(let wa) = a, case .window(let wb) = b { return wa.order < wb.order }
                 return false
             }
         }
     }
 
+    /// Returns leaves from the root that currently has a window visible on screen.
+    /// Falls back to an empty array if no root is active (no snapped windows on screen).
+    func leavesInVisibleRoot() -> [Slot] {
+        store.queue.sync {
+            guard let id = visibleRootID(), let root = store.roots[id] else { return [] }
+            return tree.allLeaves(in: root).sorted { a, b in
+                if case .window(let wa) = a, case .window(let wb) = b { return wa.order < wb.order }
+                return false
+            }
+        }
+    }
+
+    func parentOrientation(of key: WindowSlot) -> Orientation? {
+        store.queue.sync {
+            guard let id = rootID(containing: key) else { return nil }
+            return tree.findParentOrientation(of: key, in: store.roots[id]!)
+        }
+    }
+
     // MARK: - Snap / unsnap
 
+    /// Snaps `key` into the correct root, creating one if no snapped window is visible on screen.
+    /// Idempotent: no-op if the window is already in the correct root.
+    /// Performs a cross-root migration if the window belongs to a different root.
     func snap(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            store.windowCount += 1
+            // Determine target root — the one with a visible snapped window, or a brand-new root.
+            let targetRootID: UUID
+            if let visibleID = visibleRootID() {
+                targetRootID = visibleID
+            } else {
+                let id = UUID()
+                let f  = screen.visibleFrame
+                store.roots[id] = RootSlot(id: id, width: f.width, height: f.height,
+                                           orientation: .horizontal, children: [])
+                targetRootID = id
+            }
+
+            // No-op: window is already in the correct root.
+            if tree.isTracked(key, in: store.roots[targetRootID]!) { return }
+
+            // Cross-root migration: remove from old root, destroy root if now empty.
+            if let srcID = rootID(containing: key) {
+                tree.removeLeaf(key, from: &store.roots[srcID]!)
+                if store.roots[srcID]!.children.isEmpty {
+                    store.roots.removeValue(forKey: srcID)
+                    store.windowCounts.removeValue(forKey: srcID)
+                }
+            }
+
+            // Insert into target root.
+            store.windowCounts[targetRootID, default: 0] += 1
+            let order = store.windowCounts[targetRootID]!
             let newLeaf = Slot.window(WindowSlot(
                 pid: key.pid, windowHash: key.windowHash,
-                id: UUID(), parentId: store.root.id,
-                order: store.windowCount,
-                width: 0, height: 0, gaps: true
+                id: UUID(), parentId: store.roots[targetRootID]!.id,
+                order: order, width: 0, height: 0, gaps: true
             ))
-            if store.root.children.isEmpty {
-                store.root.children = [newLeaf]
+            if store.roots[targetRootID]!.children.isEmpty {
+                store.roots[targetRootID]!.children = [newLeaf]
             } else {
-                let lastOrder = tree.maxLeafOrder(in: store.root)
-                let orientation: Orientation = store.windowCount % 2 == 0 ? .horizontal : .vertical
-                tree.extractAndWrap(in: &store.root, targetOrder: lastOrder,
+                let lastOrder = tree.maxLeafOrder(in: store.roots[targetRootID]!)
+                let orientation: Orientation = order % 2 == 0 ? .horizontal : .vertical
+                tree.extractAndWrap(in: &store.roots[targetRootID]!, targetOrder: lastOrder,
                                     newLeaf: newLeaf, orientation: orientation)
             }
-            position.recomputeSizes(&store.root,
+            position.recomputeSizes(&store.roots[targetRootID]!,
                                     width: screen.visibleFrame.width  - Config.gap * 2,
                                     height: screen.visibleFrame.height - Config.gap * 2)
         }
@@ -56,23 +103,35 @@ final class SnapService {
 
     func remove(_ key: WindowSlot) {
         store.queue.async(flags: .barrier) {
-            self.tree.removeLeaf(key, from: &self.store.root)
+            guard let id = self.rootID(containing: key) else { return }
+            self.tree.removeLeaf(key, from: &self.store.roots[id]!)
+            if self.store.roots[id]!.children.isEmpty {
+                self.store.roots.removeValue(forKey: id)
+                self.store.windowCounts.removeValue(forKey: id)
+            }
         }
     }
 
     func removeAndReflow(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            tree.removeLeaf(key, from: &store.root)
-            position.recomputeSizes(&store.root,
-                                    width: screen.visibleFrame.width  - Config.gap * 2,
-                                    height: screen.visibleFrame.height - Config.gap * 2)
+            guard let id = rootID(containing: key) else { return }
+            tree.removeLeaf(key, from: &store.roots[id]!)
+            if store.roots[id]!.children.isEmpty {
+                store.roots.removeValue(forKey: id)
+                store.windowCounts.removeValue(forKey: id)
+            } else {
+                position.recomputeSizes(&store.roots[id]!,
+                                        width: screen.visibleFrame.width  - Config.gap * 2,
+                                        height: screen.visibleFrame.height - Config.gap * 2)
+            }
         }
     }
 
     func resize(key: WindowSlot, actualSize: CGSize, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            resizer.applyResize(key: key, actualSize: actualSize, root: &store.root)
-            position.recomputeSizes(&store.root,
+            guard let id = rootID(containing: key) else { return }
+            resizer.applyResize(key: key, actualSize: actualSize, root: &store.roots[id]!)
+            position.recomputeSizes(&store.roots[id]!,
                                     width: screen.visibleFrame.width  - Config.gap * 2,
                                     height: screen.visibleFrame.height - Config.gap * 2)
         }
@@ -80,14 +139,17 @@ final class SnapService {
 
     func swap(_ keyA: WindowSlot, _ keyB: WindowSlot) {
         store.queue.sync(flags: .barrier) {
-            tree.swap(keyA, keyB, in: &store.root)
+            guard let id = rootID(containing: keyA),
+                  tree.isTracked(keyB, in: store.roots[id]!) else { return }
+            tree.swap(keyA, keyB, in: &store.roots[id]!)
         }
     }
 
     func flipParentOrientation(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            tree.flipParentOrientation(of: key, in: &store.root)
-            position.recomputeSizes(&store.root,
+            guard let id = rootID(containing: key) else { return }
+            tree.flipParentOrientation(of: key, in: &store.roots[id]!)
+            position.recomputeSizes(&store.roots[id]!,
                                     width: screen.visibleFrame.width  - Config.gap * 2,
                                     height: screen.visibleFrame.height - Config.gap * 2)
         }
@@ -96,23 +158,62 @@ final class SnapService {
     func insertAdjacent(dragged: WindowSlot, target: WindowSlot,
                         zone: DropZone, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let draggedSlot = tree.findLeafSlot(dragged, in: store.root),
+            guard let draggedRootID = rootID(containing: dragged),
+                  let targetRootID  = rootID(containing: target),
+                  let draggedSlot   = tree.findLeafSlot(dragged, in: store.roots[draggedRootID]!),
                   case .window(let draggedWindow) = draggedSlot else { return }
 
-            tree.removeLeaf(dragged, from: &store.root)
+            tree.removeLeaf(dragged, from: &store.roots[draggedRootID]!)
+            // Destroy source root only on cross-root drag that empties it.
+            if draggedRootID != targetRootID, store.roots[draggedRootID]!.children.isEmpty {
+                store.roots.removeValue(forKey: draggedRootID)
+                store.windowCounts.removeValue(forKey: draggedRootID)
+            }
 
             let newLeaf = Slot.window(WindowSlot(
                 pid: draggedWindow.pid, windowHash: draggedWindow.windowHash,
-                id: UUID(), parentId: store.root.id,
-                order: draggedWindow.order,
-                width: 0, height: 0, gaps: true
+                id: UUID(), parentId: store.roots[targetRootID]!.id,
+                order: draggedWindow.order, width: 0, height: 0, gaps: true
             ))
-
-            tree.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &store.root)
-
-            position.recomputeSizes(&store.root,
+            tree.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &store.roots[targetRootID]!)
+            position.recomputeSizes(&store.roots[targetRootID]!,
                                     width: screen.visibleFrame.width  - Config.gap * 2,
                                     height: screen.visibleFrame.height - Config.gap * 2)
         }
+    }
+
+    // MARK: - Private
+
+    /// Must be called inside a `store.queue` barrier or sync block.
+    private func rootID(containing key: WindowSlot) -> UUID? {
+        store.roots.keys.first { tree.isTracked(key, in: store.roots[$0]!) }
+    }
+
+    /// Returns the UUID of the root that owns a window currently visible on screen, or `nil`.
+    /// Must be called inside a `store.queue` barrier block.
+    private func visibleRootID() -> UUID? {
+        let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
+        guard let cgList = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
+        ) as? [[String: Any]] else { return nil }
+
+        var visibleHashes = Set<UInt>()
+        for info in cgList {
+            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
+                  let pid   = info[kCGWindowOwnerPID as String] as? Int,
+                  let wid   = info[kCGWindowNumber as String] as? CGWindowID,
+                  pid_t(pid) != ownPID
+            else { continue }
+            visibleHashes.insert(UInt(wid))
+        }
+
+        for (id, root) in store.roots {
+            for leaf in tree.allLeaves(in: root) {
+                if case .window(let w) = leaf, visibleHashes.contains(w.windowHash) {
+                    return id
+                }
+            }
+        }
+        return nil
     }
 }

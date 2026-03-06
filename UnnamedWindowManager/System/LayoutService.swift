@@ -20,8 +20,10 @@ final class LayoutService {
         // y is flipped: AX uses top-left origin, AppKit uses bottom-left.
         let origin = CGPoint(x: visible.minX + Config.gap, y: primaryHeight - visible.maxY + Config.gap)
         let elements = ResizeObserver.shared.elements
-        let root = SharedRootStore.shared.snapshotRoot()
-        applyLayout(root, origin: origin, elements: elements)
+        let roots = SharedRootStore.shared.snapshotAllRoots()
+        for root in roots.values {
+            applyLayout(root, origin: origin, elements: elements)
+        }
     }
 
     /// Walks the root's direct children in order, advancing the cursor after each child

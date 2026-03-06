@@ -27,8 +27,6 @@ struct SnapHandler {
 
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
-        guard !SnapService.shared.isTracked(key) else { return }
-
         SnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
@@ -41,8 +39,6 @@ struct SnapHandler {
         guard let screen = NSScreen.main else { return }
 
         let key = windowSlot(for: window, pid: pid)
-        guard !SnapService.shared.isTracked(key) else { return }
-
         var minRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minRef) == .success,
            (minRef as? Bool) == true { return }

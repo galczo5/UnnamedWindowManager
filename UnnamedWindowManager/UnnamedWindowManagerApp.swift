@@ -24,9 +24,6 @@ struct UnnamedWindowManagerApp: App {
 
     init() {
         Logger.shared.log("=== UnnamedWindowManager started ===")
-        if let screen = NSScreen.main {
-            SharedRootStore.shared.initialize(screen: screen)
-        }
         NotificationService.shared.requestAuthorization()
     }
 
