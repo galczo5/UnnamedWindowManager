@@ -9,12 +9,18 @@ import SwiftUI
 import AppKit
 import ApplicationServices
 
+extension Notification.Name {
+    static let snapStateChanged = Notification.Name("snapStateChanged")
+}
+
 @Observable
 final class MenuState {
     var parentOrientation: Orientation? = nil
+    var isOrganized: Bool = false
 
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
+        isOrganized = SnapService.shared.snapshotVisibleRoot() != nil
     }
 }
 
@@ -28,7 +34,7 @@ struct UnnamedWindowManagerApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("Window Manager", systemImage: "rectangle.split.2x1") {
+        MenuBarExtra {
             Button("Snap")      { SnapHandler.snap()        }
             Button("Unsnap")    { UnsnapHandler.unsnap()    }
             Button("Organize")  { OrganizeHandler.organize() }
@@ -49,6 +55,21 @@ struct UnnamedWindowManagerApp: App {
             Button("Debug")     { WindowLister.logSlotTree() }
             Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
+        } label: {
+            HStack(spacing: 4) {
+                if menuState.isOrganized {
+                    Text("[organized]")
+                } else {
+                    Image(systemName: "rectangle.split.2x1")
+                }
+            }
+            .onAppear { menuState.refresh() }
+            .onReceive(NotificationCenter.default.publisher(for: .snapStateChanged)) { _ in
+                menuState.refresh()
+            }
+            .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.activeSpaceDidChangeNotification)) { _ in
+                menuState.refresh()
+            }
         }
         .menuBarExtraStyle(.menu)
     }

@@ -31,6 +31,9 @@ struct ReapplyHandler {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             ResizeObserver.shared.reapplying.subtract(allWindows)
         }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .snapStateChanged, object: nil)
+        }
     }
 
     /// Returns the drop target (window + zone) under the current mouse cursor,
