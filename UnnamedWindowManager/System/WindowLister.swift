@@ -64,4 +64,28 @@ struct WindowLister {
         }
         Logger.shared.log("=== End of windows ===")
     }
+
+    static func logSlotTree() {
+        let root = SharedRootStore.shared.snapshotRoot()
+        Logger.shared.log("=== Slot tree ===")
+        Logger.shared.log("root  size=\(root.width)x\(root.height)  orientation=\(root.orientation)  children=\(root.children.count)")
+        for child in root.children {
+            logSlot(child, depth: 1)
+        }
+        Logger.shared.log("=== End of slot tree ===")
+    }
+
+    private static func logSlot(_ slot: Slot, depth: Int) {
+        let indent = String(repeating: "  ", count: depth)
+        switch slot {
+        case .window(let w):
+            Logger.shared.log("\(indent)window  size=\(w.width)x\(w.height)  fraction=\(w.fraction)  pid=\(w.pid)")
+        case .horizontal(let h):
+            Logger.shared.log("\(indent)horizontal  size=\(h.width)x\(h.height)  fraction=\(h.fraction)  children=\(h.children.count)")
+            for child in h.children { logSlot(child, depth: depth + 1) }
+        case .vertical(let v):
+            Logger.shared.log("\(indent)vertical  size=\(v.width)x\(v.height)  fraction=\(v.fraction)  children=\(v.children.count)")
+            for child in v.children { logSlot(child, depth: depth + 1) }
+        }
+    }
 }

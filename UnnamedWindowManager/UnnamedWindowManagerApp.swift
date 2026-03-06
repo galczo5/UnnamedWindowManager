@@ -26,7 +26,7 @@ struct UnnamedWindowManagerApp: App {
             Button("Unsnap")    { UnsnapHandler.unsnap()   }
             Button("Organize")  { OrganizeHandler.organize() }
             Divider()
-            Button("Debug")     { WindowLister.logAllWindows() }
+            Button("Debug")     { WindowLister.logSlotTree() }
             Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
         }
