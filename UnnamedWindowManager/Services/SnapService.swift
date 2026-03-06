@@ -84,6 +84,15 @@ final class SnapService {
         }
     }
 
+    func flipParentOrientation(_ key: WindowSlot, screen: NSScreen) {
+        store.queue.sync(flags: .barrier) {
+            tree.flipParentOrientation(of: key, in: &store.root)
+            position.recomputeSizes(&store.root,
+                                    width: screen.visibleFrame.width  - Config.gap * 2,
+                                    height: screen.visibleFrame.height - Config.gap * 2)
+        }
+    }
+
     func insertAdjacent(dragged: WindowSlot, target: WindowSlot,
                         zone: DropZone, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {

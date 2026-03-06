@@ -25,6 +25,28 @@ struct SlotTreeService {
         root.children.map { maxLeafOrder(in: $0) }.max() ?? 0
     }
 
+    func findParentOrientation(of key: WindowSlot, in root: RootSlot) -> Orientation? {
+        if root.children.contains(where: {
+            if case .window(let w) = $0 { return w == key }; return false
+        }) { return root.orientation }
+        for child in root.children {
+            if let o = findParentOrientation(of: key, in: child) { return o }
+        }
+        return nil
+    }
+
+    func flipParentOrientation(of key: WindowSlot, in root: inout RootSlot) {
+        if root.children.contains(where: {
+            if case .window(let w) = $0 { return w == key }; return false
+        }) {
+            root.orientation = root.orientation == .horizontal ? .vertical : .horizontal
+            return
+        }
+        for i in root.children.indices {
+            if flipParentOrientation(of: key, in: &root.children[i]) { return }
+        }
+    }
+
     // MARK: - Structural mutations
 
     @discardableResult
@@ -345,6 +367,63 @@ struct SlotTreeService {
                 if insertAdjacentInSlot(&v.children[i], targetKey: targetKey,
                                         dragged: dragged, needed: needed,
                                         draggedFirst: draggedFirst) {
+                    slot = .vertical(v); return true
+                }
+            }
+            return false
+        }
+    }
+
+    private func findParentOrientation(of key: WindowSlot, in slot: Slot) -> Orientation? {
+        switch slot {
+        case .window: return nil
+        case .horizontal(let h):
+            if h.children.contains(where: {
+                if case .window(let w) = $0 { return w == key }; return false
+            }) { return .horizontal }
+            for child in h.children { if let o = findParentOrientation(of: key, in: child) { return o } }
+            return nil
+        case .vertical(let v):
+            if v.children.contains(where: {
+                if case .window(let w) = $0 { return w == key }; return false
+            }) { return .vertical }
+            for child in v.children { if let o = findParentOrientation(of: key, in: child) { return o } }
+            return nil
+        }
+    }
+
+    @discardableResult
+    private func flipParentOrientation(of key: WindowSlot, in slot: inout Slot) -> Bool {
+        switch slot {
+        case .window: return false
+        case .horizontal(var h):
+            if h.children.contains(where: {
+                if case .window(let w) = $0 { return w == key }; return false
+            }) {
+                slot = .vertical(VerticalSlot(id: h.id, parentId: h.parentId,
+                                              width: h.width, height: h.height,
+                                              children: h.children, gaps: h.gaps,
+                                              fraction: h.fraction))
+                return true
+            }
+            for i in h.children.indices {
+                if flipParentOrientation(of: key, in: &h.children[i]) {
+                    slot = .horizontal(h); return true
+                }
+            }
+            return false
+        case .vertical(var v):
+            if v.children.contains(where: {
+                if case .window(let w) = $0 { return w == key }; return false
+            }) {
+                slot = .horizontal(HorizontalSlot(id: v.id, parentId: v.parentId,
+                                                  width: v.width, height: v.height,
+                                                  children: v.children, gaps: v.gaps,
+                                                  fraction: v.fraction))
+                return true
+            }
+            for i in v.children.indices {
+                if flipParentOrientation(of: key, in: &v.children[i]) {
                     slot = .vertical(v); return true
                 }
             }
