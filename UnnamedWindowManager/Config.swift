@@ -33,6 +33,10 @@ enum Config {
     /// When true, automatically snap new windows into the layout — but only while at
     /// least one window is already snapped and visible on the current screen.
     static let autoSnap: Bool = true
+    /// When true, automatically snap the first window on an empty screen (no existing layout).
+    /// Complements autoSnap: autoOrganize handles the empty-screen bootstrap; autoSnap handles
+    /// subsequent windows once a layout exists.
+    static let autoOrganize: Bool = true
     /// Absolute path of the log file written by Logger.
     static let logFilePath: String = NSHomeDirectory() + "/.unnamed.log"
 }
