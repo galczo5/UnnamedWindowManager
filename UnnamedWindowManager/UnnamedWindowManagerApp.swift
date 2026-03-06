@@ -16,6 +16,7 @@ struct UnnamedWindowManagerApp: App {
         if let screen = NSScreen.main {
             SharedRootStore.shared.initialize(screen: screen)
         }
+        NotificationService.shared.requestAuthorization()
 
     }
 
