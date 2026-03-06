@@ -60,7 +60,7 @@ struct UnnamedWindowManagerApp: App {
                 if menuState.isOrganized {
                     Text("[organized]")
                 } else {
-                    Image(systemName: "rectangle.split.2x1")
+                    Image(systemName: "rectangle.split.3x1.fill")
                 }
             }
             .onAppear { menuState.refresh() }
