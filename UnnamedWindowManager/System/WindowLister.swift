@@ -75,7 +75,10 @@ struct WindowLister {
         let indent = String(repeating: "  ", count: depth)
         switch slot {
         case .window(let w):
-            Logger.shared.log("\(indent)window  size=\(w.width)x\(w.height)  fraction=\(w.fraction)  pid=\(w.pid)")
+            let ax = ResizeObserver.shared.elements[w]
+            let actualSize = ax.flatMap { readSize(of: $0) }
+            let actualStr = actualSize.map { "\(Int($0.width))x\(Int($0.height))" } ?? (ax == nil ? "no-element" : "no-size")
+            Logger.shared.log("\(indent)window  size=\(w.width)x\(w.height)  actual=\(actualStr)  fraction=\(w.fraction)  pid=\(w.pid)  hash=\(w.windowHash)")
         case .horizontal(let h):
             Logger.shared.log("\(indent)horizontal  size=\(h.width)x\(h.height)  fraction=\(h.fraction)  children=\(h.children.count)")
             for child in h.children { logSlot(child, depth: depth + 1) }
