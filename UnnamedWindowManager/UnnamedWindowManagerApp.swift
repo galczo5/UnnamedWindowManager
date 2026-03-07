@@ -35,7 +35,7 @@ struct UnnamedWindowManagerApp: App {
             Button("Snap")      { SnapHandler.snap()        }
             Button("Unsnap")     { UnsnapHandler.unsnap()    }
             Button("Unsnap all") { UnsnapHandler.unsnapAll() }
-            Button("Organize")  { OrganizeHandler.organize() }
+            Button("Organize (\(KeybindingService.displayString(Config.organizeShortcut)))") { OrganizeHandler.organize() }
             Divider()
             let orientLabel: String = {
                 switch menuState.parentOrientation {
@@ -57,11 +57,13 @@ struct UnnamedWindowManagerApp: App {
             }
             Button("Reload config file") {
                 Config.shared.reload()
+                KeybindingService.shared.restart()
                 ReapplyHandler.reapplyAll()
             }
             Button("Reset config file") {
                 ConfigLoader.write(ConfigData.defaults)
                 Config.shared.reload()
+                KeybindingService.shared.restart()
                 ReapplyHandler.reapplyAll()
             }
             Divider()
@@ -74,7 +76,10 @@ struct UnnamedWindowManagerApp: App {
                     Image(systemName: "rectangle.split.3x1.fill")
                 }
             }
-            .onAppear { menuState.refresh() }
+            .onAppear {
+                menuState.refresh()
+                KeybindingService.shared.start()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .snapStateChanged)) { _ in
                 menuState.refresh()
             }

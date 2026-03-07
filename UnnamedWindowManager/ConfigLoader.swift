@@ -54,6 +54,7 @@ struct ConfigLoader {
         let dz = s?.dropZones ?? d.dropZones!
         let ov = s?.overlay   ?? d.overlay!
         let bh = s?.behavior  ?? d.behavior!
+        let sh = s?.shortcuts ?? d.shortcuts!
 
         func num(_ v: CGFloat?) -> String {
             guard let v = v else { return "null" }
@@ -90,6 +91,9 @@ struct ConfigLoader {
             autoSnap: \(bh.autoSnap ?? true)
             # Automatically snap the first window on an empty screen (bootstrap when no layout exists).
             autoOrganize: \(bh.autoOrganize ?? true)
+          shortcuts:
+            # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o).
+            organize: "\(sh.organize ?? "cmd+'")"
         """
     }
 }

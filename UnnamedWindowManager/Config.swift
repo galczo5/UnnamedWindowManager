@@ -29,6 +29,7 @@ final class Config {
     static var overlayBorderWidth: CGFloat     { shared.s.overlay!.borderWidth! }
     static var autoSnap: Bool                  { shared.s.behavior!.autoSnap! }
     static var autoOrganize: Bool              { shared.s.behavior!.autoOrganize! }
+    static var organizeShortcut: String        { shared.s.shortcuts?.organize ?? "cmd+'" }
 
     static let overlayFillColor: NSColor   = .systemBlue.withAlphaComponent(0.2)
     static let overlayBorderColor: NSColor  = .systemBlue.withAlphaComponent(0.8)

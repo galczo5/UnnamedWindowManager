@@ -9,6 +9,7 @@ struct ConfigData: Codable {
         var dropZones: DropZoneConfig?
         var overlay: OverlayConfig?
         var behavior: BehaviorConfig?
+        var shortcuts: ShortcutsConfig?
     }
 
     struct LayoutConfig: Codable {
@@ -35,11 +36,16 @@ struct ConfigData: Codable {
         var autoOrganize: Bool?
     }
 
+    struct ShortcutsConfig: Codable {
+        var organize: String?
+    }
+
     static let defaults = ConfigData(config: ConfigSection(
         layout: LayoutConfig(gap: 5, fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3),
-        behavior: BehaviorConfig(autoSnap: true, autoOrganize: true)
+        behavior: BehaviorConfig(autoSnap: true, autoOrganize: true),
+        shortcuts: ShortcutsConfig(organize: "cmd+'")
     ))
 
     /// Full key paths of fields absent from the YAML file.
@@ -59,6 +65,7 @@ struct ConfigData: Codable {
         check(s?.overlay?.borderWidth,           "config.overlay.borderWidth")
         check(s?.behavior?.autoSnap,             "config.behavior.autoSnap")
         check(s?.behavior?.autoOrganize,         "config.behavior.autoOrganize")
+        check(s?.shortcuts?.organize,            "config.shortcuts.organize")
         return missing
     }
 
@@ -86,6 +93,9 @@ struct ConfigData: Codable {
             behavior: BehaviorConfig(
                 autoSnap:     s?.behavior?.autoSnap     ?? d.behavior!.autoSnap,
                 autoOrganize: s?.behavior?.autoOrganize ?? d.behavior!.autoOrganize
+            ),
+            shortcuts: ShortcutsConfig(
+                organize: s?.shortcuts?.organize ?? d.shortcuts!.organize
             )
         ))
     }
