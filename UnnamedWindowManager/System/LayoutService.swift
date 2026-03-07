@@ -51,8 +51,8 @@ final class LayoutService {
         case .window(let w):
             guard let ax = elements[w] else { return }
             let g = w.gaps ? Config.gap : 0
-            var pos  = CGPoint(x: origin.x + g, y: origin.y + g)
-            var size = CGSize(width: w.width - g * 2, height: w.height - g * 2)
+            var pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
+            var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
             Logger.shared.log("key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
             if let posVal = AXValueCreate(.cgPoint, &pos) {
                 AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal)

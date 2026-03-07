@@ -8,8 +8,8 @@ struct PositionService {
         root.height = height
         guard !root.children.isEmpty else { return }
         for i in root.children.indices {
-            let cw = root.orientation == .horizontal ? width * root.children[i].fraction : width
-            let ch = root.orientation == .horizontal ? height : height * root.children[i].fraction
+            let cw = root.orientation == .horizontal ? (width * root.children[i].fraction).rounded() : width
+            let ch = root.orientation == .horizontal ? height : (height * root.children[i].fraction).rounded()
             recomputeSizes(&root.children[i], width: cw, height: ch)
         }
     }
@@ -23,14 +23,14 @@ struct PositionService {
             h.width = width; h.height = height
             guard !h.children.isEmpty else { slot = .horizontal(h); return }
             for i in h.children.indices {
-                recomputeSizes(&h.children[i], width: width * h.children[i].fraction, height: height)
+                recomputeSizes(&h.children[i], width: (width * h.children[i].fraction).rounded(), height: height)
             }
             slot = .horizontal(h)
         case .vertical(var v):
             v.width = width; v.height = height
             guard !v.children.isEmpty else { slot = .vertical(v); return }
             for i in v.children.indices {
-                recomputeSizes(&v.children[i], width: width, height: height * v.children[i].fraction)
+                recomputeSizes(&v.children[i], width: width, height: (height * v.children[i].fraction).rounded())
             }
             slot = .vertical(v)
         }
