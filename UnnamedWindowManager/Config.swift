@@ -1,38 +1,35 @@
 import CoreGraphics
 import AppKit
 
-// Static layout and visual configuration constants.
-enum Config {
-    /// Gap between snapped windows and screen edges (points).
-    static let gap: CGFloat = 5
-    /// Fallback width fraction of the visible screen when a window's size cannot be read.
-    static let fallbackWidthFraction: CGFloat = 0.4
-    /// Maximum width of a snapped window as a fraction of the visible screen width.
-    static let maxWidthFraction: CGFloat = 0.80
-    /// Maximum height of a snapped window: full visible height minus top and bottom gaps.
-    /// Expressed as a multiplier; effective cap = visible.height × maxHeightFraction − 2 × gap.
-    static let maxHeightFraction: CGFloat = 1.0
-    /// Fraction of a window's width that counts as the left or right drop zone (each side).
-    static let dropZoneFraction: CGFloat = 0.20
-    /// Fraction of a slot's height (from the bottom) that activates the bottom drop zone.
-    static let dropZoneBottomFraction: CGFloat = 0.20
-    /// Fraction of a slot's height (from the top) that activates the top drop zone.
-    static let dropZoneTopFraction: CGFloat = 0.20
-    /// Corner radius of the swap-target overlay rectangle (points).
-    static let overlayCornerRadius: CGFloat = 8
-    /// Border width of the swap-target overlay rectangle (points).
-    static let overlayBorderWidth: CGFloat = 3
-    /// Fill color of the swap-target overlay rectangle.
-    static let overlayFillColor: NSColor = .systemBlue.withAlphaComponent(0.2)
-    /// Border color of the swap-target overlay rectangle.
-    static let overlayBorderColor: NSColor = .systemBlue.withAlphaComponent(0.8)
-    /// When true, automatically snap new windows into the layout — but only while at
-    /// least one window is already snapped and visible on the current screen.
-    static let autoSnap: Bool = true
-    /// When true, automatically snap the first window on an empty screen (no existing layout).
-    /// Complements autoSnap: autoOrganize handles the empty-screen bootstrap; autoSnap handles
-    /// subsequent windows once a layout exists.
-    static let autoOrganize: Bool = true
-    /// Absolute path of the log file written by Logger.
-    static let logFilePath: String = NSHomeDirectory() + "/.unnamed.log"
+// Runtime configuration, loaded from ~/.config/unnamed/config.yml at startup.
+final class Config {
+    static let shared = Config()
+    private var data: ConfigData
+
+    private init() {
+        data = ConfigLoader.load()
+    }
+
+    func reload() {
+        data = ConfigLoader.load()
+        Logger.shared.log("Config: reloaded from disk")
+    }
+
+    private var s: ConfigData.ConfigSection { data.config! }
+
+    static var gap: CGFloat                   { shared.s.layout!.gap! }
+    static var fallbackWidthFraction: CGFloat  { shared.s.layout!.fallbackWidthFraction! }
+    static var maxWidthFraction: CGFloat       { shared.s.layout!.maxWidthFraction! }
+    static var maxHeightFraction: CGFloat      { shared.s.layout!.maxHeightFraction! }
+    static var dropZoneFraction: CGFloat       { shared.s.dropZones!.fraction! }
+    static var dropZoneBottomFraction: CGFloat { shared.s.dropZones!.bottomFraction! }
+    static var dropZoneTopFraction: CGFloat    { shared.s.dropZones!.topFraction! }
+    static var overlayCornerRadius: CGFloat    { shared.s.overlay!.cornerRadius! }
+    static var overlayBorderWidth: CGFloat     { shared.s.overlay!.borderWidth! }
+    static var autoSnap: Bool                  { shared.s.behavior!.autoSnap! }
+    static var autoOrganize: Bool              { shared.s.behavior!.autoOrganize! }
+
+    static let overlayFillColor: NSColor   = .systemBlue.withAlphaComponent(0.2)
+    static let overlayBorderColor: NSColor  = .systemBlue.withAlphaComponent(0.8)
+    static let logFilePath: String          = NSHomeDirectory() + "/.unnamed.log"
 }

@@ -52,6 +52,19 @@ struct UnnamedWindowManagerApp: App {
             Divider()
             Button("Debug")     { WindowLister.logSlotTree() }
             Divider()
+            Button("Open config file") {
+                NSWorkspace.shared.open(URL(fileURLWithPath: ConfigLoader.filePath))
+            }
+            Button("Reload config file") {
+                Config.shared.reload()
+                ReapplyHandler.reapplyAll()
+            }
+            Button("Reset config file") {
+                ConfigLoader.write(ConfigData.defaults)
+                Config.shared.reload()
+                ReapplyHandler.reapplyAll()
+            }
+            Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {
             HStack(spacing: 4) {
