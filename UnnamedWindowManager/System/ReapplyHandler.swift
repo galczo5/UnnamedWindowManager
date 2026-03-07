@@ -55,10 +55,10 @@ struct ReapplyHandler {
             guard frame.contains(cursor) else { continue }
 
             // Left/right are checked before top/bottom so corners prefer horizontal zones.
-            if cursor.x < frame.minX + frame.width * Config.dropZoneFraction {
+            if cursor.x < frame.minX + frame.width * Config.dropZoneLeftFraction {
                 return DropTarget(window: w, zone: .left)
             }
-            if cursor.x > frame.maxX - frame.width * Config.dropZoneFraction {
+            if cursor.x > frame.maxX - frame.width * Config.dropZoneRightFraction {
                 return DropTarget(window: w, zone: .right)
             }
             if cursor.y > frame.maxY - frame.height * Config.dropZoneTopFraction {

@@ -72,8 +72,10 @@ struct ConfigLoader {
             # Maximum height of a snapped window as a fraction of the visible screen height.
             maxHeightFraction: \(num(l.maxHeightFraction))
           dropZones:
-            # Fraction of a window's width that counts as the left or right drop zone (each side).
-            fraction: \(num(dz.fraction))
+            # Fraction of a window's width that counts as the left drop zone.
+            leftFraction: \(num(dz.leftFraction))
+            # Fraction of a window's width that counts as the right drop zone.
+            rightFraction: \(num(dz.rightFraction))
             # Fraction of a slot's height (from the bottom) that activates the bottom drop zone.
             bottomFraction: \(num(dz.bottomFraction))
             # Fraction of a slot's height (from the top) that activates the top drop zone.

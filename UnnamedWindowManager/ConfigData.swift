@@ -19,7 +19,8 @@ struct ConfigData: Codable {
     }
 
     struct DropZoneConfig: Codable {
-        var fraction: CGFloat?
+        var leftFraction: CGFloat?
+        var rightFraction: CGFloat?
         var bottomFraction: CGFloat?
         var topFraction: CGFloat?
     }
@@ -36,7 +37,7 @@ struct ConfigData: Codable {
 
     static let defaults = ConfigData(config: ConfigSection(
         layout: LayoutConfig(gap: 5, fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
-        dropZones: DropZoneConfig(fraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
+        dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3),
         behavior: BehaviorConfig(autoSnap: true, autoOrganize: true)
     ))
@@ -50,7 +51,8 @@ struct ConfigData: Codable {
         check(s?.layout?.fallbackWidthFraction,  "config.layout.fallbackWidthFraction")
         check(s?.layout?.maxWidthFraction,       "config.layout.maxWidthFraction")
         check(s?.layout?.maxHeightFraction,      "config.layout.maxHeightFraction")
-        check(s?.dropZones?.fraction,            "config.dropZones.fraction")
+        check(s?.dropZones?.leftFraction,        "config.dropZones.leftFraction")
+        check(s?.dropZones?.rightFraction,       "config.dropZones.rightFraction")
         check(s?.dropZones?.bottomFraction,      "config.dropZones.bottomFraction")
         check(s?.dropZones?.topFraction,         "config.dropZones.topFraction")
         check(s?.overlay?.cornerRadius,          "config.overlay.cornerRadius")
@@ -72,7 +74,8 @@ struct ConfigData: Codable {
                 maxHeightFraction:      s?.layout?.maxHeightFraction       ?? d.layout!.maxHeightFraction
             ),
             dropZones: DropZoneConfig(
-                fraction:       s?.dropZones?.fraction       ?? d.dropZones!.fraction,
+                leftFraction:   s?.dropZones?.leftFraction   ?? d.dropZones!.leftFraction,
+                rightFraction:  s?.dropZones?.rightFraction  ?? d.dropZones!.rightFraction,
                 bottomFraction: s?.dropZones?.bottomFraction ?? d.dropZones!.bottomFraction,
                 topFraction:    s?.dropZones?.topFraction    ?? d.dropZones!.topFraction
             ),
