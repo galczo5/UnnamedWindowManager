@@ -27,4 +27,14 @@ struct UnsnapHandler {
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
         ReapplyHandler.reapplyAll()
     }
+
+    static func unsnapAll() {
+        guard AXIsProcessTrusted() else { return }
+        let removed = SnapService.shared.removeVisibleRoot()
+        for key in removed {
+            WindowVisibilityManager.shared.restoreAndForget(key)
+            ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+        }
+        NotificationCenter.default.post(name: .snapStateChanged, object: nil)
+    }
 }

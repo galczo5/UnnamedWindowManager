@@ -100,6 +100,16 @@ final class SnapService {
         }
     }
 
+    func removeVisibleRoot() -> [WindowSlot] {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleRootID() else { return [] }
+            let leaves = tree.allLeaves(in: store.roots[id]!)
+            store.roots.removeValue(forKey: id)
+            store.windowCounts.removeValue(forKey: id)
+            return leaves.compactMap { if case .window(let w) = $0 { return w } else { return nil } }
+        }
+    }
+
     func remove(_ key: WindowSlot) {
         store.queue.async(flags: .barrier) {
             guard let id = self.rootID(containing: key) else { return }

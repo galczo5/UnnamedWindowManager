@@ -39,7 +39,8 @@ struct UnnamedWindowManagerApp: App {
     var body: some Scene {
         MenuBarExtra {
             Button("Snap")      { SnapHandler.snap()        }
-            Button("Unsnap")    { UnsnapHandler.unsnap()    }
+            Button("Unsnap")     { UnsnapHandler.unsnap()    }
+            Button("Unsnap all") { UnsnapHandler.unsnapAll() }
             Button("Organize")  { OrganizeHandler.organize() }
             Divider()
             let orientLabel: String = {
