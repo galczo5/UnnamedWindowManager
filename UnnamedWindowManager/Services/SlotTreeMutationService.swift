@@ -13,7 +13,7 @@ struct SlotTreeMutationService {
             if wasFound { found = true }
             return newSlot
         }
-        if found { root.children = newChildren }
+        if found { root.children = redistributed(newChildren) }
         return found
     }
 
