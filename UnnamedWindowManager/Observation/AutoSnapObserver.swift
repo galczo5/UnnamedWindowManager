@@ -107,7 +107,39 @@ final class AutoSnapObserver {
         let window = ref as! AXUIElement
         guard !SnapService.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
         Logger.shared.log("autoSnap triggered for pid=\(pid)")
+        pruneStaleSlots(for: pid)
         SnapHandler.snapLeft(window: window, pid: pid)
+    }
+
+    private func pruneStaleSlots(for pid: pid_t) {
+        guard let trackedKeys = ResizeObserver.shared.keysByPid[pid], !trackedKeys.isEmpty else { return }
+        let knownWIDs = allWindowIDs(for: pid)
+        guard !knownWIDs.isEmpty else { return }
+        let screen = NSScreen.main
+        for key in trackedKeys {
+            guard !knownWIDs.contains(key.windowHash) else { continue }
+            Logger.shared.log("pruning stale slot: pid=\(pid) hash=\(key.windowHash)")
+            ResizeObserver.shared.stopObserving(key: key, pid: pid)
+            if let screen {
+                SnapService.shared.removeAndReflow(key, screen: screen)
+            } else {
+                SnapService.shared.remove(key)
+            }
+        }
+    }
+
+    private func allWindowIDs(for pid: pid_t) -> Set<UInt> {
+        guard let list = CGWindowListCopyWindowInfo(
+            [.excludeDesktopElements], kCGNullWindowID
+        ) as? [[String: Any]] else { return [] }
+        var ids = Set<UInt>()
+        for info in list {
+            guard let p = info[kCGWindowOwnerPID as String] as? Int, pid_t(p) == pid,
+                  let wid = info[kCGWindowNumber as String] as? CGWindowID
+            else { continue }
+            ids.insert(UInt(wid))
+        }
+        return ids
     }
 
     private func windowsOnScreen() -> [String] {
