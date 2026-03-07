@@ -17,6 +17,11 @@ final class MenuState {
     }
 }
 
+private func menuLabel(_ base: String, _ shortcut: String) -> String {
+    let display = KeybindingService.displayString(shortcut)
+    return display.isEmpty ? base : "\(base) (\(display))"
+}
+
 // App entry point; defines the menu bar extra and coordinates startup initialization.
 @main
 struct UnnamedWindowManagerApp: App {
@@ -32,10 +37,10 @@ struct UnnamedWindowManagerApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            Button("Snap")      { SnapHandler.snap()        }
-            Button("Unsnap")     { UnsnapHandler.unsnap()    }
-            Button("Unsnap all") { UnsnapHandler.unsnapAll() }
-            Button("Organize (\(KeybindingService.displayString(Config.organizeShortcut)))") { OrganizeHandler.organize() }
+            Button(menuLabel("Snap",        Config.snapShortcut))      { SnapHandler.snap()        }
+            Button(menuLabel("Unsnap",      Config.unsnapShortcut))    { UnsnapHandler.unsnap()    }
+            Button(menuLabel("Unsnap all",  Config.unsnapAllShortcut)) { UnsnapHandler.unsnapAll() }
+            Button(menuLabel("Organize",    Config.organizeShortcut))  { OrganizeHandler.organize() }
             Divider()
             let orientLabel: String = {
                 switch menuState.parentOrientation {
@@ -44,7 +49,7 @@ struct UnnamedWindowManagerApp: App {
                 case nil:         return "Flip Orientation"
                 }
             }()
-            Button(orientLabel) {
+            Button(menuLabel(orientLabel, Config.flipOrientationShortcut)) {
                 OrientFlipHandler.flipOrientation()
                 menuState.refresh()
             }

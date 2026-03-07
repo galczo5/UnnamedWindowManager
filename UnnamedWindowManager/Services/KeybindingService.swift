@@ -6,10 +6,15 @@ import ApplicationServices
 final class KeybindingService {
     static let shared = KeybindingService()
 
+    private struct Binding {
+        let modifiers: NSEvent.ModifierFlags
+        let key: String
+        let action: () -> Void
+    }
+
+    private var bindings: [Binding] = []
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    private var parsedModifiers: NSEvent.ModifierFlags = []
-    private var parsedKey: String = ""
 
     private init() {}
 
@@ -18,12 +23,25 @@ final class KeybindingService {
             Logger.shared.log("KeybindingService: Accessibility trust not granted — global shortcuts inactive")
             return
         }
-        guard let (modifiers, key) = parse(Config.organizeShortcut) else {
-            Logger.shared.log("KeybindingService: could not parse shortcut '\(Config.organizeShortcut)'")
+
+        let candidates: [(String, () -> Void)] = [
+            (Config.organizeShortcut,        { OrganizeHandler.organize() }),
+            (Config.snapShortcut,            { SnapHandler.snap() }),
+            (Config.unsnapShortcut,          { UnsnapHandler.unsnap() }),
+            (Config.unsnapAllShortcut,       { UnsnapHandler.unsnapAll() }),
+            (Config.flipOrientationShortcut, { OrientFlipHandler.flipOrientation() }),
+        ]
+
+        bindings = []
+        for (shortcut, action) in candidates {
+            guard !shortcut.isEmpty, let (mods, key) = parse(shortcut) else { continue }
+            bindings.append(Binding(modifiers: mods, key: key, action: action))
+        }
+
+        guard !bindings.isEmpty else {
+            Logger.shared.log("KeybindingService: no shortcuts configured")
             return
         }
-        parsedModifiers = modifiers
-        parsedKey = key
 
         let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
         let userInfo = Unmanaged.passUnretained(self).toOpaque()
@@ -42,12 +60,14 @@ final class KeybindingService {
                     return Unmanaged.passRetained(event)
                 }
                 let flags = nsEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
-                guard flags == service.parsedModifiers,
-                      nsEvent.charactersIgnoringModifiers == service.parsedKey else {
-                    return Unmanaged.passRetained(event)
+                for binding in service.bindings {
+                    guard flags == binding.modifiers,
+                          nsEvent.charactersIgnoringModifiers == binding.key else { continue }
+                    let action = binding.action
+                    DispatchQueue.main.async { action() }
+                    return nil // consume the event
                 }
-                DispatchQueue.main.async { OrganizeHandler.organize() }
-                return nil // consume the event
+                return Unmanaged.passRetained(event)
             },
             userInfo: userInfo
         ) else {
@@ -61,7 +81,7 @@ final class KeybindingService {
 
         eventTap = tap
         runLoopSource = source
-        Logger.shared.log("KeybindingService: registered organize shortcut '\(Config.organizeShortcut)'")
+        Logger.shared.log("KeybindingService: registered \(bindings.count) shortcut(s)")
     }
 
     func stop() {
@@ -73,6 +93,7 @@ final class KeybindingService {
             eventTap = nil
             runLoopSource = nil
         }
+        bindings = []
     }
 
     func restart() {

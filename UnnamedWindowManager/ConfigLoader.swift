@@ -92,8 +92,16 @@ struct ConfigLoader {
             # Automatically snap the first window on an empty screen (bootstrap when no layout exists).
             autoOrganize: \(bh.autoOrganize ?? true)
           shortcuts:
-            # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o).
+            # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             organize: "\(sh.organize ?? "cmd+'")"
+            # Global keyboard shortcut for Snap. Empty string disables.
+            snap: "\(sh.snap ?? "")"
+            # Global keyboard shortcut for Unsnap. Empty string disables.
+            unsnap: "\(sh.unsnap ?? "")"
+            # Global keyboard shortcut for Unsnap All. Empty string disables.
+            unsnapAll: "\(sh.unsnapAll ?? "")"
+            # Global keyboard shortcut for Flip Orientation. Empty string disables.
+            flipOrientation: "\(sh.flipOrientation ?? "")"
         """
     }
 }

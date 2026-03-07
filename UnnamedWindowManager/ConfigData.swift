@@ -38,6 +38,10 @@ struct ConfigData: Codable {
 
     struct ShortcutsConfig: Codable {
         var organize: String?
+        var snap: String?
+        var unsnap: String?
+        var unsnapAll: String?
+        var flipOrientation: String?
     }
 
     static let defaults = ConfigData(config: ConfigSection(
@@ -45,7 +49,7 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3),
         behavior: BehaviorConfig(autoSnap: true, autoOrganize: true),
-        shortcuts: ShortcutsConfig(organize: "cmd+'")
+        shortcuts: ShortcutsConfig(organize: "cmd+'", snap: "", unsnap: "", unsnapAll: "", flipOrientation: "")
     ))
 
     /// Full key paths of fields absent from the YAML file.
@@ -66,6 +70,10 @@ struct ConfigData: Codable {
         check(s?.behavior?.autoSnap,             "config.behavior.autoSnap")
         check(s?.behavior?.autoOrganize,         "config.behavior.autoOrganize")
         check(s?.shortcuts?.organize,            "config.shortcuts.organize")
+        check(s?.shortcuts?.snap,               "config.shortcuts.snap")
+        check(s?.shortcuts?.unsnap,             "config.shortcuts.unsnap")
+        check(s?.shortcuts?.unsnapAll,          "config.shortcuts.unsnapAll")
+        check(s?.shortcuts?.flipOrientation,    "config.shortcuts.flipOrientation")
         return missing
     }
 
@@ -95,7 +103,11 @@ struct ConfigData: Codable {
                 autoOrganize: s?.behavior?.autoOrganize ?? d.behavior!.autoOrganize
             ),
             shortcuts: ShortcutsConfig(
-                organize: s?.shortcuts?.organize ?? d.shortcuts!.organize
+                organize:        s?.shortcuts?.organize        ?? d.shortcuts!.organize,
+                snap:            s?.shortcuts?.snap            ?? d.shortcuts!.snap,
+                unsnap:          s?.shortcuts?.unsnap          ?? d.shortcuts!.unsnap,
+                unsnapAll:       s?.shortcuts?.unsnapAll       ?? d.shortcuts!.unsnapAll,
+                flipOrientation: s?.shortcuts?.flipOrientation ?? d.shortcuts!.flipOrientation
             )
         ))
     }
