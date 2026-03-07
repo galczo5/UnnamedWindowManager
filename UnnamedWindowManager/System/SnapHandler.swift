@@ -27,6 +27,7 @@ struct SnapHandler {
 
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
+        Logger.shared.log("snap: pid=\(pid) hash=\(key.windowHash)")
         SnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
@@ -44,6 +45,7 @@ struct SnapHandler {
            (minRef as? Bool) == true { return }
         if let sz = readSize(of: window), sz.width < 100 || sz.height < 100 { return }
 
+        Logger.shared.log("snapLeft: pid=\(pid) hash=\(key.windowHash)")
         SnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()

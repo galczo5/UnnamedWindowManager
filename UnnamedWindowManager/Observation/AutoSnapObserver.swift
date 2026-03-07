@@ -57,7 +57,15 @@ final class AutoSnapObserver {
     // Called from autoSnapCallback on the main thread.
     func handleWindowCreated(pid: pid_t) {
         // Capture screen state NOW — before the new window appears in CGWindowList.
-        let screenWasEmpty = Config.autoOrganize && !hasAnyWindowOnScreen()
+        var screenWasEmpty = false
+        if Config.autoOrganize {
+            let existing = windowsOnScreen()
+            if existing.isEmpty {
+                screenWasEmpty = true
+            } else {
+                Logger.shared.log("autoOrganize skipped — \(existing.count) window(s) on screen: \(existing.joined(separator: ", "))")
+            }
+        }
         // Defer by one run-loop pass so the new window has time to receive focus
         // before kAXFocusedWindowAttribute is queried.
         DispatchQueue.main.async { [weak self] in
@@ -85,25 +93,41 @@ final class AutoSnapObserver {
     }
 
     private func snapFocusedWindow(pid: pid_t, screenWasEmpty: Bool = false) {
+        if Config.autoOrganize && screenWasEmpty {
+            Logger.shared.log("autoOrganize triggered for pid=\(pid)")
+            OrganizeHandler.organize()
+            return
+        }
+
+        guard Config.autoSnap else { return }
         let hasLayout = SnapService.shared.snapshotVisibleRoot() != nil
-        guard (Config.autoSnap && hasLayout) || screenWasEmpty else { return }
+        guard hasLayout else {
+            Logger.shared.log("autoSnap skipped — no layout active (pid=\(pid))")
+            return
+        }
         let axApp = AXUIElementCreateApplication(pid)
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success
         else { return }
-        SnapHandler.snapLeft(window: ref as! AXUIElement, pid: pid)
+        let window = ref as! AXUIElement
+        guard !SnapService.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
+        Logger.shared.log("autoSnap triggered for pid=\(pid)")
+        SnapHandler.snapLeft(window: window, pid: pid)
     }
 
-    private func hasAnyWindowOnScreen() -> Bool {
+    private func windowsOnScreen() -> [String] {
         let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
         guard let list = CGWindowListCopyWindowInfo(
             [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
-        ) as? [[String: Any]] else { return false }
-        return list.contains {
+        ) as? [[String: Any]] else { return [] }
+        return list.compactMap {
             guard let layer = $0[kCGWindowLayer as String] as? Int, layer == 0,
-                  let pid   = $0[kCGWindowOwnerPID as String] as? Int
-            else { return false }
-            return pid_t(pid) != ownPID
+                  let pid   = $0[kCGWindowOwnerPID as String] as? Int,
+                  pid_t(pid) != ownPID
+            else { return nil }
+            let app   = $0[kCGWindowOwnerName as String] as? String ?? "?"
+            let title = $0[kCGWindowName as String] as? String ?? ""
+            return title.isEmpty ? app : "\(app) — \(title)"
         }
     }
 }
