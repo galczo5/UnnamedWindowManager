@@ -1,11 +1,15 @@
+import CoreGraphics
 import AppKit
 import ApplicationServices
 
-// Registers global keyboard shortcuts and dispatches actions when they fire.
+// Registers global keyboard shortcuts via a CGEventTap, consuming matched events.
 final class KeybindingService {
     static let shared = KeybindingService()
 
-    private var monitor: Any?
+    private var eventTap: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
+    private var parsedModifiers: NSEvent.ModifierFlags = []
+    private var parsedKey: String = ""
 
     private init() {}
 
@@ -18,19 +22,56 @@ final class KeybindingService {
             Logger.shared.log("KeybindingService: could not parse shortcut '\(Config.organizeShortcut)'")
             return
         }
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            guard flags == modifiers,
-                  event.charactersIgnoringModifiers == key else { return }
-            DispatchQueue.main.async { OrganizeHandler.organize() }
+        parsedModifiers = modifiers
+        parsedKey = key
+
+        let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        let userInfo = Unmanaged.passUnretained(self).toOpaque()
+
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: eventMask,
+            callback: { _, type, event, refcon -> Unmanaged<CGEvent>? in
+                guard let refcon, type == .keyDown else {
+                    return Unmanaged.passRetained(event)
+                }
+                let service = Unmanaged<KeybindingService>.fromOpaque(refcon).takeUnretainedValue()
+                guard let nsEvent = NSEvent(cgEvent: event) else {
+                    return Unmanaged.passRetained(event)
+                }
+                let flags = nsEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                guard flags == service.parsedModifiers,
+                      nsEvent.charactersIgnoringModifiers == service.parsedKey else {
+                    return Unmanaged.passRetained(event)
+                }
+                DispatchQueue.main.async { OrganizeHandler.organize() }
+                return nil // consume the event
+            },
+            userInfo: userInfo
+        ) else {
+            Logger.shared.log("KeybindingService: failed to create event tap")
+            return
         }
+
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+
+        eventTap = tap
+        runLoopSource = source
         Logger.shared.log("KeybindingService: registered organize shortcut '\(Config.organizeShortcut)'")
     }
 
     func stop() {
-        if let monitor {
-            NSEvent.removeMonitor(monitor)
-            self.monitor = nil
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            if let source = runLoopSource {
+                CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+            }
+            eventTap = nil
+            runLoopSource = nil
         }
     }
 
