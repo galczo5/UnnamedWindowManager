@@ -1,11 +1,7 @@
-//
-//  WindowLister.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Debugging utilities that log all on-screen windows and the current slot tree.
 struct WindowLister {
 
     static func logAllWindows() {

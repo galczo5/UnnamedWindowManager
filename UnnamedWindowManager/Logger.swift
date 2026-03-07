@@ -1,11 +1,7 @@
-//
-//  Logger.swift
-//  UnnamedWindowManager
-//
-
 import Foundation
 import AppKit
 
+// Writes timestamped log lines to a file on a background queue.
 final class Logger {
     static let shared = Logger()
 

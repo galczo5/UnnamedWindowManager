@@ -1,11 +1,7 @@
-//
-//  LayoutService.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Walks the slot tree and applies window positions and sizes via the Accessibility API.
 final class LayoutService {
     static let shared = LayoutService()
     private init() {}

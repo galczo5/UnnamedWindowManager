@@ -1,14 +1,10 @@
-//
-//  ResizeObserver.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
 // `kAXUIElementDestroyedNotification` may not be bridged in all SDK versions.
 private let kElementDestroyed = "AXUIElementDestroyed" as CFString
 
+// Tracks AX move/resize/destroy notifications for all snapped windows and drives layout reapplication.
 final class ResizeObserver {
     static let shared = ResizeObserver()
     private init() {}
@@ -19,10 +15,8 @@ final class ResizeObserver {
     var keysByPid:  [pid_t: Set<WindowSlot>]              = [:]
     /// Keys whose reapply is in-flight; prevents re-entrancy from the resulting AX notification.
     var reapplying: Set<WindowSlot>                       = []
-    /// Pending mouse-up poll work items, keyed by WindowSlot.
     var pendingReapply: [WindowSlot: DispatchWorkItem]    = [:]
-    /// Translucent overlay shown over the current swap target while dragging.
-    var swapOverlay: NSWindow?
+    let overlay = SwapOverlay()
 
     // MARK: – Public
 
@@ -84,7 +78,7 @@ final class ResizeObserver {
         // While a drag is in progress, update the drop-zone overlay in real time.
         if !isResize && NSEvent.pressedMouseButtons != 0 {
             let drop = ReapplyHandler.findDropTarget(forKey: key)
-            updateSwapOverlay(dropTarget: drop, draggedWindow: element)
+            overlay.update(dropTarget: drop, draggedWindow: element, elements: elements)
         }
 
         scheduleReapplyWhenMouseUp(key: key, isResize: isResize)
@@ -106,7 +100,7 @@ final class ResizeObserver {
     func cleanup(key: WindowSlot, pid: pid_t) {
         pendingReapply[key]?.cancel()
         pendingReapply.removeValue(forKey: key)
-        hideSwapOverlay()
+        overlay.hide()
         elements.removeValue(forKey: key)
         reapplying.remove(key)
         keysByPid[pid]?.remove(key)
@@ -118,5 +112,81 @@ final class ResizeObserver {
             observers.removeValue(forKey: pid)
             keysByPid.removeValue(forKey: pid)
         }
+    }
+
+    // MARK: - Reapply
+
+    /// Polls every 50 ms until no mouse button is held, then reapplies the snap.
+    /// Any in-progress poll for the same key is cancelled before scheduling a new one.
+    /// - Parameter isResize: true when triggered by a resize notification — accepts the
+    ///   new size and reflows all snapped windows; false for move — restores position only.
+    func scheduleReapplyWhenMouseUp(key: WindowSlot, isResize: Bool) {
+        pendingReapply[key]?.cancel()
+
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.pendingReapply.removeValue(forKey: key)
+
+            if NSEvent.pressedMouseButtons != 0 {
+                self.scheduleReapplyWhenMouseUp(key: key, isResize: isResize)
+                return
+            }
+
+            self.overlay.hide()
+
+            guard !self.reapplying.contains(key),
+                  let storedElement = self.elements[key] else { return }
+
+            if isResize {
+                guard let screen = NSScreen.main,
+                      let axElement = self.elements[key],
+                      let actualSize = readSize(of: axElement) else { return }
+
+                let allWindows = self.allTrackedWindows()
+                self.reapplying.formUnion(allWindows)
+                SnapService.shared.resize(key: key, actualSize: actualSize, screen: screen)
+                ReapplyHandler.reapplyAll()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.reapplying.subtract(allWindows)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    guard let screen = NSScreen.main else { return }
+                    PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+                }
+            } else {
+                // Move: directional insert, center swap, or restore.
+                if let drop = ReapplyHandler.findDropTarget(forKey: key) {
+                    let allWindows = self.allTrackedWindows()
+                    self.reapplying.formUnion(allWindows)
+                    if drop.zone == .center {
+                        SnapService.shared.swap(key, drop.window)
+                    } else if let screen = NSScreen.main {
+                        SnapService.shared.insertAdjacent(dragged: key, target: drop.window,
+                                                          zone: drop.zone, screen: screen)
+                    }
+                    ReapplyHandler.reapplyAll()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        self?.reapplying.subtract(allWindows)
+                    }
+                } else {
+                    self.reapplying.insert(key)
+                    ReapplyHandler.reapply(window: storedElement, key: key)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        self?.reapplying.remove(key)
+                    }
+                }
+            }
+        }
+
+        pendingReapply[key] = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
+    }
+
+    private func allTrackedWindows() -> Set<WindowSlot> {
+        let leaves = SnapService.shared.leavesInVisibleRoot()
+        return Set(leaves.compactMap { leaf -> WindowSlot? in
+            if case .window(let w) = leaf { return w }
+            return nil
+        })
     }
 }

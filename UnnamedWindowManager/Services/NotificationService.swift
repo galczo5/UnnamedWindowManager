@@ -1,10 +1,6 @@
-//
-//  NotificationService.swift
-//  UnnamedWindowManager
-//
-
 import UserNotifications
 
+// Posts user-facing system notifications via UNUserNotificationCenter.
 final class NotificationService {
     static let shared = NotificationService()
     private init() {}

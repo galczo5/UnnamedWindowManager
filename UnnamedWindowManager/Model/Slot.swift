@@ -1,8 +1,3 @@
-//
-//  Slot.swift
-//  UnnamedWindowManager
-//
-
 import Foundation
 
 enum Orientation {
@@ -58,15 +53,12 @@ struct VerticalSlot {
     var fraction: CGFloat = 1.0
 }
 
-/// Unified slot type for tree traversal.
-/// `indirect` breaks the recursive size cycle (HorizontalSlot/VerticalSlot contain [Slot]).
+// Unified slot type used throughout the layout tree; indirect breaks the recursive size cycle.
 indirect enum Slot {
     case window(WindowSlot)
     case horizontal(HorizontalSlot)
     case vertical(VerticalSlot)
-}
 
-extension Slot {
     var id: UUID {
         switch self {
         case .window(let w):     return w.id

@@ -1,10 +1,6 @@
-//
-//  SnapService.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 
+// High-level operations on the snap layout: adding, removing, resizing, and repositioning windows.
 final class SnapService {
     static let shared = SnapService()
     private init() {}
@@ -66,7 +62,6 @@ final class SnapService {
                 targetRootID = id
             }
 
-            // No-op: window is already in the correct root.
             if tree.isTracked(key, in: store.roots[targetRootID]!) { return }
 
             // Cross-root migration: remove from old root, destroy root if now empty.
@@ -78,7 +73,6 @@ final class SnapService {
                 }
             }
 
-            // Insert into target root.
             store.windowCounts[targetRootID, default: 0] += 1
             let order = store.windowCounts[targetRootID]!
             let newLeaf = Slot.window(WindowSlot(

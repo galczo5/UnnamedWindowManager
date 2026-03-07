@@ -1,11 +1,7 @@
-//
-//  OrientFlipHandler.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Reads and flips the orientation of the focused window's parent container.
 struct OrientFlipHandler {
 
     /// Returns the orientation of the direct parent container of the focused tracked window,

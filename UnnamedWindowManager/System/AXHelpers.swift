@@ -1,8 +1,3 @@
-//
-//  AXHelpers.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 

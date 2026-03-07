@@ -1,10 +1,3 @@
-//
-//  UnnamedWindowManagerApp.swift
-//  UnnamedWindowManager
-//
-//  Created by Kamil on 02/03/2026.
-//
-
 import SwiftUI
 import AppKit
 import ApplicationServices
@@ -24,6 +17,7 @@ final class MenuState {
     }
 }
 
+// App entry point; defines the menu bar extra and coordinates startup initialization.
 @main
 struct UnnamedWindowManagerApp: App {
     @State private var menuState = MenuState()

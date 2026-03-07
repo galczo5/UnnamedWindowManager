@@ -1,10 +1,6 @@
-//
-//  PositionService.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 
+// Computes pixel sizes for all slots given the root dimensions and their fractional shares.
 struct PositionService {
 
     func recomputeSizes(_ root: inout RootSlot, width: CGFloat, height: CGFloat) {

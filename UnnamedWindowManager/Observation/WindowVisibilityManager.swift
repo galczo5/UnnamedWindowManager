@@ -1,11 +1,7 @@
-//
-//  WindowVisibilityManager.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Manages auto-minimization state for snapped windows, restoring them when the layout changes.
 final class WindowVisibilityManager {
     static let shared = WindowVisibilityManager()
     private init() {}

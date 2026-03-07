@@ -1,10 +1,6 @@
-//
-//  PostResizeValidator.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 
+// Checks snapped windows after a resize and corrects any that refused the target size.
 enum PostResizeValidator {
 
     static func checkAndFixRefusals(windows: Set<WindowSlot>, screen: NSScreen) {

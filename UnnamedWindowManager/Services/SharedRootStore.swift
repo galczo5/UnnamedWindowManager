@@ -1,10 +1,6 @@
-//
-//  SharedRootStore.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 
+// Thread-safe store for all layout roots, accessed via a concurrent dispatch queue.
 final class SharedRootStore {
     static let shared = SharedRootStore()
     private init() {}

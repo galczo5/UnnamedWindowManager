@@ -1,11 +1,7 @@
-//
-//  Config.swift
-//  UnnamedWindowManager
-//
-
 import CoreGraphics
 import AppKit
 
+// Static layout and visual configuration constants.
 enum Config {
     /// Gap between snapped windows and screen edges (points).
     static let gap: CGFloat = 5

@@ -1,8 +1,3 @@
-//
-//  AutoSnapObserver.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
@@ -21,6 +16,7 @@ private func autoSnapCallback(
     obs.handleWindowCreated(pid: pid)
 }
 
+// Observes window creation and app activation events to auto-snap new windows into the layout.
 final class AutoSnapObserver {
     static let shared = AutoSnapObserver()
     private init() {}
@@ -54,7 +50,6 @@ final class AutoSnapObserver {
         removeAppObserver(pid: app.processIdentifier)
     }
 
-    // Called from autoSnapCallback on the main thread.
     func handleWindowCreated(pid: pid_t) {
         // Capture screen state NOW — before the new window appears in CGWindowList.
         var screenWasEmpty = false

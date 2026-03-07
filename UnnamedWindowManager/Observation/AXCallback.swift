@@ -1,8 +1,3 @@
-//
-//  AXCallback.swift
-//  UnnamedWindowManager
-//
-
 import ApplicationServices
 
 // C-compatible callback — must not capture any Swift context.

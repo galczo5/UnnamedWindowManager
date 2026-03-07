@@ -1,10 +1,6 @@
-//
-//  SlotTreeService.swift
-//  UnnamedWindowManager
-//
-
 import Foundation
 
+// Pure tree manipulation: inserting, removing, querying, and restructuring slots in the layout tree.
 struct SlotTreeService {
 
     // MARK: - Queries

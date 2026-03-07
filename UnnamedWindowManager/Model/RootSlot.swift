@@ -1,8 +1,3 @@
-//
-//  RootSlot.swift
-//  UnnamedWindowManager
-//
-
 import Foundation
 
 /// The root of the slot tree for a single screen.

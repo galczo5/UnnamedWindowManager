@@ -1,11 +1,7 @@
-//
-//  ReapplyHandler.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Coordinates layout reapplication, drop-target detection, and size clamping.
 struct ReapplyHandler {
 
     /// Reapplies the layout for a single already-tracked window.

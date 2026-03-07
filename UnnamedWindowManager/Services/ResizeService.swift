@@ -1,10 +1,6 @@
-//
-//  ResizeService.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 
+// Adjusts slot fractions in the tree when the user manually resizes a snapped window.
 struct ResizeService {
 
     /// Minimum fraction any slot may shrink to (prevents zero-size tiles).

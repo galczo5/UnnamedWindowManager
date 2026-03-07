@@ -1,11 +1,7 @@
-//
-//  OrganizeHandler.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Snaps all visible on-screen windows into the layout in one batch, ordered by position.
 struct OrganizeHandler {
 
     /// Snaps all visible on-screen windows into the layout, ordered left-to-right by their x-origin.

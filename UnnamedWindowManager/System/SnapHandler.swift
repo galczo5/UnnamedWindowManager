@@ -1,11 +1,7 @@
-//
-//  SnapHandler.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Entry point for snapping the focused window into the layout.
 struct SnapHandler {
 
     /// Snaps the frontmost focused window into the layout.

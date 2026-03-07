@@ -1,11 +1,7 @@
-//
-//  UnsnapHandler.swift
-//  UnnamedWindowManager
-//
-
 import AppKit
 import ApplicationServices
 
+// Entry points for removing windows from the layout.
 struct UnsnapHandler {
 
     /// Removes the frontmost focused window from the layout and reflows all remaining windows.
