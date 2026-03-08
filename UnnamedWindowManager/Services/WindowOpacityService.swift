@@ -6,12 +6,13 @@ final class WindowOpacityService {
     private init() {}
 
     private var overlay: NSWindow?
+    private let animationDuration: TimeInterval = 0.15
 
     /// Shows the full-screen dim overlay just below `focusedHash`.
     /// No-op if `dimInactiveWindows` is false or no visible layout root exists.
     func dim(focusedHash: UInt) {
         guard Config.dimInactiveWindows else {
-            hideOverlay()
+            fadeOut()
             return
         }
         guard SnapService.shared.snapshotVisibleRoot() != nil else { return }
@@ -24,23 +25,41 @@ final class WindowOpacityService {
 
         let screen = NSScreen.screens[0]
         win.setFrame(screen.frame, display: false)
-        win.order(.below, relativeTo: Int(focusedHash))
+
+        // If the window isn't visible yet, start from zero so the fade-in is smooth.
+        if !win.isVisible {
+            win.alphaValue = 0
+            win.order(.below, relativeTo: Int(focusedHash))
+        } else {
+            win.order(.below, relativeTo: Int(focusedHash))
+        }
+
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = animationDuration
+            win.animator().alphaValue = 1
+        }
     }
 
-    /// Hides the dim overlay.
+    /// Fades out and hides the dim overlay.
     func restore(hash: UInt) {
-        hideOverlay()
+        fadeOut()
     }
 
-    /// Hides the dim overlay.
+    /// Fades out and hides the dim overlay.
     func restoreAll() {
-        hideOverlay()
+        fadeOut()
     }
 
     // MARK: - Private
 
-    private func hideOverlay() {
-        overlay?.orderOut(nil)
+    private func fadeOut() {
+        guard let win = overlay, win.isVisible else { return }
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = animationDuration
+            win.animator().alphaValue = 0
+        }, completionHandler: {
+            win.orderOut(nil)
+        })
     }
 
     private func makeOverlay() -> NSWindow {
