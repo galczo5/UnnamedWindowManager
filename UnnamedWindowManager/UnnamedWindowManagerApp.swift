@@ -41,8 +41,10 @@ struct UnnamedWindowManagerApp: App {
         MenuBarExtra {
             Button(menuLabel("Snap",        Config.snapShortcut))      { SnapHandler.snap()        }
             Button(menuLabel("Unsnap",      Config.unsnapShortcut))    { UnsnapHandler.unsnap()    }
-            Button(menuLabel("Unsnap all",  Config.unsnapAllShortcut)) { UnsnapHandler.unsnapAll() }
-            Button(menuLabel("Organize",    Config.organizeShortcut))  { OrganizeHandler.organize() }
+            Button(menuLabel("Unsnap all",    Config.unsnapAllShortcut))    { UnsnapHandler.unsnapAll() }
+            Button(menuLabel("Organize",      Config.organizeShortcut))      { OrganizeHandler.organize() }
+            Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UnsnapHandler.unsnapAll(); OrganizeHandler.organize() }
+            Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
             let orientLabel: String = {
                 switch menuState.parentOrientation {

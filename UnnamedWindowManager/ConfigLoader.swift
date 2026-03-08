@@ -112,6 +112,10 @@ struct ConfigLoader {
             unsnap: "\(sh.unsnap ?? "")"
             # Global keyboard shortcut for Unsnap All. Empty string disables.
             unsnapAll: "\(sh.unsnapAll ?? "")"
+            # Global keyboard shortcut for Reset Layout. Empty string disables.
+            resetLayout: "\(sh.resetLayout ?? "")"
+            # Global keyboard shortcut for Refresh. Empty string disables.
+            refresh: "\(sh.refresh ?? "")"
             # Global keyboard shortcut for Flip Orientation. Empty string disables.
             flipOrientation: "\(sh.flipOrientation ?? "")"
             # Global keyboard shortcuts for focusing the nearest snapped window in a direction.

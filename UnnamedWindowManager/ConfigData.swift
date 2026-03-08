@@ -47,6 +47,8 @@ struct ConfigData: Codable {
         var snap: String?
         var unsnap: String?
         var unsnapAll: String?
+        var resetLayout: String?
+        var refresh: String?
         var flipOrientation: String?
         var focusLeft: String?
         var focusRight: String?
@@ -59,7 +61,7 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(autoSnap: true, autoOrganize: true, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 0.15, dimColor: "black"),
-        shortcuts: ShortcutsConfig(organize: "cmd+'", snap: "", unsnap: "", unsnapAll: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down")
+        shortcuts: ShortcutsConfig(organize: "cmd+'", snap: "", unsnap: "", unsnapAll: "", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down")
     ))
 
     /// Full key paths of fields absent from the YAML file.
@@ -89,6 +91,8 @@ struct ConfigData: Codable {
         check(s?.shortcuts?.snap,               "config.shortcuts.snap")
         check(s?.shortcuts?.unsnap,             "config.shortcuts.unsnap")
         check(s?.shortcuts?.unsnapAll,          "config.shortcuts.unsnapAll")
+        check(s?.shortcuts?.resetLayout,        "config.shortcuts.resetLayout")
+        check(s?.shortcuts?.refresh,            "config.shortcuts.refresh")
         check(s?.shortcuts?.flipOrientation,    "config.shortcuts.flipOrientation")
         check(s?.shortcuts?.focusLeft,          "config.shortcuts.focusLeft")
         check(s?.shortcuts?.focusRight,         "config.shortcuts.focusRight")
@@ -133,6 +137,8 @@ struct ConfigData: Codable {
                 snap:            s?.shortcuts?.snap            ?? d.shortcuts!.snap,
                 unsnap:          s?.shortcuts?.unsnap          ?? d.shortcuts!.unsnap,
                 unsnapAll:       s?.shortcuts?.unsnapAll       ?? d.shortcuts!.unsnapAll,
+                resetLayout:     s?.shortcuts?.resetLayout     ?? d.shortcuts!.resetLayout,
+                refresh:         s?.shortcuts?.refresh         ?? d.shortcuts!.refresh,
                 flipOrientation: s?.shortcuts?.flipOrientation ?? d.shortcuts!.flipOrientation,
                 focusLeft:       s?.shortcuts?.focusLeft       ?? d.shortcuts!.focusLeft,
                 focusRight:      s?.shortcuts?.focusRight      ?? d.shortcuts!.focusRight,

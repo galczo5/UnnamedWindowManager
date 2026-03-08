@@ -44,6 +44,8 @@ final class Config {
     static var snapShortcut: String            { shared.s.shortcuts!.snap! }
     static var unsnapShortcut: String          { shared.s.shortcuts!.unsnap! }
     static var unsnapAllShortcut: String       { shared.s.shortcuts!.unsnapAll! }
+    static var resetLayoutShortcut: String     { shared.s.shortcuts!.resetLayout! }
+    static var refreshShortcut: String         { shared.s.shortcuts!.refresh! }
     static var flipOrientationShortcut: String { shared.s.shortcuts!.flipOrientation! }
     static var focusLeftShortcut: String       { shared.s.shortcuts!.focusLeft! }
     static var focusRightShortcut: String      { shared.s.shortcuts!.focusRight! }
