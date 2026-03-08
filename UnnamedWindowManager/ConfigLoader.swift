@@ -97,6 +97,8 @@ struct ConfigLoader {
             dimInactiveWindows: \(bh.dimInactiveWindows ?? true)
             # Opacity of non-focused managed windows (0.0–1.0). Only used when dimInactiveWindows is true.
             dimInactiveOpacity: \(num(bh.dimInactiveOpacity))
+            # Duration in seconds of the dim overlay fade-in and fade-out animation (0 to disable).
+            dimAnimationDuration: \(num(bh.dimAnimationDuration))
           shortcuts:
             # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             organize: "\(sh.organize ?? "cmd+'")"

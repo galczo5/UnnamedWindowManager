@@ -58,9 +58,16 @@ final class FocusObserver {
         }
         let axWindow = ref as! AXUIElement
 
+        // Raise the focused window first so the window server reflects the correct
+        // Z-order before the overlay is positioned below it.
+        AXUIElementPerformAction(axWindow, kAXRaiseAction as CFString)
+
         let elements = ResizeObserver.shared.elements
         if let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }) {
-            WindowOpacityService.shared.dim(focusedHash: key.windowHash)
+            let hash = key.windowHash
+            DispatchQueue.main.async {
+                WindowOpacityService.shared.dim(focusedHash: hash)
+            }
         } else {
             // Focused window is not managed; remove all dim overlays.
             WindowOpacityService.shared.restoreAll()

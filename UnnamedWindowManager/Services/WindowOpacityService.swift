@@ -6,7 +6,7 @@ final class WindowOpacityService {
     private init() {}
 
     private var overlay: NSWindow?
-    private let animationDuration: TimeInterval = 0.15
+    private var animationDuration: TimeInterval { TimeInterval(Config.dimAnimationDuration) }
 
     /// Shows the full-screen dim overlay just below `focusedHash`.
     /// No-op if `dimInactiveWindows` is false or no visible layout root exists.

@@ -32,6 +32,7 @@ final class Config {
     static var dropZoneHoverDelay: CGFloat     { shared.s.behavior!.dropZoneHoverDelay! }
     static var dimInactiveWindows: Bool        { shared.s.behavior!.dimInactiveWindows! }
     static var dimInactiveOpacity: CGFloat     { shared.s.behavior!.dimInactiveOpacity! }
+    static var dimAnimationDuration: CGFloat   { shared.s.behavior!.dimAnimationDuration! }
     static var organizeShortcut: String        { shared.s.shortcuts!.organize! }
     static var snapShortcut: String            { shared.s.shortcuts!.snap! }
     static var unsnapShortcut: String          { shared.s.shortcuts!.unsnap! }
