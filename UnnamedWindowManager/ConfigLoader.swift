@@ -93,6 +93,10 @@ struct ConfigLoader {
             autoOrganize: \(bh.autoOrganize ?? true)
             # Time in seconds a window must hover over a drop zone before the operation is allowed (0 to disable).
             dropZoneHoverDelay: \(num(bh.dropZoneHoverDelay))
+            # Dim non-focused managed windows when a layout is active.
+            dimInactiveWindows: \(bh.dimInactiveWindows ?? true)
+            # Opacity of non-focused managed windows (0.0–1.0). Only used when dimInactiveWindows is true.
+            dimInactiveOpacity: \(num(bh.dimInactiveOpacity))
           shortcuts:
             # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             organize: "\(sh.organize ?? "cmd+'")"

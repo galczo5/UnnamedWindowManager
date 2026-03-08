@@ -33,6 +33,7 @@ struct UnnamedWindowManagerApp: App {
         if Config.autoSnap || Config.autoOrganize {
             AutoSnapObserver.shared.start()
         }
+        FocusObserver.shared.start()
     }
 
     var body: some Scene {
@@ -63,6 +64,7 @@ struct UnnamedWindowManagerApp: App {
             Button("Reload config file") {
                 Config.shared.reload()
                 KeybindingService.shared.restart()
+                if !Config.dimInactiveWindows { WindowOpacityService.shared.restoreAll() }
                 ReapplyHandler.reapplyAll()
             }
             Button("Reset config file") {

@@ -62,6 +62,7 @@ final class ResizeObserver {
         Logger.shared.log("[\(eventLabel)] key=\(key.windowHash) pid=\(pid)")
 
         if notification == kElementDestroyed as String {
+            WindowOpacityService.shared.restore(hash: key.windowHash)
             if let screen = NSScreen.main {
                 SnapService.shared.removeAndReflow(key, screen: screen)
             } else {
