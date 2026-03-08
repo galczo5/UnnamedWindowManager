@@ -34,6 +34,7 @@ struct UnnamedWindowManagerApp: App {
             AutoSnapObserver.shared.start()
         }
         FocusObserver.shared.start()
+        ScreenChangeObserver.shared.start()
     }
 
     var body: some Scene {

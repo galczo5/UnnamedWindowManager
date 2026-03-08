@@ -51,11 +51,17 @@ struct OrganizeHandler {
         }
 
         // Snap candidates in left-to-right order, then reapply layout once.
+        var snappedKeys: Set<WindowSlot> = []
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
             let key = windowSlot(for: item.window, pid: item.pid)
             SnapService.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
+            snappedKeys.insert(key)
         }
         ReapplyHandler.reapplyAll()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            guard let screen = NSScreen.main else { return }
+            PostResizeValidator.checkAndFixRefusals(windows: snappedKeys, screen: screen)
+        }
     }
 }

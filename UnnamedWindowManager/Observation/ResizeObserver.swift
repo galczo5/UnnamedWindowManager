@@ -178,6 +178,10 @@ final class ResizeObserver {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                         self?.reapplying.subtract(allWindows)
                     }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        guard let screen = NSScreen.main else { return }
+                        PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+                    }
                 } else {
                     self.reapplying.insert(key)
                     ReapplyHandler.reapply(window: storedElement, key: key)

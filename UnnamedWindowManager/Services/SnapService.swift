@@ -150,6 +150,15 @@ final class SnapService {
         }
     }
 
+    func recomputeVisibleRootSizes(screen: NSScreen) {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleRootID() else { return }
+            position.recomputeSizes(&store.roots[id]!,
+                                    width: screen.visibleFrame.width  - Config.gap * 2,
+                                    height: screen.visibleFrame.height - Config.gap * 2)
+        }
+    }
+
     func flipParentOrientation(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
             guard let id = rootID(containing: key) else { return }
