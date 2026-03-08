@@ -150,24 +150,13 @@ final class ResizeObserver {
                       let axElement = self.elements[key],
                       let actualSize = readSize(of: axElement) else { return }
 
-                let allWindows = self.allTrackedWindows()
-                self.reapplying.formUnion(allWindows)
                 SnapService.shared.resize(key: key, actualSize: actualSize, screen: screen)
                 ReapplyHandler.reapplyAll()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.reapplying.subtract(allWindows)
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    guard let screen = NSScreen.main else { return }
-                    PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
-                }
             } else {
                 // Move: directional insert, center swap, or restore.
                 let hoverDuration = hoverStart.map { Date().timeIntervalSince($0) } ?? 0
                 let dropAllowed = hoverDuration >= Config.dropZoneHoverDelay
                 if dropAllowed, let drop = ReapplyHandler.findDropTarget(forKey: key) {
-                    let allWindows = self.allTrackedWindows()
-                    self.reapplying.formUnion(allWindows)
                     if drop.zone == .center {
                         SnapService.shared.swap(key, drop.window)
                     } else if let screen = NSScreen.main {
@@ -175,13 +164,6 @@ final class ResizeObserver {
                                                           zone: drop.zone, screen: screen)
                     }
                     ReapplyHandler.reapplyAll()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                        self?.reapplying.subtract(allWindows)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        guard let screen = NSScreen.main else { return }
-                        PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
-                    }
                 } else {
                     self.reapplying.insert(key)
                     ReapplyHandler.reapply(window: storedElement, key: key)
@@ -207,11 +189,4 @@ final class ResizeObserver {
         dropTargetEnteredAt = Date()
     }
 
-    private func allTrackedWindows() -> Set<WindowSlot> {
-        let leaves = SnapService.shared.leavesInVisibleRoot()
-        return Set(leaves.compactMap { leaf -> WindowSlot? in
-            if case .window(let w) = leaf { return w }
-            return nil
-        })
-    }
 }

@@ -12,26 +12,38 @@ struct ReapplyHandler {
         LayoutService.shared.applyLayout(screen: screen)
     }
 
-    /// Reapplies the layout for all snapped windows and refreshes their visibility state.
-    /// Marks all windows as reapplying for 200 ms to suppress re-entrant AX notifications.
+    /// Reapplies the layout for all snapped windows, debounced to 100 ms.
+    /// Multiple calls within 100 ms collapse into one execution. After the layout
+    /// runs, PostResizeValidator fires 300 ms later to catch any refusing windows.
     static func reapplyAll() {
-        guard let screen = NSScreen.main else { return }
-        pruneOffScreenWindows(screen: screen)
-        let leaves = SnapService.shared.leavesInVisibleRoot()
-        let allWindows = Set(leaves.compactMap { leaf -> WindowSlot? in
-            if case .window(let w) = leaf { return w }
-            return nil
-        })
-        ResizeObserver.shared.reapplying.formUnion(allWindows)
-        LayoutService.shared.applyLayout(screen: screen)
-        WindowVisibilityManager.shared.applyVisibility()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            ResizeObserver.shared.reapplying.subtract(allWindows)
+        pendingLayout?.cancel()
+        let work = DispatchWorkItem {
+            guard let screen = NSScreen.main else { return }
+            pruneOffScreenWindows(screen: screen)
+            let leaves = SnapService.shared.leavesInVisibleRoot()
+            let allWindows = Set(leaves.compactMap { leaf -> WindowSlot? in
+                if case .window(let w) = leaf { return w }
+                return nil
+            })
+            ResizeObserver.shared.reapplying.formUnion(allWindows)
+            LayoutService.shared.applyLayout(screen: screen)
+            WindowVisibilityManager.shared.applyVisibility()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                ResizeObserver.shared.reapplying.subtract(allWindows)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                guard let screen = NSScreen.main else { return }
+                PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+            }
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .snapStateChanged, object: nil)
+            }
         }
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .snapStateChanged, object: nil)
-        }
+        pendingLayout = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: work)
     }
+
+    private static var pendingLayout: DispatchWorkItem?
 
     /// Returns the drop target (window + zone) under the current mouse cursor,
     /// excluding `draggedKey` itself. Returns `nil` when the cursor is not over any

@@ -59,9 +59,5 @@ struct OrganizeHandler {
             snappedKeys.insert(key)
         }
         ReapplyHandler.reapplyAll()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            guard let screen = NSScreen.main else { return }
-            PostResizeValidator.checkAndFixRefusals(windows: snappedKeys, screen: screen)
-        }
     }
 }

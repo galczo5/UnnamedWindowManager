@@ -40,7 +40,7 @@ final class SnapService {
 
     func parentOrientation(of key: WindowSlot) -> Orientation? {
         store.queue.sync {
-            guard let id = rootID(containing: key) else { return nil }
+            guard let id = rootIDSync(containing: key) else { return nil }
             return treeQuery.findParentOrientation(of: key, in: store.roots[id]!)
         }
     }
@@ -67,7 +67,7 @@ final class SnapService {
             if treeQuery.isTracked(key, in: store.roots[targetRootID]!) { return }
 
             // Cross-root migration: remove from old root, destroy root if now empty.
-            if let srcID = rootID(containing: key) {
+            if let srcID = rootIDSync(containing: key) {
                 treeMutation.removeLeaf(key, from: &store.roots[srcID]!)
                 if store.roots[srcID]!.children.isEmpty {
                     store.roots.removeValue(forKey: srcID)
@@ -108,7 +108,7 @@ final class SnapService {
 
     func remove(_ key: WindowSlot) {
         store.queue.async(flags: .barrier) {
-            guard let id = self.rootID(containing: key) else { return }
+            guard let id = self.rootIDSync(containing: key) else { return }
             self.treeMutation.removeLeaf(key, from: &self.store.roots[id]!)
             if self.store.roots[id]!.children.isEmpty {
                 self.store.roots.removeValue(forKey: id)
@@ -119,7 +119,7 @@ final class SnapService {
 
     func removeAndReflow(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let id = rootID(containing: key) else { return }
+            guard let id = rootIDSync(containing: key) else { return }
             treeMutation.removeLeaf(key, from: &store.roots[id]!)
             if store.roots[id]!.children.isEmpty {
                 store.roots.removeValue(forKey: id)
@@ -134,7 +134,7 @@ final class SnapService {
 
     func resize(key: WindowSlot, actualSize: CGSize, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let id = rootID(containing: key) else { return }
+            guard let id = rootIDSync(containing: key) else { return }
             resizer.applyResize(key: key, actualSize: actualSize, root: &store.roots[id]!)
             position.recomputeSizes(&store.roots[id]!,
                                     width: screen.visibleFrame.width  - Config.gap * 2,
@@ -144,7 +144,7 @@ final class SnapService {
 
     func swap(_ keyA: WindowSlot, _ keyB: WindowSlot) {
         store.queue.sync(flags: .barrier) {
-            guard let id = rootID(containing: keyA),
+            guard let id = rootIDSync(containing: keyA),
                   treeQuery.isTracked(keyB, in: store.roots[id]!) else { return }
             treeInsert.swap(keyA, keyB, in: &store.roots[id]!)
         }
@@ -161,7 +161,7 @@ final class SnapService {
 
     func flipParentOrientation(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let id = rootID(containing: key) else { return }
+            guard let id = rootIDSync(containing: key) else { return }
             treeMutation.flipParentOrientation(of: key, in: &store.roots[id]!)
             position.recomputeSizes(&store.roots[id]!,
                                     width: screen.visibleFrame.width  - Config.gap * 2,
@@ -172,8 +172,8 @@ final class SnapService {
     func insertAdjacent(dragged: WindowSlot, target: WindowSlot,
                         zone: DropZone, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let draggedRootID = rootID(containing: dragged),
-                  let targetRootID  = rootID(containing: target),
+            guard let draggedRootID = rootIDSync(containing: dragged),
+                  let targetRootID  = rootIDSync(containing: target),
                   let draggedSlot   = treeQuery.findLeafSlot(dragged, in: store.roots[draggedRootID]!),
                   case .window(let draggedWindow) = draggedSlot else { return }
 
@@ -196,10 +196,16 @@ final class SnapService {
         }
     }
 
+    func rootID(containing key: WindowSlot) -> UUID? {
+        store.queue.sync {
+            store.roots.keys.first { treeQuery.isTracked(key, in: store.roots[$0]!) }
+        }
+    }
+
     // MARK: - Private
 
     /// Must be called inside a `store.queue` barrier or sync block.
-    private func rootID(containing key: WindowSlot) -> UUID? {
+    private func rootIDSync(containing key: WindowSlot) -> UUID? {
         store.roots.keys.first { treeQuery.isTracked(key, in: store.roots[$0]!) }
     }
 

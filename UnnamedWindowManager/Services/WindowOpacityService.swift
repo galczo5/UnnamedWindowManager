@@ -1,24 +1,29 @@
 import AppKit
 
-// Dims non-focused managed windows using a single full-screen overlay ordered below the focused window.
+// Dims non-focused managed windows using per-root full-screen overlays, one per organized layout root.
+// Each overlay lives on the space its root belongs to, so switching spaces never causes a fade transition.
 final class WindowOpacityService {
     static let shared = WindowOpacityService()
     private init() {}
 
-    private var overlay: NSWindow?
+    private var overlays: [UUID: NSWindow] = [:]
+    private var pendingFadeOuts: [UUID: DispatchWorkItem] = [:]
+    // Incremented per-root on every dim() call to invalidate stale fadeOut completion handlers.
+    private var dimGenerations: [UUID: Int] = [:]
     private var animationDuration: TimeInterval { TimeInterval(Config.dimAnimationDuration) }
 
-    /// Shows the full-screen dim overlay just below `focusedHash`.
-    /// No-op if `dimInactiveWindows` is false or no visible layout root exists.
-    func dim(focusedHash: UInt) {
+    func dim(rootID: UUID, focusedHash: UInt) {
         guard Config.dimInactiveWindows else {
-            fadeOut()
+            scheduleFadeOut(rootID: rootID)
             return
         }
-        guard SnapService.shared.snapshotVisibleRoot() != nil else { return }
 
-        let win = overlay ?? makeOverlay()
-        overlay = win
+        pendingFadeOuts[rootID]?.cancel()
+        pendingFadeOuts.removeValue(forKey: rootID)
+        dimGenerations[rootID, default: 0] += 1
+
+        let win = overlays[rootID] ?? makeOverlay()
+        overlays[rootID] = win
 
         win.contentView?.layer?.backgroundColor =
             Config.dimColor.withAlphaComponent(1 - Config.dimInactiveOpacity).cgColor
@@ -26,7 +31,6 @@ final class WindowOpacityService {
         let screen = NSScreen.screens[0]
         win.setFrame(screen.frame, display: false)
 
-        // If the window isn't visible yet, start from zero so the fade-in is smooth.
         if !win.isVisible {
             win.alphaValue = 0
             win.order(.below, relativeTo: Int(focusedHash))
@@ -40,24 +44,40 @@ final class WindowOpacityService {
         }
     }
 
-    /// Fades out and hides the dim overlay.
     func restore(hash: UInt) {
-        fadeOut()
+        restoreAll()
     }
 
-    /// Fades out and hides the dim overlay.
     func restoreAll() {
-        fadeOut()
+        for rootID in overlays.keys {
+            scheduleFadeOut(rootID: rootID)
+        }
     }
 
     // MARK: - Private
 
-    private func fadeOut() {
-        guard let win = overlay, win.isVisible else { return }
+    // Defers the actual fade by one run-loop cycle so a rapid restoreAll()+dim() pair
+    // (e.g. from transient AX notifications during a Space switch) cancels before animating.
+    private func scheduleFadeOut(rootID: UUID) {
+        pendingFadeOuts[rootID]?.cancel()
+        guard let win = overlays[rootID], win.isVisible else { return }
+        let work = DispatchWorkItem { [weak self] in
+            self?.pendingFadeOuts.removeValue(forKey: rootID)
+            self?.fadeOut(rootID: rootID)
+        }
+        pendingFadeOuts[rootID] = work
+        DispatchQueue.main.async(execute: work)
+    }
+
+    private func fadeOut(rootID: UUID) {
+        guard let win = overlays[rootID], win.isVisible else { return }
+        dimGenerations[rootID, default: 0] += 1
+        let gen = dimGenerations[rootID]!
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = animationDuration
             win.animator().alphaValue = 0
-        }, completionHandler: {
+        }, completionHandler: { [weak self] in
+            guard let self, self.dimGenerations[rootID] == gen else { return }
             win.orderOut(nil)
         })
     }
@@ -67,7 +87,7 @@ final class WindowOpacityService {
         win.isOpaque = false
         win.backgroundColor = .clear
         win.ignoresMouseEvents = true
-        win.collectionBehavior = [.canJoinAllSpaces, .transient]
+        win.collectionBehavior = [.moveToActiveSpace, .transient]
 
         let view = NSView()
         view.wantsLayer = true

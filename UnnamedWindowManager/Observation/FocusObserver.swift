@@ -63,13 +63,14 @@ final class FocusObserver {
         AXUIElementPerformAction(axWindow, kAXRaiseAction as CFString)
 
         let elements = ResizeObserver.shared.elements
-        if let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }) {
+        if let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }),
+           let rootID = SnapService.shared.rootID(containing: key) {
             let hash = key.windowHash
             DispatchQueue.main.async {
-                WindowOpacityService.shared.dim(focusedHash: hash)
+                WindowOpacityService.shared.dim(rootID: rootID, focusedHash: hash)
             }
         } else {
-            // Focused window is not managed; remove all dim overlays.
+            // Focused window is not managed; hide all dim overlays.
             WindowOpacityService.shared.restoreAll()
         }
     }
