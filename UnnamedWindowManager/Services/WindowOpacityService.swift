@@ -21,7 +21,7 @@ final class WindowOpacityService {
         overlay = win
 
         win.contentView?.layer?.backgroundColor =
-            NSColor.black.withAlphaComponent(1 - Config.dimInactiveOpacity).cgColor
+            Config.dimColor.withAlphaComponent(1 - Config.dimInactiveOpacity).cgColor
 
         let screen = NSScreen.screens[0]
         win.setFrame(screen.frame, display: false)

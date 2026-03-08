@@ -31,13 +31,13 @@ final class SwapOverlay {
 
             let view = NSView()
             view.wantsLayer = true
-            view.layer?.backgroundColor = Config.overlayFillColor.cgColor
-            view.layer?.borderColor = Config.overlayBorderColor.cgColor
-            view.layer?.borderWidth = Config.overlayBorderWidth
-            view.layer?.cornerRadius = Config.overlayCornerRadius
             win.contentView = view
             window = win
         }
+        window?.contentView?.layer?.backgroundColor = Config.overlayFillColor.cgColor
+        window?.contentView?.layer?.borderColor = Config.overlayBorderColor.cgColor
+        window?.contentView?.layer?.borderWidth = Config.overlayBorderWidth
+        window?.contentView?.layer?.cornerRadius = Config.overlayCornerRadius
         window?.setFrame(frame, display: false)
         if let windowNumber {
             window?.order(.below, relativeTo: windowNumber)

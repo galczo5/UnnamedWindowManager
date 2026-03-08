@@ -27,12 +27,19 @@ final class Config {
     static var dropZoneTopFraction: CGFloat    { shared.s.dropZones!.topFraction! }
     static var overlayCornerRadius: CGFloat    { shared.s.overlay!.cornerRadius! }
     static var overlayBorderWidth: CGFloat     { shared.s.overlay!.borderWidth! }
+    static var overlayFillColor: NSColor {
+        (SystemColor.resolve(shared.s.overlay!.overlayColor!) ?? .systemBlue).withAlphaComponent(0.2)
+    }
+    static var overlayBorderColor: NSColor {
+        (SystemColor.resolve(shared.s.overlay!.overlayColor!) ?? .systemBlue).withAlphaComponent(0.8)
+    }
     static var autoSnap: Bool                  { shared.s.behavior!.autoSnap! }
     static var autoOrganize: Bool              { shared.s.behavior!.autoOrganize! }
     static var dropZoneHoverDelay: CGFloat     { shared.s.behavior!.dropZoneHoverDelay! }
     static var dimInactiveWindows: Bool        { shared.s.behavior!.dimInactiveWindows! }
     static var dimInactiveOpacity: CGFloat     { shared.s.behavior!.dimInactiveOpacity! }
     static var dimAnimationDuration: CGFloat   { shared.s.behavior!.dimAnimationDuration! }
+    static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
     static var organizeShortcut: String        { shared.s.shortcuts!.organize! }
     static var snapShortcut: String            { shared.s.shortcuts!.snap! }
     static var unsnapShortcut: String          { shared.s.shortcuts!.unsnap! }
@@ -43,7 +50,5 @@ final class Config {
     static var focusUpShortcut: String         { shared.s.shortcuts!.focusUp! }
     static var focusDownShortcut: String       { shared.s.shortcuts!.focusDown! }
 
-    static let overlayFillColor: NSColor   = .systemBlue.withAlphaComponent(0.2)
-    static let overlayBorderColor: NSColor  = .systemBlue.withAlphaComponent(0.8)
-    static let logFilePath: String          = NSHomeDirectory() + "/.unnamed.log"
+    static let logFilePath: String = NSHomeDirectory() + "/.unnamed.log"
 }

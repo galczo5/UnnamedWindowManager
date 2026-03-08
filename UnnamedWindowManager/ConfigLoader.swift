@@ -86,6 +86,8 @@ struct ConfigLoader {
             cornerRadius: \(num(ov.cornerRadius))
             # Border width of the swap-target overlay rectangle (points).
             borderWidth: \(num(ov.borderWidth))
+            # Accent color of the drop-zone overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
+            overlayColor: \(ov.overlayColor ?? "blue")
           behavior:
             # Automatically snap new windows into the layout when at least one snapped window is visible.
             autoSnap: \(bh.autoSnap ?? true)
@@ -99,6 +101,8 @@ struct ConfigLoader {
             dimInactiveOpacity: \(num(bh.dimInactiveOpacity))
             # Duration in seconds of the dim overlay fade-in and fade-out animation (0 to disable).
             dimAnimationDuration: \(num(bh.dimAnimationDuration))
+            # Color of the dim overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
+            dimColor: \(bh.dimColor ?? "black")
           shortcuts:
             # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             organize: "\(sh.organize ?? "cmd+'")"

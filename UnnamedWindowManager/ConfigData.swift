@@ -29,6 +29,7 @@ struct ConfigData: Codable {
     struct OverlayConfig: Codable {
         var cornerRadius: CGFloat?
         var borderWidth: CGFloat?
+        var overlayColor: String?
     }
 
     struct BehaviorConfig: Codable {
@@ -38,6 +39,7 @@ struct ConfigData: Codable {
         var dimInactiveWindows: Bool?
         var dimInactiveOpacity: CGFloat?
         var dimAnimationDuration: CGFloat?
+        var dimColor: String?
     }
 
     struct ShortcutsConfig: Codable {
@@ -55,8 +57,8 @@ struct ConfigData: Codable {
     static let defaults = ConfigData(config: ConfigSection(
         layout: LayoutConfig(gap: 5, fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
-        overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3),
-        behavior: BehaviorConfig(autoSnap: true, autoOrganize: true, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 0.15),
+        overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
+        behavior: BehaviorConfig(autoSnap: true, autoOrganize: true, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 0.15, dimColor: "black"),
         shortcuts: ShortcutsConfig(organize: "cmd+'", snap: "", unsnap: "", unsnapAll: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down")
     ))
 
@@ -75,12 +77,14 @@ struct ConfigData: Codable {
         check(s?.dropZones?.topFraction,         "config.dropZones.topFraction")
         check(s?.overlay?.cornerRadius,          "config.overlay.cornerRadius")
         check(s?.overlay?.borderWidth,           "config.overlay.borderWidth")
+        check(s?.overlay?.overlayColor,          "config.overlay.overlayColor")
         check(s?.behavior?.autoSnap,             "config.behavior.autoSnap")
         check(s?.behavior?.autoOrganize,         "config.behavior.autoOrganize")
         check(s?.behavior?.dropZoneHoverDelay,   "config.behavior.dropZoneHoverDelay")
         check(s?.behavior?.dimInactiveWindows,   "config.behavior.dimInactiveWindows")
         check(s?.behavior?.dimInactiveOpacity,      "config.behavior.dimInactiveOpacity")
         check(s?.behavior?.dimAnimationDuration,       "config.behavior.dimAnimationDuration")
+        check(s?.behavior?.dimColor,                   "config.behavior.dimColor")
         check(s?.shortcuts?.organize,            "config.shortcuts.organize")
         check(s?.shortcuts?.snap,               "config.shortcuts.snap")
         check(s?.shortcuts?.unsnap,             "config.shortcuts.unsnap")
@@ -112,7 +116,8 @@ struct ConfigData: Codable {
             ),
             overlay: OverlayConfig(
                 cornerRadius: s?.overlay?.cornerRadius ?? d.overlay!.cornerRadius,
-                borderWidth:  s?.overlay?.borderWidth  ?? d.overlay!.borderWidth
+                borderWidth:  s?.overlay?.borderWidth  ?? d.overlay!.borderWidth,
+                overlayColor: s?.overlay?.overlayColor ?? d.overlay!.overlayColor
             ),
             behavior: BehaviorConfig(
                 autoSnap:            s?.behavior?.autoSnap            ?? d.behavior!.autoSnap,
@@ -120,7 +125,8 @@ struct ConfigData: Codable {
                 dropZoneHoverDelay:  s?.behavior?.dropZoneHoverDelay  ?? d.behavior!.dropZoneHoverDelay,
                 dimInactiveWindows:  s?.behavior?.dimInactiveWindows  ?? d.behavior!.dimInactiveWindows,
                 dimInactiveOpacity:       s?.behavior?.dimInactiveOpacity       ?? d.behavior!.dimInactiveOpacity,
-                dimAnimationDuration:     s?.behavior?.dimAnimationDuration     ?? d.behavior!.dimAnimationDuration
+                dimAnimationDuration:     s?.behavior?.dimAnimationDuration     ?? d.behavior!.dimAnimationDuration,
+                dimColor:                 s?.behavior?.dimColor                 ?? d.behavior!.dimColor
             ),
             shortcuts: ShortcutsConfig(
                 organize:        s?.shortcuts?.organize        ?? d.shortcuts!.organize,
