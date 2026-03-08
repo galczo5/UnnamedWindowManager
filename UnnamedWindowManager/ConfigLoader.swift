@@ -102,6 +102,11 @@ struct ConfigLoader {
             unsnapAll: "\(sh.unsnapAll ?? "")"
             # Global keyboard shortcut for Flip Orientation. Empty string disables.
             flipOrientation: "\(sh.flipOrientation ?? "")"
+            # Global keyboard shortcuts for focusing the nearest snapped window in a direction.
+            focusLeft: "\(sh.focusLeft ?? "ctrl+opt+left")"
+            focusRight: "\(sh.focusRight ?? "ctrl+opt+right")"
+            focusUp: "\(sh.focusUp ?? "ctrl+opt+up")"
+            focusDown: "\(sh.focusDown ?? "ctrl+opt+down")"
         """
     }
 }

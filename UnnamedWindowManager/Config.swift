@@ -34,6 +34,10 @@ final class Config {
     static var unsnapShortcut: String          { shared.s.shortcuts!.unsnap! }
     static var unsnapAllShortcut: String       { shared.s.shortcuts!.unsnapAll! }
     static var flipOrientationShortcut: String { shared.s.shortcuts!.flipOrientation! }
+    static var focusLeftShortcut: String       { shared.s.shortcuts!.focusLeft! }
+    static var focusRightShortcut: String      { shared.s.shortcuts!.focusRight! }
+    static var focusUpShortcut: String         { shared.s.shortcuts!.focusUp! }
+    static var focusDownShortcut: String       { shared.s.shortcuts!.focusDown! }
 
     static let overlayFillColor: NSColor   = .systemBlue.withAlphaComponent(0.2)
     static let overlayBorderColor: NSColor  = .systemBlue.withAlphaComponent(0.8)

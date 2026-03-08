@@ -8,7 +8,10 @@ final class KeybindingService {
 
     private struct Binding {
         let modifiers: NSEvent.ModifierFlags
-        let key: String
+        /// Character match (for regular keys). Exactly one of key/keyCode is set.
+        let key: String?
+        /// Key code match (for arrow keys and other special keys).
+        let keyCode: UInt16?
         let action: () -> Void
     }
 
@@ -30,12 +33,16 @@ final class KeybindingService {
             (Config.unsnapShortcut,          { UnsnapHandler.unsnap() }),
             (Config.unsnapAllShortcut,       { UnsnapHandler.unsnapAll() }),
             (Config.flipOrientationShortcut, { OrientFlipHandler.flipOrientation() }),
+            (Config.focusLeftShortcut,       { FocusLeftHandler.focus() }),
+            (Config.focusRightShortcut,      { FocusRightHandler.focus() }),
+            (Config.focusUpShortcut,         { FocusUpHandler.focus() }),
+            (Config.focusDownShortcut,       { FocusDownHandler.focus() }),
         ]
 
         bindings = []
         for (shortcut, action) in candidates {
-            guard !shortcut.isEmpty, let (mods, key) = parse(shortcut) else { continue }
-            bindings.append(Binding(modifiers: mods, key: key, action: action))
+            guard !shortcut.isEmpty, let parsed = parse(shortcut) else { continue }
+            bindings.append(Binding(modifiers: parsed.modifiers, key: parsed.key, keyCode: parsed.keyCode, action: action))
         }
 
         guard !bindings.isEmpty else {
@@ -59,10 +66,14 @@ final class KeybindingService {
                 guard let nsEvent = NSEvent(cgEvent: event) else {
                     return Unmanaged.passRetained(event)
                 }
-                let flags = nsEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                let flags = nsEvent.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.numericPad, .function])
                 for binding in service.bindings {
-                    guard flags == binding.modifiers,
-                          nsEvent.charactersIgnoringModifiers == binding.key else { continue }
+                    guard flags == binding.modifiers else { continue }
+                    if let keyCode = binding.keyCode {
+                        guard nsEvent.keyCode == keyCode else { continue }
+                    } else if let key = binding.key {
+                        guard nsEvent.charactersIgnoringModifiers == key else { continue }
+                    } else { continue }
                     let action = binding.action
                     DispatchQueue.main.async { action() }
                     return nil // consume the event
@@ -118,12 +129,19 @@ final class KeybindingService {
         return modifiers + key
     }
 
-    /// Parses a shortcut string like "cmd+'" into modifier flags and a key character.
-    private func parse(_ shortcut: String) -> (NSEvent.ModifierFlags, String)? {
+    private struct ParsedBinding {
+        let modifiers: NSEvent.ModifierFlags
+        let key: String?
+        let keyCode: UInt16?
+    }
+
+    /// Parses a shortcut string like "cmd+'" into modifier flags and a key or keyCode.
+    /// Arrow key names ("left", "right", "up", "down") are matched by keyCode for reliability with modifier combos.
+    private func parse(_ shortcut: String) -> ParsedBinding? {
         let tokens = shortcut.lowercased().split(separator: "+", omittingEmptySubsequences: false).map(String.init)
         guard tokens.count >= 2 else { return nil }
-        let key = tokens.last!
-        guard !key.isEmpty else { return nil }
+        let rawKey = tokens.last!
+        guard !rawKey.isEmpty else { return nil }
         var modifiers: NSEvent.ModifierFlags = []
         for token in tokens.dropLast() {
             switch token {
@@ -136,6 +154,12 @@ final class KeybindingService {
                 return nil
             }
         }
-        return (modifiers, key)
+        switch rawKey {
+        case "left":  return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 123)
+        case "right": return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 124)
+        case "down":  return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 125)
+        case "up":    return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 126)
+        default:      return ParsedBinding(modifiers: modifiers, key: rawKey, keyCode: nil)
+        }
     }
 }

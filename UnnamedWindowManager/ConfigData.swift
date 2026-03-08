@@ -42,6 +42,10 @@ struct ConfigData: Codable {
         var unsnap: String?
         var unsnapAll: String?
         var flipOrientation: String?
+        var focusLeft: String?
+        var focusRight: String?
+        var focusUp: String?
+        var focusDown: String?
     }
 
     static let defaults = ConfigData(config: ConfigSection(
@@ -49,7 +53,7 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3),
         behavior: BehaviorConfig(autoSnap: true, autoOrganize: true),
-        shortcuts: ShortcutsConfig(organize: "cmd+'", snap: "", unsnap: "", unsnapAll: "", flipOrientation: "")
+        shortcuts: ShortcutsConfig(organize: "cmd+'", snap: "", unsnap: "", unsnapAll: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down")
     ))
 
     /// Full key paths of fields absent from the YAML file.
@@ -74,6 +78,10 @@ struct ConfigData: Codable {
         check(s?.shortcuts?.unsnap,             "config.shortcuts.unsnap")
         check(s?.shortcuts?.unsnapAll,          "config.shortcuts.unsnapAll")
         check(s?.shortcuts?.flipOrientation,    "config.shortcuts.flipOrientation")
+        check(s?.shortcuts?.focusLeft,          "config.shortcuts.focusLeft")
+        check(s?.shortcuts?.focusRight,         "config.shortcuts.focusRight")
+        check(s?.shortcuts?.focusUp,            "config.shortcuts.focusUp")
+        check(s?.shortcuts?.focusDown,          "config.shortcuts.focusDown")
         return missing
     }
 
@@ -107,7 +115,11 @@ struct ConfigData: Codable {
                 snap:            s?.shortcuts?.snap            ?? d.shortcuts!.snap,
                 unsnap:          s?.shortcuts?.unsnap          ?? d.shortcuts!.unsnap,
                 unsnapAll:       s?.shortcuts?.unsnapAll       ?? d.shortcuts!.unsnapAll,
-                flipOrientation: s?.shortcuts?.flipOrientation ?? d.shortcuts!.flipOrientation
+                flipOrientation: s?.shortcuts?.flipOrientation ?? d.shortcuts!.flipOrientation,
+                focusLeft:       s?.shortcuts?.focusLeft       ?? d.shortcuts!.focusLeft,
+                focusRight:      s?.shortcuts?.focusRight      ?? d.shortcuts!.focusRight,
+                focusUp:         s?.shortcuts?.focusUp         ?? d.shortcuts!.focusUp,
+                focusDown:       s?.shortcuts?.focusDown       ?? d.shortcuts!.focusDown
             )
         ))
     }
