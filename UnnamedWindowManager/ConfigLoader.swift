@@ -91,6 +91,8 @@ struct ConfigLoader {
             autoSnap: \(bh.autoSnap ?? true)
             # Automatically snap the first window on an empty screen (bootstrap when no layout exists).
             autoOrganize: \(bh.autoOrganize ?? true)
+            # Time in seconds a window must hover over a drop zone before the operation is allowed (0 to disable).
+            dropZoneHoverDelay: \(num(bh.dropZoneHoverDelay))
           shortcuts:
             # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             organize: "\(sh.organize ?? "cmd+'")"

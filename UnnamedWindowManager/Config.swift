@@ -29,6 +29,7 @@ final class Config {
     static var overlayBorderWidth: CGFloat     { shared.s.overlay!.borderWidth! }
     static var autoSnap: Bool                  { shared.s.behavior!.autoSnap! }
     static var autoOrganize: Bool              { shared.s.behavior!.autoOrganize! }
+    static var dropZoneHoverDelay: CGFloat     { shared.s.behavior!.dropZoneHoverDelay! }
     static var organizeShortcut: String        { shared.s.shortcuts!.organize! }
     static var snapShortcut: String            { shared.s.shortcuts!.snap! }
     static var unsnapShortcut: String          { shared.s.shortcuts!.unsnap! }

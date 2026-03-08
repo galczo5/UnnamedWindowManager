@@ -34,6 +34,7 @@ struct ConfigData: Codable {
     struct BehaviorConfig: Codable {
         var autoSnap: Bool?
         var autoOrganize: Bool?
+        var dropZoneHoverDelay: CGFloat?
     }
 
     struct ShortcutsConfig: Codable {
@@ -52,7 +53,7 @@ struct ConfigData: Codable {
         layout: LayoutConfig(gap: 5, fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3),
-        behavior: BehaviorConfig(autoSnap: true, autoOrganize: true),
+        behavior: BehaviorConfig(autoSnap: true, autoOrganize: true, dropZoneHoverDelay: 0.2),
         shortcuts: ShortcutsConfig(organize: "cmd+'", snap: "", unsnap: "", unsnapAll: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down")
     ))
 
@@ -73,6 +74,7 @@ struct ConfigData: Codable {
         check(s?.overlay?.borderWidth,           "config.overlay.borderWidth")
         check(s?.behavior?.autoSnap,             "config.behavior.autoSnap")
         check(s?.behavior?.autoOrganize,         "config.behavior.autoOrganize")
+        check(s?.behavior?.dropZoneHoverDelay,   "config.behavior.dropZoneHoverDelay")
         check(s?.shortcuts?.organize,            "config.shortcuts.organize")
         check(s?.shortcuts?.snap,               "config.shortcuts.snap")
         check(s?.shortcuts?.unsnap,             "config.shortcuts.unsnap")
@@ -107,8 +109,9 @@ struct ConfigData: Codable {
                 borderWidth:  s?.overlay?.borderWidth  ?? d.overlay!.borderWidth
             ),
             behavior: BehaviorConfig(
-                autoSnap:     s?.behavior?.autoSnap     ?? d.behavior!.autoSnap,
-                autoOrganize: s?.behavior?.autoOrganize ?? d.behavior!.autoOrganize
+                autoSnap:            s?.behavior?.autoSnap            ?? d.behavior!.autoSnap,
+                autoOrganize:        s?.behavior?.autoOrganize        ?? d.behavior!.autoOrganize,
+                dropZoneHoverDelay:  s?.behavior?.dropZoneHoverDelay  ?? d.behavior!.dropZoneHoverDelay
             ),
             shortcuts: ShortcutsConfig(
                 organize:        s?.shortcuts?.organize        ?? d.shortcuts!.organize,

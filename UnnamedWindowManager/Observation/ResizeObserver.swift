@@ -18,6 +18,9 @@ final class ResizeObserver {
     var pendingReapply: [WindowSlot: DispatchWorkItem]    = [:]
     let overlay = SwapOverlay()
 
+    private var lastDropTarget: DropTarget?
+    private var dropTargetEnteredAt: Date?
+
     // MARK: – Public
 
     func observe(window: AXUIElement, pid: pid_t, key: WindowSlot) {
@@ -78,6 +81,7 @@ final class ResizeObserver {
         // While a drag is in progress, update the drop-zone overlay in real time.
         if !isResize && NSEvent.pressedMouseButtons != 0 {
             let drop = ReapplyHandler.findDropTarget(forKey: key)
+            updateTrackedDropTarget(drop)
             overlay.update(dropTarget: drop, draggedWindow: element, elements: elements)
         }
 
@@ -133,6 +137,9 @@ final class ResizeObserver {
             }
 
             self.overlay.hide()
+            let hoverStart = self.dropTargetEnteredAt
+            self.lastDropTarget = nil
+            self.dropTargetEnteredAt = nil
 
             guard !self.reapplying.contains(key),
                   let storedElement = self.elements[key] else { return }
@@ -155,7 +162,9 @@ final class ResizeObserver {
                 }
             } else {
                 // Move: directional insert, center swap, or restore.
-                if let drop = ReapplyHandler.findDropTarget(forKey: key) {
+                let hoverDuration = hoverStart.map { Date().timeIntervalSince($0) } ?? 0
+                let dropAllowed = hoverDuration >= Config.dropZoneHoverDelay
+                if dropAllowed, let drop = ReapplyHandler.findDropTarget(forKey: key) {
                     let allWindows = self.allTrackedWindows()
                     self.reapplying.formUnion(allWindows)
                     if drop.zone == .center {
@@ -180,6 +189,17 @@ final class ResizeObserver {
 
         pendingReapply[key] = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
+    }
+
+    private func updateTrackedDropTarget(_ newTarget: DropTarget?) {
+        guard let new = newTarget else {
+            lastDropTarget = nil
+            dropTargetEnteredAt = nil
+            return
+        }
+        if let last = lastDropTarget, last.window == new.window, last.zone == new.zone { return }
+        lastDropTarget = new
+        dropTargetEnteredAt = Date()
     }
 
     private func allTrackedWindows() -> Set<WindowSlot> {
