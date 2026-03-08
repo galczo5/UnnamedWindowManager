@@ -106,9 +106,30 @@ final class AutoSnapObserver {
         else { return }
         let window = ref as! AXUIElement
         guard !SnapService.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
+        // If a tracked window for this pid is at the same position, the new window is a tab — skip.
+        guard !isTabOfTrackedWindow(window, pid: pid) else {
+            Logger.shared.log("autoSnap skipped — new window is a tab of a tracked window (pid=\(pid))")
+            return
+        }
         Logger.shared.log("autoSnap triggered for pid=\(pid)")
         pruneStaleSlots(for: pid)
         SnapHandler.snapLeft(window: window, pid: pid)
+    }
+
+    /// Returns true if `window` appears at the same screen position as any already-tracked window
+    /// for `pid`, indicating it is a tab of that window rather than an independent new window.
+    private func isTabOfTrackedWindow(_ window: AXUIElement, pid: pid_t) -> Bool {
+        guard let trackedKeys = ResizeObserver.shared.keysByPid[pid], !trackedKeys.isEmpty else { return false }
+        guard let origin = readOrigin(of: window) else { return false }
+        let elements = ResizeObserver.shared.elements
+        for key in trackedKeys {
+            guard let trackedElement = elements[key],
+                  let trackedOrigin = readOrigin(of: trackedElement) else { continue }
+            if abs(origin.x - trackedOrigin.x) < 10 && abs(origin.y - trackedOrigin.y) < 10 {
+                return true
+            }
+        }
+        return false
     }
 
     private func pruneStaleSlots(for pid: pid_t) {

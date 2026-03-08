@@ -80,7 +80,7 @@ struct ConfigData: Codable {
         check(s?.behavior?.dropZoneHoverDelay,   "config.behavior.dropZoneHoverDelay")
         check(s?.behavior?.dimInactiveWindows,   "config.behavior.dimInactiveWindows")
         check(s?.behavior?.dimInactiveOpacity,      "config.behavior.dimInactiveOpacity")
-        check(s?.behavior?.dimAnimationDuration,    "config.behavior.dimAnimationDuration")
+        check(s?.behavior?.dimAnimationDuration,       "config.behavior.dimAnimationDuration")
         check(s?.shortcuts?.organize,            "config.shortcuts.organize")
         check(s?.shortcuts?.snap,               "config.shortcuts.snap")
         check(s?.shortcuts?.unsnap,             "config.shortcuts.unsnap")
@@ -119,8 +119,8 @@ struct ConfigData: Codable {
                 autoOrganize:        s?.behavior?.autoOrganize        ?? d.behavior!.autoOrganize,
                 dropZoneHoverDelay:  s?.behavior?.dropZoneHoverDelay  ?? d.behavior!.dropZoneHoverDelay,
                 dimInactiveWindows:  s?.behavior?.dimInactiveWindows  ?? d.behavior!.dimInactiveWindows,
-                dimInactiveOpacity:    s?.behavior?.dimInactiveOpacity    ?? d.behavior!.dimInactiveOpacity,
-                dimAnimationDuration:  s?.behavior?.dimAnimationDuration  ?? d.behavior!.dimAnimationDuration
+                dimInactiveOpacity:       s?.behavior?.dimInactiveOpacity       ?? d.behavior!.dimInactiveOpacity,
+                dimAnimationDuration:     s?.behavior?.dimAnimationDuration     ?? d.behavior!.dimAnimationDuration
             ),
             shortcuts: ShortcutsConfig(
                 organize:        s?.shortcuts?.organize        ?? d.shortcuts!.organize,
