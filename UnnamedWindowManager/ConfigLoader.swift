@@ -90,9 +90,9 @@ struct ConfigLoader {
             overlayColor: \(ov.overlayColor ?? "blue")
           behavior:
             # Automatically snap new windows into the layout when at least one snapped window is visible.
-            autoSnap: \(bh.autoSnap ?? true)
+            autoSnap: \(bh.autoSnap ?? false)
             # Automatically snap the first window on an empty screen (bootstrap when no layout exists).
-            autoOrganize: \(bh.autoOrganize ?? true)
+            autoOrganize: \(bh.autoOrganize ?? false)
             # Time in seconds a window must hover over a drop zone before the operation is allowed (0 to disable).
             dropZoneHoverDelay: \(num(bh.dropZoneHoverDelay))
             # Dim non-focused managed windows when a layout is active.
@@ -104,14 +104,12 @@ struct ConfigLoader {
             # Color of the dim overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
             dimColor: \(bh.dimColor ?? "black")
           shortcuts:
-            # Global keyboard shortcut for Organize. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
-            organize: "\(sh.organize ?? "cmd+'")"
+            # Global keyboard shortcut for Snap All / Unsnap All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
+            snapAll: "\(sh.snapAll ?? "cmd+'")"
             # Global keyboard shortcut for Snap. Empty string disables.
             snap: "\(sh.snap ?? "")"
             # Global keyboard shortcut for Unsnap. Empty string disables.
             unsnap: "\(sh.unsnap ?? "")"
-            # Global keyboard shortcut for Unsnap All. Empty string disables.
-            unsnapAll: "\(sh.unsnapAll ?? "")"
             # Global keyboard shortcut for Reset Layout. Empty string disables.
             resetLayout: "\(sh.resetLayout ?? "")"
             # Global keyboard shortcut for Refresh. Empty string disables.

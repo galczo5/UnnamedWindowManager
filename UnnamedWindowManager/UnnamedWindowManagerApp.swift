@@ -9,11 +9,11 @@ extension Notification.Name {
 @Observable
 final class MenuState {
     var parentOrientation: Orientation? = nil
-    var isOrganized: Bool = false
+    var isSnapped: Bool = false
 
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
-        isOrganized = SnapService.shared.snapshotVisibleRoot() != nil
+        isSnapped = SnapService.shared.snapshotVisibleRoot() != nil
     }
 }
 
@@ -39,10 +39,13 @@ struct UnnamedWindowManagerApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            Button(menuLabel("Snap",        Config.snapShortcut))      { SnapHandler.snap()        }
-            Button(menuLabel("Unsnap",      Config.unsnapShortcut))    { UnsnapHandler.unsnap()    }
-            Button(menuLabel("Unsnap all",    Config.unsnapAllShortcut))    { UnsnapHandler.unsnapAll() }
-            Button(menuLabel("Organize",      Config.organizeShortcut))      { OrganizeHandler.organize() }
+            Button(menuLabel("Snap",          Config.snapShortcut))      { SnapHandler.snap()        }
+            Button(menuLabel("Unsnap",        Config.unsnapShortcut))    { UnsnapHandler.unsnap()    }
+            if menuState.isSnapped {
+                Button(menuLabel("Unsnap all", Config.snapAllShortcut)) { UnsnapHandler.unsnapAll() }
+            } else {
+                Button(menuLabel("Snap all",   Config.snapAllShortcut)) { OrganizeHandler.organize() }
+            }
             Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UnsnapHandler.unsnapAll(); OrganizeHandler.organize() }
             Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
@@ -80,8 +83,8 @@ struct UnnamedWindowManagerApp: App {
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {
             HStack(spacing: 4) {
-                if menuState.isOrganized {
-                    Text("[organized]")
+                if menuState.isSnapped {
+                    Text("[snapped]")
                 } else {
                     Image(systemName: "rectangle.split.3x1.fill")
                 }

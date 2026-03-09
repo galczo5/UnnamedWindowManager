@@ -28,10 +28,15 @@ final class KeybindingService {
         }
 
         let candidates: [(String, () -> Void)] = [
-            (Config.organizeShortcut,        { OrganizeHandler.organize() }),
+            (Config.snapAllShortcut, {
+                if SnapService.shared.snapshotVisibleRoot() != nil {
+                    UnsnapHandler.unsnapAll()
+                } else {
+                    OrganizeHandler.organize()
+                }
+            }),
             (Config.snapShortcut,            { SnapHandler.snap() }),
             (Config.unsnapShortcut,          { UnsnapHandler.unsnap() }),
-            (Config.unsnapAllShortcut,       { UnsnapHandler.unsnapAll() }),
             (Config.flipOrientationShortcut, { OrientFlipHandler.flipOrientation() }),
             (Config.focusLeftShortcut,       { FocusLeftHandler.focus() }),
             (Config.focusRightShortcut,      { FocusRightHandler.focus() }),
