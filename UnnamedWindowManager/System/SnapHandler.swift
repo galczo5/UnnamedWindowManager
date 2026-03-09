@@ -22,7 +22,9 @@ struct SnapHandler {
         let axWindow = focusedWindow as! AXUIElement
 
         guard let screen = NSScreen.main else { return }
-        let key = windowSlot(for: axWindow, pid: pid)
+        var key = windowSlot(for: axWindow, pid: pid)
+        key.preSnapOrigin = readOrigin(of: axWindow)
+        key.preSnapSize = readSize(of: axWindow)
         Logger.shared.log("snap: pid=\(pid) hash=\(key.windowHash)")
         SnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
@@ -35,12 +37,14 @@ struct SnapHandler {
         guard AXIsProcessTrusted() else { return }
         guard let screen = NSScreen.main else { return }
 
-        let key = windowSlot(for: window, pid: pid)
+        var key = windowSlot(for: window, pid: pid)
         var minRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minRef) == .success,
            (minRef as? Bool) == true { return }
         if let sz = readSize(of: window), sz.width < 100 || sz.height < 100 { return }
 
+        key.preSnapOrigin = readOrigin(of: window)
+        key.preSnapSize = readSize(of: window)
         Logger.shared.log("snapLeft: pid=\(pid) hash=\(key.windowHash)")
         SnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)

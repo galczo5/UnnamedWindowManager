@@ -18,18 +18,22 @@ struct UnsnapHandler {
 
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
+        let stored = SnapService.shared.storedSlot(key)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         WindowVisibilityManager.shared.restoreAndForget(key)
         SnapService.shared.removeAndReflow(key, screen: screen)
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
+        if let stored { RestoreService.restore(stored, element: axWindow) }
         ReapplyHandler.reapplyAll()
     }
 
     static func unsnapAll() {
         guard AXIsProcessTrusted() else { return }
+        let elements = ResizeObserver.shared.elements
         let removed = SnapService.shared.removeVisibleRoot()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
+            if let ax = elements[key] { RestoreService.restore(key, element: ax) }
             WindowVisibilityManager.shared.restoreAndForget(key)
             ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
         }

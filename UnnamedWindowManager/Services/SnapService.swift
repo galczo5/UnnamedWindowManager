@@ -38,6 +38,16 @@ final class SnapService {
         }
     }
 
+    func storedSlot(_ key: WindowSlot) -> WindowSlot? {
+        store.queue.sync {
+            for root in store.roots.values {
+                if let slot = treeQuery.findLeafSlot(key, in: root),
+                   case .window(let w) = slot { return w }
+            }
+            return nil
+        }
+    }
+
     func parentOrientation(of key: WindowSlot) -> Orientation? {
         store.queue.sync {
             guard let id = rootIDSync(containing: key) else { return nil }
@@ -66,8 +76,15 @@ final class SnapService {
 
             if treeQuery.isTracked(key, in: store.roots[targetRootID]!) { return }
 
-            // Cross-root migration: remove from old root, destroy root if now empty.
+            // Preserve original pre-snap values during cross-root migration.
+            var preSnapOrigin = key.preSnapOrigin
+            var preSnapSize = key.preSnapSize
             if let srcID = rootIDSync(containing: key) {
+                if let oldSlot = treeQuery.findLeafSlot(key, in: store.roots[srcID]!),
+                   case .window(let oldWindow) = oldSlot {
+                    preSnapOrigin = oldWindow.preSnapOrigin
+                    preSnapSize = oldWindow.preSnapSize
+                }
                 treeMutation.removeLeaf(key, from: &store.roots[srcID]!)
                 if store.roots[srcID]!.children.isEmpty {
                     store.roots.removeValue(forKey: srcID)
@@ -80,7 +97,8 @@ final class SnapService {
             let newLeaf = Slot.window(WindowSlot(
                 pid: key.pid, windowHash: key.windowHash,
                 id: UUID(), parentId: store.roots[targetRootID]!.id,
-                order: order, width: 0, height: 0, gaps: true
+                order: order, width: 0, height: 0, gaps: true,
+                preSnapOrigin: preSnapOrigin, preSnapSize: preSnapSize
             ))
             if store.roots[targetRootID]!.children.isEmpty {
                 store.roots[targetRootID]!.children = [newLeaf]
@@ -187,7 +205,8 @@ final class SnapService {
             let newLeaf = Slot.window(WindowSlot(
                 pid: draggedWindow.pid, windowHash: draggedWindow.windowHash,
                 id: UUID(), parentId: store.roots[targetRootID]!.id,
-                order: draggedWindow.order, width: 0, height: 0, gaps: true
+                order: draggedWindow.order, width: 0, height: 0, gaps: true,
+                preSnapOrigin: draggedWindow.preSnapOrigin, preSnapSize: draggedWindow.preSnapSize
             ))
             treeInsert.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &store.roots[targetRootID]!)
             position.recomputeSizes(&store.roots[targetRootID]!,
