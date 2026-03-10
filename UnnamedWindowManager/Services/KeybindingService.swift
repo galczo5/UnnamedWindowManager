@@ -35,8 +35,7 @@ final class KeybindingService {
                     OrganizeHandler.organize()
                 }
             }),
-            (Config.snapShortcut,            { SnapHandler.snap() }),
-            (Config.unsnapShortcut,          { UnsnapHandler.unsnap() }),
+            (Config.snapShortcut,            { SnapHandler.snapToggle() }),
             (Config.flipOrientationShortcut, { OrientFlipHandler.flipOrientation() }),
             (Config.focusLeftShortcut,       { FocusLeftHandler.focus() }),
             (Config.focusRightShortcut,      { FocusRightHandler.focus() }),
@@ -44,8 +43,25 @@ final class KeybindingService {
             (Config.focusDownShortcut,       { FocusDownHandler.focus() }),
         ]
 
+        let commandCandidates: [(String, () -> Void)] = Config.commands.compactMap { cmd in
+            guard let shortcut = cmd.shortcut, !shortcut.isEmpty,
+                  let run = cmd.run, !run.isEmpty else { return nil }
+            return (shortcut, { CommandService.execute(run) })
+        }
+
+        let allShortcuts = (candidates + commandCandidates).compactMap { s, _ in s.isEmpty ? nil : s }
+        if let duplicate = findDuplicate(allShortcuts) {
+            NotificationService.shared.post(
+                title: "Shortcut conflict",
+                body: "Duplicate shortcut \"\(duplicate)\" — all shortcuts disabled. Fix in config."
+            )
+            Logger.shared.log("KeybindingService: duplicate shortcut '\(duplicate)' — all shortcuts disabled")
+            bindings = []
+            return
+        }
+
         bindings = []
-        for (shortcut, action) in candidates {
+        for (shortcut, action) in candidates + commandCandidates {
             guard !shortcut.isEmpty, let parsed = parse(shortcut) else { continue }
             bindings.append(Binding(modifiers: parsed.modifiers, key: parsed.key, keyCode: parsed.keyCode, action: action))
         }
@@ -131,13 +147,50 @@ final class KeybindingService {
             default: return token
             }
         }.joined()
-        return modifiers + key
+        let displayKey: String
+        switch key {
+        case "enter", "return": displayKey = "↩"
+        case "left":            displayKey = "←"
+        case "right":           displayKey = "→"
+        case "up":              displayKey = "↑"
+        case "down":            displayKey = "↓"
+        default:                displayKey = key
+        }
+        return modifiers + displayKey
     }
 
     private struct ParsedBinding {
         let modifiers: NSEvent.ModifierFlags
         let key: String?
         let keyCode: UInt16?
+    }
+
+    /// Returns the first shortcut string that appears more than once (after normalization), or nil.
+    private func findDuplicate(_ shortcuts: [String]) -> String? {
+        var seen: Set<String> = []
+        for shortcut in shortcuts {
+            let normalized = normalize(shortcut)
+            if !seen.insert(normalized).inserted { return shortcut }
+        }
+        return nil
+    }
+
+    /// Normalizes a shortcut string for duplicate comparison: lowercase, canonical modifier names, sorted modifiers.
+    private func normalize(_ shortcut: String) -> String {
+        let tokens = shortcut.lowercased().split(separator: "+").map(String.init)
+        guard tokens.count >= 2 else { return shortcut.lowercased() }
+        let key = tokens.last!
+        let mods = tokens.dropLast().map { token -> String in
+            switch token {
+            case "command":            return "cmd"
+            case "control":            return "ctrl"
+            case "alt", "option":      return "opt"
+            case "enter":              return "return"
+            default:                   return token
+            }
+        }.sorted()
+        let normalizedKey = key == "enter" ? "return" : key
+        return (mods + [normalizedKey]).joined(separator: "+")
     }
 
     /// Parses a shortcut string like "cmd+'" into modifier flags and a key or keyCode.
@@ -160,11 +213,12 @@ final class KeybindingService {
             }
         }
         switch rawKey {
-        case "left":  return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 123)
-        case "right": return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 124)
-        case "down":  return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 125)
-        case "up":    return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 126)
-        default:      return ParsedBinding(modifiers: modifiers, key: rawKey, keyCode: nil)
+        case "left":           return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 123)
+        case "right":          return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 124)
+        case "down":           return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 125)
+        case "up":             return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 126)
+        case "enter", "return": return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 36)
+        default:               return ParsedBinding(modifiers: modifiers, key: rawKey, keyCode: nil)
         }
     }
 }

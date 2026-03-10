@@ -43,7 +43,6 @@ final class Config {
     static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
     static var snapAllShortcut: String          { shared.s.shortcuts!.snapAll! }
     static var snapShortcut: String            { shared.s.shortcuts!.snap! }
-    static var unsnapShortcut: String          { shared.s.shortcuts!.unsnap! }
     static var resetLayoutShortcut: String     { shared.s.shortcuts!.resetLayout! }
     static var refreshShortcut: String         { shared.s.shortcuts!.refresh! }
     static var flipOrientationShortcut: String { shared.s.shortcuts!.flipOrientation! }
@@ -51,6 +50,7 @@ final class Config {
     static var focusRightShortcut: String      { shared.s.shortcuts!.focusRight! }
     static var focusUpShortcut: String         { shared.s.shortcuts!.focusUp! }
     static var focusDownShortcut: String       { shared.s.shortcuts!.focusDown! }
+    static var commands: [ConfigData.CommandConfig] { shared.s.commands ?? [] }
 
     static let logFilePath: String = NSHomeDirectory() + "/.unnamed.log"
 }

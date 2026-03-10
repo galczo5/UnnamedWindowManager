@@ -56,6 +56,11 @@ struct ConfigLoader {
         let ov = s?.overlay   ?? d.overlay!
         let bh = s?.behavior  ?? d.behavior!
         let sh = s?.shortcuts ?? d.shortcuts!
+        let cm = s?.commands ?? d.commands ?? []
+
+        let commandLines = cm.map { c in
+            "    - shortcut: \"\(c.shortcut ?? "")\"\n      run: \"\(c.run ?? "")\""
+        }.joined(separator: "\n")
 
         func num(_ v: CGFloat?) -> String {
             guard let v = v else { return "null" }
@@ -113,10 +118,8 @@ struct ConfigLoader {
           shortcuts:
             # Global keyboard shortcut for Snap All / Unsnap All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             snapAll: "\(sh.snapAll ?? "cmd+'")"
-            # Global keyboard shortcut for Snap. Empty string disables.
+            # Global keyboard shortcut for Snap / Unsnap toggle (snaps if not snapped, unsnaps if snapped). Empty string disables.
             snap: "\(sh.snap ?? "")"
-            # Global keyboard shortcut for Unsnap. Empty string disables.
-            unsnap: "\(sh.unsnap ?? "")"
             # Global keyboard shortcut for Reset Layout. Empty string disables.
             resetLayout: "\(sh.resetLayout ?? "")"
             # Global keyboard shortcut for Refresh. Empty string disables.
@@ -128,6 +131,10 @@ struct ConfigLoader {
             focusRight: "\(sh.focusRight ?? "ctrl+opt+right")"
             focusUp: "\(sh.focusUp ?? "ctrl+opt+up")"
             focusDown: "\(sh.focusDown ?? "ctrl+opt+down")"
+          # Custom keyboard shortcuts that run shell commands.
+          # Format: shortcut uses modifier+key (e.g. cmd+enter, cmd+shift+t). run is a shell command.
+          commands:
+        \(commandLines)
         """
     }
 }

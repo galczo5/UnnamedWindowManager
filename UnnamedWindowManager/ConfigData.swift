@@ -10,6 +10,7 @@ struct ConfigData: Codable {
         var overlay: OverlayConfig?
         var behavior: BehaviorConfig?
         var shortcuts: ShortcutsConfig?
+        var commands: [CommandConfig]?
     }
 
     struct OuterGapsConfig: Codable {
@@ -50,10 +51,14 @@ struct ConfigData: Codable {
         var dimColor: String?
     }
 
+    struct CommandConfig: Codable {
+        var shortcut: String?
+        var run: String?
+    }
+
     struct ShortcutsConfig: Codable {
         var snapAll: String?
         var snap: String?
-        var unsnap: String?
         var resetLayout: String?
         var refresh: String?
         var flipOrientation: String?
@@ -68,7 +73,8 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black"),
-        shortcuts: ShortcutsConfig(snapAll: "cmd+'", snap: "", unsnap: "", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down")
+        shortcuts: ShortcutsConfig(snapAll: "cmd+'", snap: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down"),
+        commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
 
     /// Full key paths of fields absent from the YAML file.
@@ -100,7 +106,6 @@ struct ConfigData: Codable {
         check(s?.behavior?.dimColor,                   "config.behavior.dimColor")
         check(s?.shortcuts?.snapAll,             "config.shortcuts.snapAll")
         check(s?.shortcuts?.snap,               "config.shortcuts.snap")
-        check(s?.shortcuts?.unsnap,             "config.shortcuts.unsnap")
         check(s?.shortcuts?.resetLayout,        "config.shortcuts.resetLayout")
         check(s?.shortcuts?.refresh,            "config.shortcuts.refresh")
         check(s?.shortcuts?.flipOrientation,    "config.shortcuts.flipOrientation")
@@ -151,7 +156,6 @@ struct ConfigData: Codable {
             shortcuts: ShortcutsConfig(
                 snapAll:         s?.shortcuts?.snapAll         ?? d.shortcuts!.snapAll,
                 snap:            s?.shortcuts?.snap            ?? d.shortcuts!.snap,
-                unsnap:          s?.shortcuts?.unsnap          ?? d.shortcuts!.unsnap,
                 resetLayout:     s?.shortcuts?.resetLayout     ?? d.shortcuts!.resetLayout,
                 refresh:         s?.shortcuts?.refresh         ?? d.shortcuts!.refresh,
                 flipOrientation: s?.shortcuts?.flipOrientation ?? d.shortcuts!.flipOrientation,
@@ -159,7 +163,8 @@ struct ConfigData: Codable {
                 focusRight:      s?.shortcuts?.focusRight      ?? d.shortcuts!.focusRight,
                 focusUp:         s?.shortcuts?.focusUp         ?? d.shortcuts!.focusUp,
                 focusDown:       s?.shortcuts?.focusDown       ?? d.shortcuts!.focusDown
-            )
+            ),
+            commands: s?.commands ?? d.commands
         ))
     }
 }

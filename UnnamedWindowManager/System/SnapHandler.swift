@@ -31,6 +31,22 @@ struct SnapHandler {
         ReapplyHandler.reapplyAll()
     }
 
+    /// Snaps the frontmost window if it is not snapped, or unsnaps it if it is.
+    static func snapToggle() {
+        guard AXIsProcessTrusted() else { return }
+        guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
+        let pid = frontApp.processIdentifier
+        let axApp = AXUIElementCreateApplication(pid)
+        var focusedWindow: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
+        let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
+        if SnapService.shared.isTracked(key) {
+            UnsnapHandler.unsnap()
+        } else {
+            snap()
+        }
+    }
+
     /// Snaps `window` into the layout as a new leaf.
     /// Skips windows that are already tracked, minimised, or smaller than 100×100 pts.
     static func snapLeft(window: AXUIElement, pid: pid_t) {

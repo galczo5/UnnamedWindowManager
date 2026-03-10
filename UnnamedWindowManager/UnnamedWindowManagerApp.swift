@@ -4,16 +4,27 @@ import ApplicationServices
 
 extension Notification.Name {
     static let snapStateChanged = Notification.Name("snapStateChanged")
+    static let windowFocusChanged = Notification.Name("windowFocusChanged")
 }
 
 @Observable
 final class MenuState {
     var parentOrientation: Orientation? = nil
     var isSnapped: Bool = false
+    var isFrontmostSnapped: Bool = false
 
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
         isSnapped = SnapService.shared.snapshotVisibleRoot() != nil
+        isFrontmostSnapped = {
+            guard let frontApp = NSWorkspace.shared.frontmostApplication else { return false }
+            let pid = frontApp.processIdentifier
+            let axApp = AXUIElementCreateApplication(pid)
+            var focusedWindow: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return false }
+            let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
+            return SnapService.shared.isTracked(key)
+        }()
     }
 }
 
@@ -39,8 +50,11 @@ struct UnnamedWindowManagerApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            Button(menuLabel("Snap",          Config.snapShortcut))      { SnapHandler.snap()        }
-            Button(menuLabel("Unsnap",        Config.unsnapShortcut))    { UnsnapHandler.unsnap()    }
+            if menuState.isFrontmostSnapped {
+                Button(menuLabel("Unsnap", Config.snapShortcut)) { UnsnapHandler.unsnap() }
+            } else {
+                Button(menuLabel("Snap", Config.snapShortcut)) { SnapHandler.snap() }
+            }
             if menuState.isSnapped {
                 Button(menuLabel("Unsnap all", Config.snapAllShortcut)) { UnsnapHandler.unsnapAll() }
             } else {
@@ -94,6 +108,9 @@ struct UnnamedWindowManagerApp: App {
                 KeybindingService.shared.start()
             }
             .onReceive(NotificationCenter.default.publisher(for: .snapStateChanged)) { _ in
+                menuState.refresh()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .windowFocusChanged)) { _ in
                 menuState.refresh()
             }
             .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.activeSpaceDidChangeNotification)) { _ in

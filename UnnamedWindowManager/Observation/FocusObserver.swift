@@ -12,6 +12,9 @@ private func focusChangedCallback(
     var pid: pid_t = 0
     AXUIElementGetPid(element, &pid)
     let obs = Unmanaged<FocusObserver>.fromOpaque(refcon).takeUnretainedValue()
+    DispatchQueue.main.async {
+        NotificationCenter.default.post(name: .windowFocusChanged, object: nil)
+    }
     obs.applyDimForFrontmostWindow(pid: pid)
 }
 
@@ -39,6 +42,7 @@ final class FocusObserver {
         else { return }
         let pid = app.processIdentifier
         observeApp(pid: pid)
+        NotificationCenter.default.post(name: .windowFocusChanged, object: nil)
         applyDimForFrontmostWindow(pid: pid)
     }
 
