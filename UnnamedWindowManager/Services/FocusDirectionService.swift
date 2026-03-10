@@ -34,7 +34,7 @@ struct FocusDirectionService {
         let rect: CGRect
     }
 
-    private static func leafRects(in root: RootSlot) -> [LeafRect] {
+    private static func leafRects(in root: TilingRootSlot) -> [LeafRect] {
         guard let screen = NSScreen.main else { return [] }
         let primaryHeight = NSScreen.screens[0].frame.height
         let visible = screen.visibleFrame

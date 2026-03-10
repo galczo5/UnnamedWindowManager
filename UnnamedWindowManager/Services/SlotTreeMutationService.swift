@@ -6,7 +6,7 @@ struct SlotTreeMutationService {
     /// Removes the window leaf matching `key` from the tree, collapsing any single-child containers left behind.
     /// Returns `true` if the leaf was found and removed.
     @discardableResult
-    func removeLeaf(_ key: WindowSlot, from root: inout RootSlot) -> Bool {
+    func removeLeaf(_ key: WindowSlot, from root: inout TilingRootSlot) -> Bool {
         var found = false
         let newChildren: [Slot] = root.children.compactMap {
             let (newSlot, wasFound) = removeFromTree(key, slot: $0)
@@ -19,7 +19,7 @@ struct SlotTreeMutationService {
 
     /// Finds the leaf with `targetOrder` and wraps it together with `newLeaf` in a new container of `orientation`.
     func extractAndWrap(
-        in root: inout RootSlot,
+        in root: inout TilingRootSlot,
         targetOrder: Int,
         newLeaf: Slot,
         orientation: Orientation
@@ -35,7 +35,7 @@ struct SlotTreeMutationService {
     @discardableResult
     func updateLeaf(
         _ key: WindowSlot,
-        in root: inout RootSlot,
+        in root: inout TilingRootSlot,
         update: (inout WindowSlot) -> Void
     ) -> Bool {
         for i in root.children.indices {
@@ -45,7 +45,7 @@ struct SlotTreeMutationService {
     }
 
     /// Toggles the split orientation of the container that directly holds `key` (horizontal ↔ vertical).
-    func flipParentOrientation(of key: WindowSlot, in root: inout RootSlot) {
+    func flipParentOrientation(of key: WindowSlot, in root: inout TilingRootSlot) {
         if root.children.contains(where: {
             if case .window(let w) = $0 { return w == key }; return false
         }) {

@@ -12,7 +12,7 @@ struct SlotTreeInsertService {
         _ dragged: Slot,
         adjacentTo targetKey: WindowSlot,
         zone: DropZone,
-        in root: inout RootSlot
+        in root: inout TilingRootSlot
     ) {
         let needed: Orientation = (zone == .left || zone == .right) ? .horizontal : .vertical
         let draggedFirst = (zone == .left || zone == .top)
@@ -40,7 +40,7 @@ struct SlotTreeInsertService {
     }
 
     /// Swaps the pid and windowHash of two window leaves in place, preserving their positions and fractions.
-    func swap(_ keyA: WindowSlot, _ keyB: WindowSlot, in root: inout RootSlot) {
+    func swap(_ keyA: WindowSlot, _ keyB: WindowSlot, in root: inout TilingRootSlot) {
         let query = SlotTreeQueryService()
         guard query.findLeafSlot(keyA, in: root) != nil,
               query.findLeafSlot(keyB, in: root) != nil else { return }

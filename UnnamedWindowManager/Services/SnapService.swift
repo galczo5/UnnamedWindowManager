@@ -31,7 +31,7 @@ final class SnapService {
     }
 
     /// Returns a snapshot of the root whose windows are currently visible on screen, or `nil`.
-    func snapshotVisibleRoot() -> RootSlot? {
+    func snapshotVisibleRoot() -> TilingRootSlot? {
         store.queue.sync {
             guard let id = visibleRootID() else { return nil }
             return store.roots[id]
@@ -69,7 +69,7 @@ final class SnapService {
             } else {
                 let id = UUID()
                 let f  = screen.visibleFrame
-                store.roots[id] = RootSlot(id: id, width: f.width, height: f.height,
+                store.roots[id] = TilingRootSlot(id: id, width: f.width, height: f.height,
                                            orientation: .horizontal, children: [])
                 targetRootID = id
             }

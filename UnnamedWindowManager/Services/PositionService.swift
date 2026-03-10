@@ -3,7 +3,7 @@ import AppKit
 // Computes pixel sizes for all slots given the root dimensions and their fractional shares.
 struct PositionService {
 
-    func recomputeSizes(_ root: inout RootSlot, width: CGFloat, height: CGFloat) {
+    func recomputeSizes(_ root: inout TilingRootSlot, width: CGFloat, height: CGFloat) {
         root.width = width
         root.height = height
         guard !root.children.isEmpty else { return }

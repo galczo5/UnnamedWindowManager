@@ -22,7 +22,7 @@ final class LayoutService {
     /// Walks the root's direct children in order, advancing the cursor after each child
     /// by the child's width (horizontal root) or height (vertical root).
     private func applyLayout(
-        _ root: RootSlot,
+        _ root: TilingRootSlot,
         origin: CGPoint,
         elements: [WindowSlot: AXUIElement]
     ) {
