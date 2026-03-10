@@ -13,7 +13,7 @@ struct ResizeService {
               case .window(let w) = leaf else { return }
 
         // Convert AX size (gap-excluded) back to slot space (gap-included).
-        let gap = w.gaps ? Config.gap * 2 : 0
+        let gap = w.gaps ? Config.innerGap * 2 : 0
         let newSlotWidth  = actualSize.width  + gap
         let newSlotHeight = actualSize.height + gap
 

@@ -38,7 +38,8 @@ struct FocusDirectionService {
         guard let screen = NSScreen.main else { return [] }
         let primaryHeight = NSScreen.screens[0].frame.height
         let visible = screen.visibleFrame
-        let origin = CGPoint(x: visible.minX + Config.gap, y: primaryHeight - visible.maxY + Config.gap)
+        let og = Config.outerGaps
+        let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
 
         var results: [LeafRect] = []
         var cursor = origin
@@ -56,7 +57,7 @@ struct FocusDirectionService {
     private static func collectLeafRects(_ slot: Slot, origin: CGPoint, into results: inout [LeafRect]) {
         switch slot {
         case .window(let w):
-            let g = w.gaps ? Config.gap : 0
+            let g = w.gaps ? Config.innerGap : 0
             let rect = CGRect(
                 x: (origin.x + g).rounded(),
                 y: (origin.y + g).rounded(),

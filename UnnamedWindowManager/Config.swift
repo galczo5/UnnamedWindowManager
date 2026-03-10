@@ -17,7 +17,8 @@ final class Config {
 
     private var s: ConfigData.ConfigSection { data.config! }
 
-    static var gap: CGFloat                   { shared.s.layout!.gap! }
+    static var innerGap: CGFloat               { shared.s.layout!.innerGap! }
+    static var outerGaps: ConfigData.OuterGapsConfig { shared.s.layout!.outerGaps! }
     static var fallbackWidthFraction: CGFloat  { shared.s.layout!.fallbackWidthFraction! }
     static var maxWidthFraction: CGFloat       { shared.s.layout!.maxWidthFraction! }
     static var maxHeightFraction: CGFloat      { shared.s.layout!.maxHeightFraction! }

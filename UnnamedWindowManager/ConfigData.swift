@@ -12,8 +12,16 @@ struct ConfigData: Codable {
         var shortcuts: ShortcutsConfig?
     }
 
+    struct OuterGapsConfig: Codable {
+        var left: CGFloat?
+        var top: CGFloat?
+        var right: CGFloat?
+        var bottom: CGFloat?
+    }
+
     struct LayoutConfig: Codable {
-        var gap: CGFloat?
+        var innerGap: CGFloat?
+        var outerGaps: OuterGapsConfig?
         var fallbackWidthFraction: CGFloat?
         var maxWidthFraction: CGFloat?
         var maxHeightFraction: CGFloat?
@@ -56,7 +64,7 @@ struct ConfigData: Codable {
     }
 
     static let defaults = ConfigData(config: ConfigSection(
-        layout: LayoutConfig(gap: 5, fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
+        layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black"),
@@ -68,7 +76,11 @@ struct ConfigData: Codable {
         var missing: [String] = []
         let s = config
         func check<T>(_ val: T?, _ path: String) { if val == nil { missing.append(path) } }
-        check(s?.layout?.gap,                   "config.layout.gap")
+        check(s?.layout?.innerGap,              "config.layout.innerGap")
+        check(s?.layout?.outerGaps?.left,       "config.layout.outerGaps.left")
+        check(s?.layout?.outerGaps?.top,        "config.layout.outerGaps.top")
+        check(s?.layout?.outerGaps?.right,      "config.layout.outerGaps.right")
+        check(s?.layout?.outerGaps?.bottom,     "config.layout.outerGaps.bottom")
         check(s?.layout?.fallbackWidthFraction,  "config.layout.fallbackWidthFraction")
         check(s?.layout?.maxWidthFraction,       "config.layout.maxWidthFraction")
         check(s?.layout?.maxHeightFraction,      "config.layout.maxHeightFraction")
@@ -105,10 +117,16 @@ struct ConfigData: Codable {
         let s = config
         return ConfigData(config: ConfigSection(
             layout: LayoutConfig(
-                gap:                   s?.layout?.gap                   ?? d.layout!.gap,
+                innerGap:               s?.layout?.innerGap               ?? d.layout!.innerGap,
+                outerGaps: OuterGapsConfig(
+                    left:   s?.layout?.outerGaps?.left   ?? d.layout!.outerGaps!.left,
+                    top:    s?.layout?.outerGaps?.top    ?? d.layout!.outerGaps!.top,
+                    right:  s?.layout?.outerGaps?.right  ?? d.layout!.outerGaps!.right,
+                    bottom: s?.layout?.outerGaps?.bottom ?? d.layout!.outerGaps!.bottom
+                ),
                 fallbackWidthFraction:  s?.layout?.fallbackWidthFraction  ?? d.layout!.fallbackWidthFraction,
-                maxWidthFraction:       s?.layout?.maxWidthFraction        ?? d.layout!.maxWidthFraction,
-                maxHeightFraction:      s?.layout?.maxHeightFraction       ?? d.layout!.maxHeightFraction
+                maxWidthFraction:       s?.layout?.maxWidthFraction       ?? d.layout!.maxWidthFraction,
+                maxHeightFraction:      s?.layout?.maxHeightFraction      ?? d.layout!.maxHeightFraction
             ),
             dropZones: DropZoneConfig(
                 leftFraction:   s?.dropZones?.leftFraction   ?? d.dropZones!.leftFraction,

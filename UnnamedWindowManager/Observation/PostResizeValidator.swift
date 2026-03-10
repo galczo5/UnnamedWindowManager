@@ -18,7 +18,7 @@ enum PostResizeValidator {
             guard case .window(let w) = leaf, windows.contains(w) else { continue }
             guard let axEl = observer.elements[w], let actual = readSize(of: axEl) else { continue }
 
-            let gap     = w.gaps ? Config.gap * 2 : 0
+            let gap     = w.gaps ? Config.innerGap * 2 : 0
             let targetW = w.width  - gap
             let targetH = w.height - gap
 

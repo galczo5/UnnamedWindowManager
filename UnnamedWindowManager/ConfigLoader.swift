@@ -50,7 +50,8 @@ struct ConfigLoader {
     private static func format(_ data: ConfigData) -> String {
         let d = ConfigData.defaults.config!
         let s = data.config
-        let l  = s?.layout    ?? d.layout!
+        let l  = s?.layout     ?? d.layout!
+        let og = l.outerGaps  ?? d.layout!.outerGaps!
         let dz = s?.dropZones ?? d.dropZones!
         let ov = s?.overlay   ?? d.overlay!
         let bh = s?.behavior  ?? d.behavior!
@@ -64,8 +65,14 @@ struct ConfigLoader {
         return """
         config:
           layout:
-            # Gap between snapped windows and screen edges (points).
-            gap: \(num(l.gap))
+            # Gap between adjacent snapped windows (points).
+            innerGap: \(num(l.innerGap))
+            # Gaps between outermost windows and screen edges (points).
+            outerGaps:
+              left: \(num(og.left))
+              top: \(num(og.top))
+              right: \(num(og.right))
+              bottom: \(num(og.bottom))
             # Fallback width fraction of the visible screen when a window's size cannot be read.
             fallbackWidthFraction: \(num(l.fallbackWidthFraction))
             # Maximum width of a snapped window as a fraction of the visible screen width.

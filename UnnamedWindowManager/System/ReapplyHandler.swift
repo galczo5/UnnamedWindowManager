@@ -121,7 +121,8 @@ struct ReapplyHandler {
     static func clampSize(_ size: CGSize, screen: NSScreen) -> CGSize {
         let visible = screen.visibleFrame
         let maxW = visible.width  * Config.maxWidthFraction
-        let maxH = visible.height * Config.maxHeightFraction - Config.gap * 2
+        let og = Config.outerGaps
+        let maxH = visible.height * Config.maxHeightFraction - og.top! - og.bottom!
         return CGSize(
             width:  min(size.width,  maxW),
             height: min(size.height, maxH)

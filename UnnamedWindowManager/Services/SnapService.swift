@@ -108,9 +108,10 @@ final class SnapService {
                 treeMutation.extractAndWrap(in: &store.roots[targetRootID]!, targetOrder: lastOrder,
                                     newLeaf: newLeaf, orientation: orientation)
             }
+            let og = Config.outerGaps
             position.recomputeSizes(&store.roots[targetRootID]!,
-                                    width: screen.visibleFrame.width  - Config.gap * 2,
-                                    height: screen.visibleFrame.height - Config.gap * 2)
+                                    width: screen.visibleFrame.width  - og.left! - og.right!,
+                                    height: screen.visibleFrame.height - og.top! - og.bottom!)
         }
     }
 
@@ -143,9 +144,10 @@ final class SnapService {
                 store.roots.removeValue(forKey: id)
                 store.windowCounts.removeValue(forKey: id)
             } else {
+                let og = Config.outerGaps
                 position.recomputeSizes(&store.roots[id]!,
-                                        width: screen.visibleFrame.width  - Config.gap * 2,
-                                        height: screen.visibleFrame.height - Config.gap * 2)
+                                        width: screen.visibleFrame.width  - og.left! - og.right!,
+                                        height: screen.visibleFrame.height - og.top! - og.bottom!)
             }
         }
     }
@@ -154,9 +156,10 @@ final class SnapService {
         store.queue.sync(flags: .barrier) {
             guard let id = rootIDSync(containing: key) else { return }
             resizer.applyResize(key: key, actualSize: actualSize, root: &store.roots[id]!)
+            let og = Config.outerGaps
             position.recomputeSizes(&store.roots[id]!,
-                                    width: screen.visibleFrame.width  - Config.gap * 2,
-                                    height: screen.visibleFrame.height - Config.gap * 2)
+                                    width: screen.visibleFrame.width  - og.left! - og.right!,
+                                    height: screen.visibleFrame.height - og.top! - og.bottom!)
         }
     }
 
@@ -171,9 +174,10 @@ final class SnapService {
     func recomputeVisibleRootSizes(screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
             guard let id = visibleRootID() else { return }
+            let og = Config.outerGaps
             position.recomputeSizes(&store.roots[id]!,
-                                    width: screen.visibleFrame.width  - Config.gap * 2,
-                                    height: screen.visibleFrame.height - Config.gap * 2)
+                                    width: screen.visibleFrame.width  - og.left! - og.right!,
+                                    height: screen.visibleFrame.height - og.top! - og.bottom!)
         }
     }
 
@@ -181,9 +185,10 @@ final class SnapService {
         store.queue.sync(flags: .barrier) {
             guard let id = rootIDSync(containing: key) else { return }
             treeMutation.flipParentOrientation(of: key, in: &store.roots[id]!)
+            let og = Config.outerGaps
             position.recomputeSizes(&store.roots[id]!,
-                                    width: screen.visibleFrame.width  - Config.gap * 2,
-                                    height: screen.visibleFrame.height - Config.gap * 2)
+                                    width: screen.visibleFrame.width  - og.left! - og.right!,
+                                    height: screen.visibleFrame.height - og.top! - og.bottom!)
         }
     }
 
@@ -209,9 +214,10 @@ final class SnapService {
                 preSnapOrigin: draggedWindow.preSnapOrigin, preSnapSize: draggedWindow.preSnapSize
             ))
             treeInsert.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &store.roots[targetRootID]!)
+            let og = Config.outerGaps
             position.recomputeSizes(&store.roots[targetRootID]!,
-                                    width: screen.visibleFrame.width  - Config.gap * 2,
-                                    height: screen.visibleFrame.height - Config.gap * 2)
+                                    width: screen.visibleFrame.width  - og.left! - og.right!,
+                                    height: screen.visibleFrame.height - og.top! - og.bottom!)
         }
     }
 

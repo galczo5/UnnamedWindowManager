@@ -7,14 +7,13 @@ final class LayoutService {
     private init() {}
 
     /// Positions all snapped windows on `screen` by walking the current slot tree.
-    /// Reads the tree snapshot from `SharedRootStore` and the live AX element map from
-    /// `ResizeObserver`. The root origin is shifted inward by one gap so the outer margin
-    /// equals the inter-window gap (both equal `Config.gap`).
+    /// The root origin is shifted inward by outer gaps; leaf windows are inset by inner gap.
     func applyLayout(screen: NSScreen) {
         let visible       = screen.visibleFrame
         let primaryHeight = NSScreen.screens[0].frame.height
         // y is flipped: AX uses top-left origin, AppKit uses bottom-left.
-        let origin = CGPoint(x: visible.minX + Config.gap, y: primaryHeight - visible.maxY + Config.gap)
+        let og = Config.outerGaps
+        let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
         let elements = ResizeObserver.shared.elements
         guard let root = SnapService.shared.snapshotVisibleRoot() else { return }
         applyLayout(root, origin: origin, elements: elements)
@@ -50,7 +49,7 @@ final class LayoutService {
         switch slot {
         case .window(let w):
             guard let ax = elements[w] else { return }
-            let g = w.gaps ? Config.gap : 0
+            let g = w.gaps ? Config.innerGap : 0
             var pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
             var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
             Logger.shared.log("key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
