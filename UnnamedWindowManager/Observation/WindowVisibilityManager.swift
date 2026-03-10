@@ -1,7 +1,7 @@
 import AppKit
 import ApplicationServices
 
-// Manages auto-minimization state for snapped windows, restoring them when the layout changes.
+// Manages auto-minimization state for tiled windows, restoring them when the layout changes.
 final class WindowVisibilityManager {
     static let shared = WindowVisibilityManager()
     private init() {}
@@ -20,7 +20,7 @@ final class WindowVisibilityManager {
     }
 
     /// Restores a window if it was auto-minimized, then removes it from tracking.
-    /// Call before releasing a window from the registry (e.g. unsnap).
+    /// Call before releasing a window from the registry (e.g. untile).
     func restoreAndForget(_ key: WindowSlot) {
         guard autoMinimized.contains(key) else { return }
         if let axWindow = ResizeObserver.shared.window(for: key) {

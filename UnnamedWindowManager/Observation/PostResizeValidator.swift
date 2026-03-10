@@ -1,6 +1,6 @@
 import AppKit
 
-// Checks snapped windows after a resize and corrects any that refused the target size.
+// Checks tiled windows after a resize and corrects any that refused the target size.
 enum PostResizeValidator {
 
     static func checkAndFixRefusals(windows: Set<WindowSlot>, screen: NSScreen) {
@@ -12,7 +12,7 @@ enum PostResizeValidator {
 
         let observer = ResizeObserver.shared
         var refusals: [Refusal] = []
-        let leaves = SnapService.shared.leavesInVisibleRoot()
+        let leaves = TileService.shared.leavesInVisibleRoot()
 
         for leaf in leaves {
             guard case .window(let w) = leaf, windows.contains(w) else { continue }
@@ -37,7 +37,7 @@ enum PostResizeValidator {
         observer.reapplying.formUnion(allTracked)
 
         for r in refusals {
-            SnapService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
+            TileService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
         }
         LayoutService.shared.applyLayout(screen: screen)
 

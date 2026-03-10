@@ -41,8 +41,8 @@ final class Config {
     static var dimInactiveOpacity: CGFloat     { shared.s.behavior!.dimInactiveOpacity! }
     static var dimAnimationDuration: CGFloat   { shared.s.behavior!.dimAnimationDuration! }
     static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
-    static var snapAllShortcut: String          { shared.s.shortcuts!.snapAll! }
-    static var snapShortcut: String            { shared.s.shortcuts!.snap! }
+    static var tileAllShortcut: String          { shared.s.shortcuts!.tileAll! }
+    static var tileShortcut: String            { shared.s.shortcuts!.tile! }
     static var resetLayoutShortcut: String     { shared.s.shortcuts!.resetLayout! }
     static var refreshShortcut: String         { shared.s.shortcuts!.refresh! }
     static var flipOrientationShortcut: String { shared.s.shortcuts!.flipOrientation! }

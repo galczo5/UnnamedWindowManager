@@ -68,7 +68,7 @@ final class FocusObserver {
 
         let elements = ResizeObserver.shared.elements
         if let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }),
-           let rootID = SnapService.shared.rootID(containing: key) {
+           let rootID = TileService.shared.rootID(containing: key) {
             let hash = key.windowHash
             DispatchQueue.main.async {
                 WindowOpacityService.shared.dim(rootID: rootID, focusedHash: hash)

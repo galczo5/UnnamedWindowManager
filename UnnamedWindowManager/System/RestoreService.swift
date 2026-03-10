@@ -1,10 +1,10 @@
 import ApplicationServices
 
-/// Restores a window's position and size to its pre-snap frame via the Accessibility API.
+/// Restores a window's position and size to its pre-tile frame via the Accessibility API.
 struct RestoreService {
 
     static func restore(_ slot: WindowSlot, element: AXUIElement) {
-        guard var pos = slot.preSnapOrigin, var size = slot.preSnapSize else { return }
+        guard var pos = slot.preTileOrigin, var size = slot.preTileSize else { return }
         if let posVal = AXValueCreate(.cgPoint, &pos) {
             AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, posVal)
         }

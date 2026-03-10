@@ -17,7 +17,7 @@ final class ScreenChangeObserver {
 
     @objc private func screenParametersChanged() {
         guard let screen = NSScreen.main else { return }
-        SnapService.shared.recomputeVisibleRootSizes(screen: screen)
+        TileService.shared.recomputeVisibleRootSizes(screen: screen)
         ReapplyHandler.reapplyAll()
     }
 }

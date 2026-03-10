@@ -3,27 +3,27 @@ import AppKit
 import ApplicationServices
 
 extension Notification.Name {
-    static let snapStateChanged = Notification.Name("snapStateChanged")
+    static let tileStateChanged = Notification.Name("tileStateChanged")
     static let windowFocusChanged = Notification.Name("windowFocusChanged")
 }
 
 @Observable
 final class MenuState {
     var parentOrientation: Orientation? = nil
-    var isSnapped: Bool = false
-    var isFrontmostSnapped: Bool = false
+    var isTiled: Bool = false
+    var isFrontmostTiled: Bool = false
 
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
-        isSnapped = SnapService.shared.snapshotVisibleRoot() != nil
-        isFrontmostSnapped = {
+        isTiled = TileService.shared.snapshotVisibleRoot() != nil
+        isFrontmostTiled = {
             guard let frontApp = NSWorkspace.shared.frontmostApplication else { return false }
             let pid = frontApp.processIdentifier
             let axApp = AXUIElementCreateApplication(pid)
             var focusedWindow: CFTypeRef?
             guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return false }
             let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
-            return SnapService.shared.isTracked(key)
+            return TileService.shared.isTracked(key)
         }()
     }
 }
@@ -42,7 +42,7 @@ struct UnnamedWindowManagerApp: App {
         Logger.shared.log("=== UnnamedWindowManager started ===")
         NotificationService.shared.requestAuthorization()
         if Config.autoSnap || Config.autoOrganize {
-            AutoSnapObserver.shared.start()
+            AutoTileObserver.shared.start()
         }
         FocusObserver.shared.start()
         ScreenChangeObserver.shared.start()
@@ -50,17 +50,17 @@ struct UnnamedWindowManagerApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            if menuState.isFrontmostSnapped {
-                Button(menuLabel("Unsnap", Config.snapShortcut)) { UnsnapHandler.unsnap() }
+            if menuState.isFrontmostTiled {
+                Button(menuLabel("Untile", Config.tileShortcut)) { UntileHandler.untile() }
             } else {
-                Button(menuLabel("Snap", Config.snapShortcut)) { SnapHandler.snap() }
+                Button(menuLabel("Tile", Config.tileShortcut)) { TileHandler.tile() }
             }
-            if menuState.isSnapped {
-                Button(menuLabel("Unsnap all", Config.snapAllShortcut)) { UnsnapHandler.unsnapAll() }
+            if menuState.isTiled {
+                Button(menuLabel("Untile all", Config.tileAllShortcut)) { UntileHandler.untileAll() }
             } else {
-                Button(menuLabel("Snap all",   Config.snapAllShortcut)) { OrganizeHandler.organize() }
+                Button(menuLabel("Tile all",   Config.tileAllShortcut)) { OrganizeHandler.organize() }
             }
-            Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UnsnapHandler.unsnapAll(); OrganizeHandler.organize() }
+            Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }
             Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
             let orientLabel: String = {
@@ -97,8 +97,8 @@ struct UnnamedWindowManagerApp: App {
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {
             HStack(spacing: 4) {
-                if menuState.isSnapped {
-                    Text("[snapped]")
+                if menuState.isTiled {
+                    Text("[tiled]")
                 } else {
                     Image(systemName: "rectangle.split.3x1.fill")
                 }
@@ -107,7 +107,7 @@ struct UnnamedWindowManagerApp: App {
                 menuState.refresh()
                 KeybindingService.shared.start()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .snapStateChanged)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .tileStateChanged)) { _ in
                 menuState.refresh()
             }
             .onReceive(NotificationCenter.default.publisher(for: .windowFocusChanged)) { _ in

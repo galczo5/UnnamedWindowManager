@@ -160,7 +160,7 @@ struct SlotTreeInsertService {
                 pid: replacement.pid, windowHash: replacement.windowHash,
                 id: w.id, parentId: w.parentId, order: w.order,
                 width: w.width, height: w.height, gaps: w.gaps, fraction: w.fraction,
-                preSnapOrigin: replacement.preSnapOrigin, preSnapSize: replacement.preSnapSize
+                preTileOrigin: replacement.preTileOrigin, preTileSize: replacement.preTileSize
             )
             slot = .window(swapped); return true
         case .horizontal(var h):

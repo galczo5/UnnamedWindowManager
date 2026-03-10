@@ -4,7 +4,7 @@ import ApplicationServices
 // `kAXUIElementDestroyedNotification` may not be bridged in all SDK versions.
 private let kElementDestroyed = "AXUIElementDestroyed" as CFString
 
-// Tracks AX move/resize/destroy notifications for all snapped windows and drives layout reapplication.
+// Tracks AX move/resize/destroy notifications for all tiled windows and drives layout reapplication.
 final class ResizeObserver {
     static let shared = ResizeObserver()
     private init() {}
@@ -64,9 +64,9 @@ final class ResizeObserver {
         if notification == kElementDestroyed as String {
             WindowOpacityService.shared.restore(hash: key.windowHash)
             if let screen = NSScreen.main {
-                SnapService.shared.removeAndReflow(key, screen: screen)
+                TileService.shared.removeAndReflow(key, screen: screen)
             } else {
-                SnapService.shared.remove(key)
+                TileService.shared.remove(key)
             }
             cleanup(key: key, pid: pid)
             WindowVisibilityManager.shared.windowRemoved(key)
@@ -74,7 +74,7 @@ final class ResizeObserver {
             return
         }
 
-        guard SnapService.shared.isTracked(key) else { return }
+        guard TileService.shared.isTracked(key) else { return }
         guard !reapplying.contains(key) else { return }
 
         let isResize = notification == (kAXWindowResizedNotification as String)
@@ -121,7 +121,7 @@ final class ResizeObserver {
 
     // MARK: - Reapply
 
-    /// Polls every 50 ms until no mouse button is held, then reapplies the snap.
+    /// Polls every 50 ms until no mouse button is held, then reapplies the tile.
     /// Any in-progress poll for the same key is cancelled before scheduling a new one.
     /// - Parameter isResize: true when triggered by a resize notification — accepts the
     ///   new size and reflows all snapped windows; false for move — restores position only.
@@ -150,7 +150,7 @@ final class ResizeObserver {
                       let axElement = self.elements[key],
                       let actualSize = readSize(of: axElement) else { return }
 
-                SnapService.shared.resize(key: key, actualSize: actualSize, screen: screen)
+                TileService.shared.resize(key: key, actualSize: actualSize, screen: screen)
                 ReapplyHandler.reapplyAll()
             } else {
                 // Move: directional insert, center swap, or restore.
@@ -158,9 +158,9 @@ final class ResizeObserver {
                 let dropAllowed = hoverDuration >= Config.dropZoneHoverDelay
                 if dropAllowed, let drop = ReapplyHandler.findDropTarget(forKey: key) {
                     if drop.zone == .center {
-                        SnapService.shared.swap(key, drop.window)
+                        TileService.shared.swap(key, drop.window)
                     } else if let screen = NSScreen.main {
-                        SnapService.shared.insertAdjacent(dragged: key, target: drop.window,
+                        TileService.shared.insertAdjacent(dragged: key, target: drop.window,
                                                           zone: drop.zone, screen: screen)
                     }
                     ReapplyHandler.reapplyAll()

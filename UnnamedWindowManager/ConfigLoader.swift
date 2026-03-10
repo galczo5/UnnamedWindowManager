@@ -116,10 +116,10 @@ struct ConfigLoader {
             # Color of the dim overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
             dimColor: \(bh.dimColor ?? "black")
           shortcuts:
-            # Global keyboard shortcut for Snap All / Unsnap All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
-            snapAll: "\(sh.snapAll ?? "cmd+'")"
-            # Global keyboard shortcut for Snap / Unsnap toggle (snaps if not snapped, unsnaps if snapped). Empty string disables.
-            snap: "\(sh.snap ?? "")"
+            # Global keyboard shortcut for Tile All / Untile All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
+            tileAll: "\(sh.tileAll ?? "cmd+'")"
+            # Global keyboard shortcut for Tile / Untile toggle (tiles if not tiled, untiles if tiled). Empty string disables.
+            tile: "\(sh.tile ?? "")"
             # Global keyboard shortcut for Reset Layout. Empty string disables.
             resetLayout: "\(sh.resetLayout ?? "")"
             # Global keyboard shortcut for Refresh. Empty string disables.

@@ -1,12 +1,12 @@
 import AppKit
 import ApplicationServices
 
-// Entry point for snapping the focused window into the layout.
-struct SnapHandler {
+// Entry point for tiling the focused window into the layout.
+struct TileHandler {
 
-    /// Snaps the frontmost focused window into the layout.
+    /// Tiles the frontmost focused window into the layout.
     /// Prompts for AX trust if not yet granted. No-op if the window is already tracked.
-    static func snap() {
+    static func tile() {
         guard AXIsProcessTrusted() else {
             let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
             AXIsProcessTrustedWithOptions(opts as CFDictionary)
@@ -23,16 +23,16 @@ struct SnapHandler {
 
         guard let screen = NSScreen.main else { return }
         var key = windowSlot(for: axWindow, pid: pid)
-        key.preSnapOrigin = readOrigin(of: axWindow)
-        key.preSnapSize = readSize(of: axWindow)
-        Logger.shared.log("snap: pid=\(pid) hash=\(key.windowHash)")
-        SnapService.shared.snap(key, screen: screen)
+        key.preTileOrigin = readOrigin(of: axWindow)
+        key.preTileSize = readSize(of: axWindow)
+        Logger.shared.log("tile: pid=\(pid) hash=\(key.windowHash)")
+        TileService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }
 
-    /// Snaps the frontmost window if it is not snapped, or unsnaps it if it is.
-    static func snapToggle() {
+    /// Tiles the frontmost window if it is not tiled, or untiles it if it is.
+    static func tileToggle() {
         guard AXIsProcessTrusted() else { return }
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
         let pid = frontApp.processIdentifier
@@ -40,16 +40,16 @@ struct SnapHandler {
         var focusedWindow: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
-        if SnapService.shared.isTracked(key) {
-            UnsnapHandler.unsnap()
+        if TileService.shared.isTracked(key) {
+            UntileHandler.untile()
         } else {
-            snap()
+            tile()
         }
     }
 
-    /// Snaps `window` into the layout as a new leaf.
+    /// Tiles `window` into the layout as a new leaf.
     /// Skips windows that are already tracked, minimised, or smaller than 100×100 pts.
-    static func snapLeft(window: AXUIElement, pid: pid_t) {
+    static func tileLeft(window: AXUIElement, pid: pid_t) {
         guard AXIsProcessTrusted() else { return }
         guard let screen = NSScreen.main else { return }
 
@@ -59,10 +59,10 @@ struct SnapHandler {
            (minRef as? Bool) == true { return }
         if let sz = readSize(of: window), sz.width < 100 || sz.height < 100 { return }
 
-        key.preSnapOrigin = readOrigin(of: window)
-        key.preSnapSize = readSize(of: window)
-        Logger.shared.log("snapLeft: pid=\(pid) hash=\(key.windowHash)")
-        SnapService.shared.snap(key, screen: screen)
+        key.preTileOrigin = readOrigin(of: window)
+        key.preTileSize = readSize(of: window)
+        Logger.shared.log("tileLeft: pid=\(pid) hash=\(key.windowHash)")
+        TileService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }

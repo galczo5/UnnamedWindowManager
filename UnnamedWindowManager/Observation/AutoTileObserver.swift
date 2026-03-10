@@ -2,8 +2,8 @@ import AppKit
 import ApplicationServices
 
 // C-compatible callback — must not capture any Swift context.
-// refcon is Unmanaged<AutoSnapObserver> passed via AXObserverAddNotification.
-private func autoSnapCallback(
+// refcon is Unmanaged<AutoTileObserver> passed via AXObserverAddNotification.
+private func autoTileCallback(
     _ observer: AXObserver,
     _ element: AXUIElement,
     _ notification: CFString,
@@ -12,13 +12,13 @@ private func autoSnapCallback(
     guard let refcon else { return }
     var pid: pid_t = 0
     AXUIElementGetPid(element, &pid)
-    let obs = Unmanaged<AutoSnapObserver>.fromOpaque(refcon).takeUnretainedValue()
+    let obs = Unmanaged<AutoTileObserver>.fromOpaque(refcon).takeUnretainedValue()
     obs.handleWindowCreated(pid: pid)
 }
 
-// Observes window creation and app activation events to auto-snap new windows into the layout.
-final class AutoSnapObserver {
-    static let shared = AutoSnapObserver()
+// Observes window creation and app activation events to auto-tile new windows into the layout.
+final class AutoTileObserver {
+    static let shared = AutoTileObserver()
     private init() {}
 
     private var appObservers: [pid_t: AXObserver] = [:]
@@ -41,7 +41,7 @@ final class AutoSnapObserver {
         else { return }
         let pid = app.processIdentifier
         observeApp(pid: pid)
-        snapFocusedWindow(pid: pid)
+        tileFocusedWindow(pid: pid)
     }
 
     @objc private func didTerminateApp(_ note: Notification) {
@@ -64,7 +64,7 @@ final class AutoSnapObserver {
         // Defer by one run-loop pass so the new window has time to receive focus
         // before kAXFocusedWindowAttribute is queried.
         DispatchQueue.main.async { [weak self] in
-            self?.snapFocusedWindow(pid: pid, screenWasEmpty: screenWasEmpty)
+            self?.tileFocusedWindow(pid: pid, screenWasEmpty: screenWasEmpty)
         }
     }
 
@@ -73,7 +73,7 @@ final class AutoSnapObserver {
     private func observeApp(pid: pid_t) {
         guard appObservers[pid] == nil else { return }
         var axObs: AXObserver?
-        guard AXObserverCreate(pid, autoSnapCallback, &axObs) == .success, let axObs else { return }
+        guard AXObserverCreate(pid, autoTileCallback, &axObs) == .success, let axObs else { return }
         let appEl = AXUIElementCreateApplication(pid)
         let refcon = Unmanaged.passUnretained(self).toOpaque()
         AXObserverAddNotification(axObs, appEl, kAXWindowCreatedNotification as CFString, refcon)
@@ -87,7 +87,7 @@ final class AutoSnapObserver {
         appObservers.removeValue(forKey: pid)
     }
 
-    private func snapFocusedWindow(pid: pid_t, screenWasEmpty: Bool = false) {
+    private func tileFocusedWindow(pid: pid_t, screenWasEmpty: Bool = false) {
         if Config.autoOrganize && screenWasEmpty {
             Logger.shared.log("autoOrganize triggered for pid=\(pid)")
             OrganizeHandler.organize()
@@ -95,9 +95,9 @@ final class AutoSnapObserver {
         }
 
         guard Config.autoSnap else { return }
-        let hasLayout = SnapService.shared.snapshotVisibleRoot() != nil
+        let hasLayout = TileService.shared.snapshotVisibleRoot() != nil
         guard hasLayout else {
-            Logger.shared.log("autoSnap skipped — no layout active (pid=\(pid))")
+            Logger.shared.log("autoTile skipped — no layout active (pid=\(pid))")
             return
         }
         let axApp = AXUIElementCreateApplication(pid)
@@ -105,15 +105,15 @@ final class AutoSnapObserver {
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success
         else { return }
         let window = ref as! AXUIElement
-        guard !SnapService.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
+        guard !TileService.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
         // If a tracked window for this pid is at the same position, the new window is a tab — skip.
         guard !isTabOfTrackedWindow(window, pid: pid) else {
-            Logger.shared.log("autoSnap skipped — new window is a tab of a tracked window (pid=\(pid))")
+            Logger.shared.log("autoTile skipped — new window is a tab of a tracked window (pid=\(pid))")
             return
         }
-        Logger.shared.log("autoSnap triggered for pid=\(pid)")
+        Logger.shared.log("autoTile triggered for pid=\(pid)")
         pruneStaleSlots(for: pid)
-        SnapHandler.snapLeft(window: window, pid: pid)
+        TileHandler.tileLeft(window: window, pid: pid)
     }
 
     /// Returns true if `window` appears at the same screen position as any already-tracked window
@@ -142,9 +142,9 @@ final class AutoSnapObserver {
             Logger.shared.log("pruning stale slot: pid=\(pid) hash=\(key.windowHash)")
             ResizeObserver.shared.stopObserving(key: key, pid: pid)
             if let screen {
-                SnapService.shared.removeAndReflow(key, screen: screen)
+                TileService.shared.removeAndReflow(key, screen: screen)
             } else {
-                SnapService.shared.remove(key)
+                TileService.shared.remove(key)
             }
         }
     }

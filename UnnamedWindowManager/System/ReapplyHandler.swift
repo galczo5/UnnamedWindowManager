@@ -7,12 +7,12 @@ struct ReapplyHandler {
     /// Reapplies the layout for a single already-tracked window.
     /// No-op if the window is no longer in the slot tree.
     static func reapply(window: AXUIElement, key: WindowSlot) {
-        guard SnapService.shared.isTracked(key) else { return }
+        guard TileService.shared.isTracked(key) else { return }
         guard let screen = NSScreen.main else { return }
         LayoutService.shared.applyLayout(screen: screen)
     }
 
-    /// Reapplies the layout for all snapped windows, debounced to 100 ms.
+    /// Reapplies the layout for all tiled windows, debounced to 100 ms.
     /// Multiple calls within 100 ms collapse into one execution. After the layout
     /// runs, PostResizeValidator fires 300 ms later to catch any refusing windows.
     static func reapplyAll() {
@@ -20,7 +20,7 @@ struct ReapplyHandler {
         let work = DispatchWorkItem {
             guard let screen = NSScreen.main else { return }
             pruneOffScreenWindows(screen: screen)
-            let leaves = SnapService.shared.leavesInVisibleRoot()
+            let leaves = TileService.shared.leavesInVisibleRoot()
             let allWindows = Set(leaves.compactMap { leaf -> WindowSlot? in
                 if case .window(let w) = leaf { return w }
                 return nil
@@ -36,7 +36,7 @@ struct ReapplyHandler {
                 PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
             }
             DispatchQueue.main.async {
-                NotificationCenter.default.post(name: .snapStateChanged, object: nil)
+                NotificationCenter.default.post(name: .tileStateChanged, object: nil)
             }
         }
         pendingLayout = work
@@ -51,7 +51,7 @@ struct ReapplyHandler {
     static func findDropTarget(forKey draggedKey: WindowSlot) -> DropTarget? {
         let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
         let screenHeight = NSScreen.screens[0].frame.height
-        let leaves = SnapService.shared.leavesInVisibleRoot()
+        let leaves = TileService.shared.leavesInVisibleRoot()
         let elements = ResizeObserver.shared.elements
 
         for leaf in leaves {
@@ -90,13 +90,13 @@ struct ReapplyHandler {
     private static func pruneOffScreenWindows(screen: NSScreen) {
         let onScreen = onScreenWindowIDs()
         guard !onScreen.isEmpty else { return }
-        let leaves = SnapService.shared.leavesInVisibleRoot()
+        let leaves = TileService.shared.leavesInVisibleRoot()
         for leaf in leaves {
             guard case .window(let w) = leaf else { continue }
             guard !onScreen.contains(w.windowHash) else { continue }
             Logger.shared.log("pruning off-screen window: pid=\(w.pid) hash=\(w.windowHash)")
             ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
-            SnapService.shared.removeAndReflow(w, screen: screen)
+            TileService.shared.removeAndReflow(w, screen: screen)
         }
     }
 

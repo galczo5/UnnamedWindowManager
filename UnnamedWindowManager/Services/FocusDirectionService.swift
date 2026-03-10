@@ -19,7 +19,7 @@ struct FocusDirectionService {
         let axWindow = ref as! AXUIElement
         let currentKey = windowSlot(for: axWindow, pid: pid)
 
-        guard let root = SnapService.shared.snapshotVisibleRoot() else { return }
+        guard let root = TileService.shared.snapshotVisibleRoot() else { return }
         let rects = leafRects(in: root)
         guard let sourceRect = rects.first(where: { $0.key == currentKey })?.rect else { return }
 

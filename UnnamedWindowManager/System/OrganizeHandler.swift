@@ -54,9 +54,9 @@ struct OrganizeHandler {
         var snappedKeys: Set<WindowSlot> = []
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
             var key = windowSlot(for: item.window, pid: item.pid)
-            key.preSnapOrigin = readOrigin(of: item.window)
-            key.preSnapSize = readSize(of: item.window)
-            SnapService.shared.snap(key, screen: screen)
+            key.preTileOrigin = readOrigin(of: item.window)
+            key.preTileSize = readSize(of: item.window)
+            TileService.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
             snappedKeys.insert(key)
         }

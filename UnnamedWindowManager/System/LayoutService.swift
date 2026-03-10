@@ -6,7 +6,7 @@ final class LayoutService {
     static let shared = LayoutService()
     private init() {}
 
-    /// Positions all snapped windows on `screen` by walking the current slot tree.
+    /// Positions all tiled windows on `screen` by walking the current slot tree.
     /// The root origin is shifted inward by outer gaps; leaf windows are inset by inner gap.
     func applyLayout(screen: NSScreen) {
         let visible       = screen.visibleFrame
@@ -15,7 +15,7 @@ final class LayoutService {
         let og = Config.outerGaps
         let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
         let elements = ResizeObserver.shared.elements
-        guard let root = SnapService.shared.snapshotVisibleRoot() else { return }
+        guard let root = TileService.shared.snapshotVisibleRoot() else { return }
         applyLayout(root, origin: origin, elements: elements)
     }
 
@@ -39,8 +39,8 @@ final class LayoutService {
 
     /// Recursively positions a slot subtree starting at `origin`.
     /// - Window leaf: applies gap insets, then writes position and size via AX.
-    /// - Horizontal container: tiles children left-to-right.
-    /// - Vertical container: tiles children top-to-bottom.
+    /// - Horizontal container: lays children left-to-right.
+    /// - Vertical container: lays children top-to-bottom.
     private func applyLayout(
         _ slot: Slot,
         origin: CGPoint,

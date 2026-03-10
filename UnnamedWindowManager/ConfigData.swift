@@ -57,8 +57,8 @@ struct ConfigData: Codable {
     }
 
     struct ShortcutsConfig: Codable {
-        var snapAll: String?
-        var snap: String?
+        var tileAll: String?
+        var tile: String?
         var resetLayout: String?
         var refresh: String?
         var flipOrientation: String?
@@ -73,7 +73,7 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black"),
-        shortcuts: ShortcutsConfig(snapAll: "cmd+'", snap: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down"),
+        shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down"),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
 
@@ -104,8 +104,8 @@ struct ConfigData: Codable {
         check(s?.behavior?.dimInactiveOpacity,      "config.behavior.dimInactiveOpacity")
         check(s?.behavior?.dimAnimationDuration,       "config.behavior.dimAnimationDuration")
         check(s?.behavior?.dimColor,                   "config.behavior.dimColor")
-        check(s?.shortcuts?.snapAll,             "config.shortcuts.snapAll")
-        check(s?.shortcuts?.snap,               "config.shortcuts.snap")
+        check(s?.shortcuts?.tileAll,             "config.shortcuts.tileAll")
+        check(s?.shortcuts?.tile,               "config.shortcuts.tile")
         check(s?.shortcuts?.resetLayout,        "config.shortcuts.resetLayout")
         check(s?.shortcuts?.refresh,            "config.shortcuts.refresh")
         check(s?.shortcuts?.flipOrientation,    "config.shortcuts.flipOrientation")
@@ -154,8 +154,8 @@ struct ConfigData: Codable {
                 dimColor:                 s?.behavior?.dimColor                 ?? d.behavior!.dimColor
             ),
             shortcuts: ShortcutsConfig(
-                snapAll:         s?.shortcuts?.snapAll         ?? d.shortcuts!.snapAll,
-                snap:            s?.shortcuts?.snap            ?? d.shortcuts!.snap,
+                tileAll:         s?.shortcuts?.tileAll         ?? d.shortcuts!.tileAll,
+                tile:            s?.shortcuts?.tile            ?? d.shortcuts!.tile,
                 resetLayout:     s?.shortcuts?.resetLayout     ?? d.shortcuts!.resetLayout,
                 refresh:         s?.shortcuts?.refresh         ?? d.shortcuts!.refresh,
                 flipOrientation: s?.shortcuts?.flipOrientation ?? d.shortcuts!.flipOrientation,

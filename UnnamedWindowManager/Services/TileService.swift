@@ -1,8 +1,8 @@
 import AppKit
 
-// High-level operations on the snap layout: adding, removing, resizing, and repositioning windows.
-final class SnapService {
-    static let shared = SnapService()
+// High-level operations on the tiling layout: adding, removing, resizing, and repositioning windows.
+final class TileService {
+    static let shared = TileService()
     private init() {}
 
     private let store        = SharedRootStore.shared
@@ -19,7 +19,7 @@ final class SnapService {
     }
 
     /// Returns leaves from the root that currently has a window visible on screen.
-    /// Falls back to an empty array if no root is active (no snapped windows on screen).
+    /// Falls back to an empty array if no root is active (no tiled windows on screen).
     func leavesInVisibleRoot() -> [Slot] {
         store.queue.sync {
             guard let id = visibleRootID(), let root = store.roots[id] else { return [] }
@@ -55,14 +55,14 @@ final class SnapService {
         }
     }
 
-    // MARK: - Snap / unsnap
+    // MARK: - Tile / untile
 
-    /// Snaps `key` into the correct root, creating one if no snapped window is visible on screen.
+    /// Tiles `key` into the correct root, creating one if no tiled window is visible on screen.
     /// Idempotent: no-op if the window is already in the correct root.
     /// Performs a cross-root migration if the window belongs to a different root.
     func snap(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            // Determine target root — the one with a visible snapped window, or a brand-new root.
+            // Determine target root — the one with a visible tiled window, or a brand-new root.
             let targetRootID: UUID
             if let visibleID = visibleRootID() {
                 targetRootID = visibleID
@@ -76,14 +76,14 @@ final class SnapService {
 
             if treeQuery.isTracked(key, in: store.roots[targetRootID]!) { return }
 
-            // Preserve original pre-snap values during cross-root migration.
-            var preSnapOrigin = key.preSnapOrigin
-            var preSnapSize = key.preSnapSize
+            // Preserve original pre-tile values during cross-root migration.
+            var preTileOrigin = key.preTileOrigin
+            var preTileSize = key.preTileSize
             if let srcID = rootIDSync(containing: key) {
                 if let oldSlot = treeQuery.findLeafSlot(key, in: store.roots[srcID]!),
                    case .window(let oldWindow) = oldSlot {
-                    preSnapOrigin = oldWindow.preSnapOrigin
-                    preSnapSize = oldWindow.preSnapSize
+                    preTileOrigin = oldWindow.preTileOrigin
+                    preTileSize = oldWindow.preTileSize
                 }
                 treeMutation.removeLeaf(key, from: &store.roots[srcID]!)
                 if store.roots[srcID]!.children.isEmpty {
@@ -98,7 +98,7 @@ final class SnapService {
                 pid: key.pid, windowHash: key.windowHash,
                 id: UUID(), parentId: store.roots[targetRootID]!.id,
                 order: order, width: 0, height: 0, gaps: true,
-                preSnapOrigin: preSnapOrigin, preSnapSize: preSnapSize
+                preTileOrigin: preTileOrigin, preTileSize: preTileSize
             ))
             if store.roots[targetRootID]!.children.isEmpty {
                 store.roots[targetRootID]!.children = [newLeaf]
@@ -211,7 +211,7 @@ final class SnapService {
                 pid: draggedWindow.pid, windowHash: draggedWindow.windowHash,
                 id: UUID(), parentId: store.roots[targetRootID]!.id,
                 order: draggedWindow.order, width: 0, height: 0, gaps: true,
-                preSnapOrigin: draggedWindow.preSnapOrigin, preSnapSize: draggedWindow.preSnapSize
+                preTileOrigin: draggedWindow.preTileOrigin, preTileSize: draggedWindow.preTileSize
             ))
             treeInsert.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &store.roots[targetRootID]!)
             let og = Config.outerGaps
