@@ -144,6 +144,8 @@ struct SlotTreeInsertService {
                 }
             }
             return false
+        case .stacking:
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeInsertService")
         }
     }
 
@@ -177,6 +179,8 @@ struct SlotTreeInsertService {
                 }
             }
             return false
+        case .stacking:
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeInsertService")
         }
     }
 }

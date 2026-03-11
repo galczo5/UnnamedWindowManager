@@ -77,6 +77,8 @@ struct FocusDirectionService {
                 collectLeafRects(child, origin: cursor, into: &results)
                 cursor.y += child.height
             }
+        case .stacking:
+            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by FocusDirectionService")
         }
     }
 

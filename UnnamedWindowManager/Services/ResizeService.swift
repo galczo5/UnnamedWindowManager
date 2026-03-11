@@ -118,6 +118,9 @@ struct ResizeService {
                     applyFractionDelta(&children, targetIndex: i, fractionDelta: delta / sizeInAxis)
                     return .adjusted
                 }
+
+            case .stacking:
+                fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by ResizeService")
             }
         }
         return .notFound

@@ -33,6 +33,12 @@ struct PositionService {
                 recomputeSizes(&v.children[i], width: width, height: (height * v.children[i].fraction).rounded())
             }
             slot = .vertical(v)
+        case .stacking(var s):
+            s.width = width; s.height = height
+            for i in s.children.indices {
+                s.children[i].height = height
+            }
+            slot = .stacking(s)
         }
     }
 

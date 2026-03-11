@@ -93,6 +93,8 @@ struct SlotTreeMutationService {
             }
             var updated = v; updated.children = redistributed(newChildren)
             return (.vertical(updated), true)
+        case .stacking:
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
         }
     }
 
@@ -136,6 +138,8 @@ struct SlotTreeMutationService {
                 }
             }
             return false
+        case .stacking:
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
         }
     }
 
@@ -163,6 +167,8 @@ struct SlotTreeMutationService {
                 }
             }
             return false
+        case .stacking:
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
         }
     }
 
@@ -202,6 +208,8 @@ struct SlotTreeMutationService {
                 }
             }
             return false
+        case .stacking:
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
         }
     }
 

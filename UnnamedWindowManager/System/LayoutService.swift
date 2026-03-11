@@ -71,6 +71,20 @@ final class LayoutService {
                 applyLayout(child, origin: cursor, elements: elements)
                 cursor.y += child.height
             }
+        case .stacking(let s):
+            // Raise lowest-priority windows first so the top window is raised last.
+            let raiseSequence: [WindowSlot] = s.order == .lifo ? s.children : s.children.reversed()
+            for w in raiseSequence {
+                guard let ax = elements[w] else { continue }
+                let g = w.gaps ? Config.innerGap : 0
+                let xOffset: CGFloat = s.align == .left ? 0 : s.width - w.width
+                var pos  = CGPoint(x: (origin.x + xOffset + g).rounded(), y: (origin.y + g).rounded())
+                var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
+                Logger.shared.log("key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
+                if let posVal  = AXValueCreate(.cgPoint, &pos)  { AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal) }
+                if let sizeVal = AXValueCreate(.cgSize,  &size) { AXUIElementSetAttributeValue(ax, kAXSizeAttribute  as CFString, sizeVal) }
+                AXUIElementPerformAction(ax, kAXRaiseAction as CFString)
+            }
         }
     }
 }
