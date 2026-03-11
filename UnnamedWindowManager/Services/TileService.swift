@@ -15,14 +15,20 @@ final class TileService {
     // MARK: - Queries
 
     func isTracked(_ key: WindowSlot) -> Bool {
-        store.queue.sync { store.roots.values.contains { treeQuery.isTracked(key, in: $0) } }
+        store.queue.sync {
+            store.roots.values.contains {
+                guard case .tiling(let root) = $0 else { return false }
+                return treeQuery.isTracked(key, in: root)
+            }
+        }
     }
 
     /// Returns leaves from the root that currently has a window visible on screen.
     /// Falls back to an empty array if no root is active (no tiled windows on screen).
     func leavesInVisibleRoot() -> [Slot] {
         store.queue.sync {
-            guard let id = visibleRootID(), let root = store.roots[id] else { return [] }
+            guard let id = visibleRootID(),
+                  case .tiling(let root) = store.roots[id] else { return [] }
             return treeQuery.allLeaves(in: root).sorted { a, b in
                 if case .window(let wa) = a, case .window(let wb) = b { return wa.order < wb.order }
                 return false
@@ -33,14 +39,16 @@ final class TileService {
     /// Returns a snapshot of the root whose windows are currently visible on screen, or `nil`.
     func snapshotVisibleRoot() -> TilingRootSlot? {
         store.queue.sync {
-            guard let id = visibleRootID() else { return nil }
-            return store.roots[id]
+            guard let id = visibleRootID(),
+                  case .tiling(let root) = store.roots[id] else { return nil }
+            return root
         }
     }
 
     func storedSlot(_ key: WindowSlot) -> WindowSlot? {
         store.queue.sync {
-            for root in store.roots.values {
+            for rootSlot in store.roots.values {
+                guard case .tiling(let root) = rootSlot else { continue }
                 if let slot = treeQuery.findLeafSlot(key, in: root),
                    case .window(let w) = slot { return w }
             }
@@ -50,8 +58,9 @@ final class TileService {
 
     func parentOrientation(of key: WindowSlot) -> Orientation? {
         store.queue.sync {
-            guard let id = rootIDSync(containing: key) else { return nil }
-            return treeQuery.findParentOrientation(of: key, in: store.roots[id]!)
+            guard let id = rootIDSync(containing: key),
+                  case .tiling(let root) = store.roots[id] else { return nil }
+            return treeQuery.findParentOrientation(of: key, in: root)
         }
     }
 
@@ -69,26 +78,30 @@ final class TileService {
             } else {
                 let id = UUID()
                 let f  = screen.visibleFrame
-                store.roots[id] = TilingRootSlot(id: id, width: f.width, height: f.height,
-                                           orientation: .horizontal, children: [])
+                store.roots[id] = .tiling(TilingRootSlot(id: id, width: f.width, height: f.height,
+                                                         orientation: .horizontal, children: []))
                 targetRootID = id
             }
 
-            if treeQuery.isTracked(key, in: store.roots[targetRootID]!) { return }
+            guard case .tiling(var targetRoot) = store.roots[targetRootID] else { return }
+            if treeQuery.isTracked(key, in: targetRoot) { return }
 
             // Preserve original pre-tile values during cross-root migration.
             var preTileOrigin = key.preTileOrigin
             var preTileSize = key.preTileSize
-            if let srcID = rootIDSync(containing: key) {
-                if let oldSlot = treeQuery.findLeafSlot(key, in: store.roots[srcID]!),
+            if let srcID = rootIDSync(containing: key),
+               case .tiling(var srcRoot) = store.roots[srcID] {
+                if let oldSlot = treeQuery.findLeafSlot(key, in: srcRoot),
                    case .window(let oldWindow) = oldSlot {
                     preTileOrigin = oldWindow.preTileOrigin
                     preTileSize = oldWindow.preTileSize
                 }
-                treeMutation.removeLeaf(key, from: &store.roots[srcID]!)
-                if store.roots[srcID]!.children.isEmpty {
+                treeMutation.removeLeaf(key, from: &srcRoot)
+                if srcRoot.children.isEmpty {
                     store.roots.removeValue(forKey: srcID)
                     store.windowCounts.removeValue(forKey: srcID)
+                } else {
+                    store.roots[srcID] = .tiling(srcRoot)
                 }
             }
 
@@ -96,29 +109,31 @@ final class TileService {
             let order = store.windowCounts[targetRootID]!
             let newLeaf = Slot.window(WindowSlot(
                 pid: key.pid, windowHash: key.windowHash,
-                id: UUID(), parentId: store.roots[targetRootID]!.id,
+                id: UUID(), parentId: targetRoot.id,
                 order: order, width: 0, height: 0, gaps: true,
                 preTileOrigin: preTileOrigin, preTileSize: preTileSize
             ))
-            if store.roots[targetRootID]!.children.isEmpty {
-                store.roots[targetRootID]!.children = [newLeaf]
+            if targetRoot.children.isEmpty {
+                targetRoot.children = [newLeaf]
             } else {
-                let lastOrder = treeQuery.maxLeafOrder(in: store.roots[targetRootID]!)
+                let lastOrder = treeQuery.maxLeafOrder(in: targetRoot)
                 let orientation: Orientation = order % 2 == 0 ? .horizontal : .vertical
-                treeMutation.extractAndWrap(in: &store.roots[targetRootID]!, targetOrder: lastOrder,
-                                    newLeaf: newLeaf, orientation: orientation)
+                treeMutation.extractAndWrap(in: &targetRoot, targetOrder: lastOrder,
+                                            newLeaf: newLeaf, orientation: orientation)
             }
             let og = Config.outerGaps
-            position.recomputeSizes(&store.roots[targetRootID]!,
+            position.recomputeSizes(&targetRoot,
                                     width: screen.visibleFrame.width  - og.left! - og.right!,
                                     height: screen.visibleFrame.height - og.top! - og.bottom!)
+            store.roots[targetRootID] = .tiling(targetRoot)
         }
     }
 
     func removeVisibleRoot() -> [WindowSlot] {
         store.queue.sync(flags: .barrier) {
-            guard let id = visibleRootID() else { return [] }
-            let leaves = treeQuery.allLeaves(in: store.roots[id]!)
+            guard let id = visibleRootID(),
+                  case .tiling(let root) = store.roots[id] else { return [] }
+            let leaves = treeQuery.allLeaves(in: root)
             store.roots.removeValue(forKey: id)
             store.windowCounts.removeValue(forKey: id)
             return leaves.compactMap { if case .window(let w) = $0 { return w } else { return nil } }
@@ -127,68 +142,81 @@ final class TileService {
 
     func remove(_ key: WindowSlot) {
         store.queue.async(flags: .barrier) {
-            guard let id = self.rootIDSync(containing: key) else { return }
-            self.treeMutation.removeLeaf(key, from: &self.store.roots[id]!)
-            if self.store.roots[id]!.children.isEmpty {
+            guard let id = self.rootIDSync(containing: key),
+                  case .tiling(var root) = self.store.roots[id] else { return }
+            self.treeMutation.removeLeaf(key, from: &root)
+            if root.children.isEmpty {
                 self.store.roots.removeValue(forKey: id)
                 self.store.windowCounts.removeValue(forKey: id)
+            } else {
+                self.store.roots[id] = .tiling(root)
             }
         }
     }
 
     func removeAndReflow(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let id = rootIDSync(containing: key) else { return }
-            treeMutation.removeLeaf(key, from: &store.roots[id]!)
-            if store.roots[id]!.children.isEmpty {
+            guard let id = rootIDSync(containing: key),
+                  case .tiling(var root) = store.roots[id] else { return }
+            treeMutation.removeLeaf(key, from: &root)
+            if root.children.isEmpty {
                 store.roots.removeValue(forKey: id)
                 store.windowCounts.removeValue(forKey: id)
             } else {
                 let og = Config.outerGaps
-                position.recomputeSizes(&store.roots[id]!,
+                position.recomputeSizes(&root,
                                         width: screen.visibleFrame.width  - og.left! - og.right!,
                                         height: screen.visibleFrame.height - og.top! - og.bottom!)
+                store.roots[id] = .tiling(root)
             }
         }
     }
 
     func resize(key: WindowSlot, actualSize: CGSize, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let id = rootIDSync(containing: key) else { return }
-            resizer.applyResize(key: key, actualSize: actualSize, root: &store.roots[id]!)
+            guard let id = rootIDSync(containing: key),
+                  case .tiling(var root) = store.roots[id] else { return }
+            resizer.applyResize(key: key, actualSize: actualSize, root: &root)
             let og = Config.outerGaps
-            position.recomputeSizes(&store.roots[id]!,
+            position.recomputeSizes(&root,
                                     width: screen.visibleFrame.width  - og.left! - og.right!,
                                     height: screen.visibleFrame.height - og.top! - og.bottom!)
+            store.roots[id] = .tiling(root)
         }
     }
 
     func swap(_ keyA: WindowSlot, _ keyB: WindowSlot) {
         store.queue.sync(flags: .barrier) {
             guard let id = rootIDSync(containing: keyA),
-                  treeQuery.isTracked(keyB, in: store.roots[id]!) else { return }
-            treeInsert.swap(keyA, keyB, in: &store.roots[id]!)
+                  case .tiling(var root) = store.roots[id],
+                  treeQuery.isTracked(keyB, in: root) else { return }
+            treeInsert.swap(keyA, keyB, in: &root)
+            store.roots[id] = .tiling(root)
         }
     }
 
     func recomputeVisibleRootSizes(screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let id = visibleRootID() else { return }
+            guard let id = visibleRootID(),
+                  case .tiling(var root) = store.roots[id] else { return }
             let og = Config.outerGaps
-            position.recomputeSizes(&store.roots[id]!,
+            position.recomputeSizes(&root,
                                     width: screen.visibleFrame.width  - og.left! - og.right!,
                                     height: screen.visibleFrame.height - og.top! - og.bottom!)
+            store.roots[id] = .tiling(root)
         }
     }
 
     func flipParentOrientation(_ key: WindowSlot, screen: NSScreen) {
         store.queue.sync(flags: .barrier) {
-            guard let id = rootIDSync(containing: key) else { return }
-            treeMutation.flipParentOrientation(of: key, in: &store.roots[id]!)
+            guard let id = rootIDSync(containing: key),
+                  case .tiling(var root) = store.roots[id] else { return }
+            treeMutation.flipParentOrientation(of: key, in: &root)
             let og = Config.outerGaps
-            position.recomputeSizes(&store.roots[id]!,
+            position.recomputeSizes(&root,
                                     width: screen.visibleFrame.width  - og.left! - og.right!,
                                     height: screen.visibleFrame.height - og.top! - og.bottom!)
+            store.roots[id] = .tiling(root)
         }
     }
 
@@ -197,33 +225,43 @@ final class TileService {
         store.queue.sync(flags: .barrier) {
             guard let draggedRootID = rootIDSync(containing: dragged),
                   let targetRootID  = rootIDSync(containing: target),
-                  let draggedSlot   = treeQuery.findLeafSlot(dragged, in: store.roots[draggedRootID]!),
+                  case .tiling(var draggedRoot) = store.roots[draggedRootID],
+                  case .tiling(var targetRoot)  = store.roots[targetRootID],
+                  let draggedSlot = treeQuery.findLeafSlot(dragged, in: draggedRoot),
                   case .window(let draggedWindow) = draggedSlot else { return }
 
-            treeMutation.removeLeaf(dragged, from: &store.roots[draggedRootID]!)
+            treeMutation.removeLeaf(dragged, from: &draggedRoot)
             // Destroy source root only on cross-root drag that empties it.
-            if draggedRootID != targetRootID, store.roots[draggedRootID]!.children.isEmpty {
-                store.roots.removeValue(forKey: draggedRootID)
-                store.windowCounts.removeValue(forKey: draggedRootID)
+            if draggedRootID != targetRootID {
+                if draggedRoot.children.isEmpty {
+                    store.roots.removeValue(forKey: draggedRootID)
+                    store.windowCounts.removeValue(forKey: draggedRootID)
+                } else {
+                    store.roots[draggedRootID] = .tiling(draggedRoot)
+                }
             }
 
             let newLeaf = Slot.window(WindowSlot(
                 pid: draggedWindow.pid, windowHash: draggedWindow.windowHash,
-                id: UUID(), parentId: store.roots[targetRootID]!.id,
+                id: UUID(), parentId: targetRoot.id,
                 order: draggedWindow.order, width: 0, height: 0, gaps: true,
                 preTileOrigin: draggedWindow.preTileOrigin, preTileSize: draggedWindow.preTileSize
             ))
-            treeInsert.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &store.roots[targetRootID]!)
+            treeInsert.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &targetRoot)
             let og = Config.outerGaps
-            position.recomputeSizes(&store.roots[targetRootID]!,
+            position.recomputeSizes(&targetRoot,
                                     width: screen.visibleFrame.width  - og.left! - og.right!,
                                     height: screen.visibleFrame.height - og.top! - og.bottom!)
+            store.roots[targetRootID] = .tiling(targetRoot)
         }
     }
 
     func rootID(containing key: WindowSlot) -> UUID? {
         store.queue.sync {
-            store.roots.keys.first { treeQuery.isTracked(key, in: store.roots[$0]!) }
+            store.roots.first { _, rootSlot in
+                guard case .tiling(let root) = rootSlot else { return false }
+                return treeQuery.isTracked(key, in: root)
+            }?.key
         }
     }
 
@@ -231,7 +269,10 @@ final class TileService {
 
     /// Must be called inside a `store.queue` barrier or sync block.
     private func rootIDSync(containing key: WindowSlot) -> UUID? {
-        store.roots.keys.first { treeQuery.isTracked(key, in: store.roots[$0]!) }
+        store.roots.first { _, rootSlot in
+            guard case .tiling(let root) = rootSlot else { return false }
+            return treeQuery.isTracked(key, in: root)
+        }?.key
     }
 
     /// Returns the UUID of the root that owns a window currently visible on screen, or `nil`.
@@ -252,7 +293,8 @@ final class TileService {
             visibleHashes.insert(UInt(wid))
         }
 
-        for (id, root) in store.roots {
+        for (id, rootSlot) in store.roots {
+            guard case .tiling(let root) = rootSlot else { continue }
             for leaf in treeQuery.allLeaves(in: root) {
                 if case .window(let w) = leaf, visibleHashes.contains(w.windowHash) {
                     return id
