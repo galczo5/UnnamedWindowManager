@@ -71,6 +71,9 @@ struct WindowLister {
                 for child in root.children { logSlot(child, depth: 1) }
             case .scrolling(let root):
                 Logger.shared.log("scrolling root \(id.uuidString.prefix(8))  size=\(Int(root.width))x\(Int(root.height))")
+                if let left = root.left  { Logger.shared.log("  [left]");   logSlot(left,        depth: 1) }
+                Logger.shared.log("  [center]"); logSlot(root.center, depth: 1)
+                if let right = root.right { Logger.shared.log("  [right]");  logSlot(right, depth: 1) }
             }
         }
         Logger.shared.log("=== End of slot trees ===")

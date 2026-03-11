@@ -1,0 +1,128 @@
+import AppKit
+
+// Manages ScrollingRootSlot creation and mutation in SharedRootStore.
+final class ScrollingTileService {
+    static let shared = ScrollingTileService()
+    private init() {}
+
+    private let store    = SharedRootStore.shared
+    private let position = ScrollingPositionService()
+
+    func snapshotVisibleScrollingRoot() -> ScrollingRootSlot? {
+        store.queue.sync {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(let root) = store.roots[id] else { return nil }
+            return root
+        }
+    }
+
+    func isTracked(_ key: WindowSlot) -> Bool {
+        store.queue.sync {
+            store.roots.values.contains { rootSlot in
+                guard case .scrolling(let root) = rootSlot else { return false }
+                return containsWindow(key, in: root)
+            }
+        }
+    }
+
+    func createScrollingRoot(key: WindowSlot, screen: NSScreen) {
+        store.queue.sync(flags: .barrier) {
+            let id  = UUID()
+            let og  = Config.outerGaps
+            let w   = screen.visibleFrame.width  - og.left! - og.right!
+            let h   = screen.visibleFrame.height - og.top!  - og.bottom!
+            let win = WindowSlot(pid: key.pid, windowHash: key.windowHash,
+                                 id: UUID(), parentId: id, order: 1,
+                                 width: 0, height: 0, gaps: true,
+                                 preTileOrigin: key.preTileOrigin, preTileSize: key.preTileSize)
+            var root = ScrollingRootSlot(id: id, width: w, height: h,
+                                         left: nil, center: .window(win), right: nil)
+            position.recomputeSizes(&root, width: w, height: h)
+            store.roots[id] = .scrolling(root)
+            store.windowCounts[id] = 1
+        }
+    }
+
+    func addWindow(_ key: WindowSlot, screen: NSScreen) {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(var root) = store.roots[id] else { return }
+            guard !containsWindow(key, in: root) else { return }
+
+            store.windowCounts[id, default: 0] += 1
+            let order = store.windowCounts[id]!
+            let newWin = WindowSlot(pid: key.pid, windowHash: key.windowHash,
+                                    id: UUID(), parentId: id, order: order,
+                                    width: 0, height: 0, gaps: true,
+                                    preTileOrigin: key.preTileOrigin, preTileSize: key.preTileSize)
+
+            // Move old center into left StackingSlot, then put new window in center.
+            if case .window(let oldCenter) = root.center {
+                switch root.left {
+                case nil:
+                    let stacking = StackingSlot(id: UUID(), parentId: id,
+                                                width: 0, height: 0,
+                                                children: [oldCenter],
+                                                align: .right, order: .lifo)
+                    root.left = .stacking(stacking)
+                case .stacking(var s):
+                    s.children.append(oldCenter)
+                    root.left = .stacking(s)
+                default:
+                    break
+                }
+            }
+
+            root.center = .window(newWin)
+            let og = Config.outerGaps
+            let w  = screen.visibleFrame.width  - og.left! - og.right!
+            let h  = screen.visibleFrame.height - og.top!  - og.bottom!
+            position.recomputeSizes(&root, width: w, height: h)
+            store.roots[id] = .scrolling(root)
+        }
+    }
+
+    // MARK: - Private
+
+    /// Must be called inside a `store.queue` block.
+    private func visibleScrollingRootID() -> UUID? {
+        let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
+        guard let cgList = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
+        ) as? [[String: Any]] else { return nil }
+
+        var visibleHashes = Set<UInt>()
+        for info in cgList {
+            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
+                  let pid  = info[kCGWindowOwnerPID as String] as? Int,
+                  let wid  = info[kCGWindowNumber as String] as? CGWindowID,
+                  pid_t(pid) != ownPID else { continue }
+            visibleHashes.insert(UInt(wid))
+        }
+
+        for (id, rootSlot) in store.roots {
+            guard case .scrolling(let root) = rootSlot else { continue }
+            if windowHashes(in: root).contains(where: { visibleHashes.contains($0) }) { return id }
+        }
+        return nil
+    }
+
+    private func containsWindow(_ key: WindowSlot, in root: ScrollingRootSlot) -> Bool {
+        windowHashes(in: root).contains(key.windowHash)
+    }
+
+    private func windowHashes(in root: ScrollingRootSlot) -> [UInt] {
+        var hashes: [UInt] = []
+        func collect(_ slot: Slot) {
+            switch slot {
+            case .window(let w):    hashes.append(w.windowHash)
+            case .stacking(let s): s.children.forEach { hashes.append($0.windowHash) }
+            default: break
+            }
+        }
+        if let left  = root.left  { collect(left) }
+        collect(root.center)
+        if let right = root.right { collect(right) }
+        return hashes
+    }
+}

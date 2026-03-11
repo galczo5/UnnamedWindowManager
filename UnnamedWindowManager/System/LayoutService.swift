@@ -15,8 +15,12 @@ final class LayoutService {
         let og = Config.outerGaps
         let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
         let elements = ResizeObserver.shared.elements
-        guard let root = TileService.shared.snapshotVisibleRoot() else { return }
-        applyLayout(root, origin: origin, elements: elements)
+        if let root = TileService.shared.snapshotVisibleRoot() {
+            applyLayout(root, origin: origin, elements: elements)
+        }
+        if let root = ScrollingTileService.shared.snapshotVisibleScrollingRoot() {
+            ScrollingLayoutService.shared.applyLayout(root: root, origin: origin, elements: elements)
+        }
     }
 
     /// Walks the root's direct children in order, advancing the cursor after each child

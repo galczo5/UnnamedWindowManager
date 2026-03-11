@@ -60,6 +60,9 @@ struct UnnamedWindowManagerApp: App {
             } else {
                 Button(menuLabel("Tile all",   Config.tileAllShortcut)) { OrganizeHandler.organize() }
             }
+            if !menuState.isTiled {
+                Button("Scroll") { ScrollingRootHandler.scroll() }
+            }
             Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }
             Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
