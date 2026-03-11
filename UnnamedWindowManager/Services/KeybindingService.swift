@@ -7,6 +7,7 @@ final class KeybindingService {
     static let shared = KeybindingService()
 
     private struct Binding {
+        let label: String
         let modifiers: NSEvent.ModifierFlags
         /// Character match (for regular keys). Exactly one of key/keyCode is set.
         let key: String?
@@ -27,29 +28,29 @@ final class KeybindingService {
             return
         }
 
-        let candidates: [(String, () -> Void)] = [
-            (Config.tileAllShortcut, {
+        let candidates: [(String, String, () -> Void)] = [
+            (Config.tileAllShortcut, "tileAll", {
                 if TileService.shared.snapshotVisibleRoot() != nil {
                     UntileHandler.untileAll()
                 } else {
                     OrganizeHandler.organize()
                 }
             }),
-            (Config.tileShortcut,            { TileHandler.tileToggle() }),
-            (Config.flipOrientationShortcut, { OrientFlipHandler.flipOrientation() }),
-            (Config.focusLeftShortcut,       { FocusLeftHandler.focus() }),
-            (Config.focusRightShortcut,      { FocusRightHandler.focus() }),
-            (Config.focusUpShortcut,         { FocusUpHandler.focus() }),
-            (Config.focusDownShortcut,       { FocusDownHandler.focus() }),
+            (Config.tileShortcut,            "tile",            { TileHandler.tileToggle() }),
+            (Config.flipOrientationShortcut, "flipOrientation", { OrientFlipHandler.flipOrientation() }),
+            (Config.focusLeftShortcut,       "focusLeft",       { FocusLeftHandler.focus() }),
+            (Config.focusRightShortcut,      "focusRight",      { FocusRightHandler.focus() }),
+            (Config.focusUpShortcut,         "focusUp",         { FocusUpHandler.focus() }),
+            (Config.focusDownShortcut,       "focusDown",       { FocusDownHandler.focus() }),
         ]
 
-        let commandCandidates: [(String, () -> Void)] = Config.commands.compactMap { cmd in
+        let commandCandidates: [(String, String, () -> Void)] = Config.commands.compactMap { cmd in
             guard let shortcut = cmd.shortcut, !shortcut.isEmpty,
                   let run = cmd.run, !run.isEmpty else { return nil }
-            return (shortcut, { CommandService.execute(run) })
+            return (shortcut, "cmd:\(run)", { CommandService.execute(run) })
         }
 
-        let allShortcuts = (candidates + commandCandidates).compactMap { s, _ in s.isEmpty ? nil : s }
+        let allShortcuts = (candidates + commandCandidates).compactMap { s, _, _ in s.isEmpty ? nil : s }
         if let duplicate = findDuplicate(allShortcuts) {
             NotificationService.shared.post(
                 title: "Shortcut conflict",
@@ -61,9 +62,9 @@ final class KeybindingService {
         }
 
         bindings = []
-        for (shortcut, action) in candidates + commandCandidates {
+        for (shortcut, label, action) in candidates + commandCandidates {
             guard !shortcut.isEmpty, let parsed = parse(shortcut) else { continue }
-            bindings.append(Binding(modifiers: parsed.modifiers, key: parsed.key, keyCode: parsed.keyCode, action: action))
+            bindings.append(Binding(label: label, modifiers: parsed.modifiers, key: parsed.key, keyCode: parsed.keyCode, action: action))
         }
 
         guard !bindings.isEmpty else {
@@ -80,6 +81,13 @@ final class KeybindingService {
             options: .defaultTap,
             eventsOfInterest: eventMask,
             callback: { _, type, event, refcon -> Unmanaged<CGEvent>? in
+                if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+                    Logger.shared.log("KeybindingService: event tap disabled by \(type == .tapDisabledByTimeout ? "timeout" : "user input"), re-enabling")
+                    if let refcon, let tap = Unmanaged<KeybindingService>.fromOpaque(refcon).takeUnretainedValue().eventTap {
+                        CGEvent.tapEnable(tap: tap, enable: true)
+                    }
+                    return Unmanaged.passRetained(event)
+                }
                 guard let refcon, type == .keyDown else {
                     return Unmanaged.passRetained(event)
                 }
@@ -95,8 +103,12 @@ final class KeybindingService {
                     } else if let key = binding.key {
                         guard nsEvent.charactersIgnoringModifiers == key else { continue }
                     } else { continue }
+                    let label = binding.label
                     let action = binding.action
-                    DispatchQueue.main.async { action() }
+                    DispatchQueue.main.async {
+                        Logger.shared.log("shortcut captured: \(label)")
+                        action()
+                    }
                     return nil // consume the event
                 }
                 return Unmanaged.passRetained(event)

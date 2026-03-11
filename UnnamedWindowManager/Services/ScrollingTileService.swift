@@ -82,6 +82,74 @@ final class ScrollingTileService {
         }
     }
 
+    /// Scrolls right: first child of right slot becomes center, old center appended to left slot.
+    /// Returns the new center WindowSlot, or nil if right slot is empty.
+    func scrollRight(screen: NSScreen) -> WindowSlot? {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(var root) = store.roots[id] else { return nil }
+            guard case .stacking(var rightStack) = root.right else { return nil }
+
+            let newCenterWin = rightStack.children.removeFirst()
+            root.right = rightStack.children.isEmpty ? nil : .stacking(rightStack)
+
+            if case .window(let oldCenter) = root.center {
+                switch root.left {
+                case nil:
+                    let s = StackingSlot(id: UUID(), parentId: id, width: 0, height: 0,
+                                         children: [oldCenter], align: .right, order: .lifo)
+                    root.left = .stacking(s)
+                case .stacking(var s):
+                    s.children.append(oldCenter)
+                    root.left = .stacking(s)
+                default: break
+                }
+            }
+
+            root.center = .window(newCenterWin)
+            let og = Config.outerGaps
+            let w  = screen.visibleFrame.width  - og.left! - og.right!
+            let h  = screen.visibleFrame.height - og.top!  - og.bottom!
+            position.recomputeSizes(&root, width: w, height: h)
+            store.roots[id] = .scrolling(root)
+            return newCenterWin
+        }
+    }
+
+    /// Scrolls left: last child of left slot becomes center, old center inserted at front of right slot.
+    /// Returns the new center WindowSlot, or nil if left slot is empty.
+    func scrollLeft(screen: NSScreen) -> WindowSlot? {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(var root) = store.roots[id] else { return nil }
+            guard case .stacking(var leftStack) = root.left else { return nil }
+
+            let newCenterWin = leftStack.children.removeLast()
+            root.left = leftStack.children.isEmpty ? nil : .stacking(leftStack)
+
+            if case .window(let oldCenter) = root.center {
+                switch root.right {
+                case nil:
+                    let s = StackingSlot(id: UUID(), parentId: id, width: 0, height: 0,
+                                         children: [oldCenter], align: .left, order: .lifo)
+                    root.right = .stacking(s)
+                case .stacking(var s):
+                    s.children.insert(oldCenter, at: 0)
+                    root.right = .stacking(s)
+                default: break
+                }
+            }
+
+            root.center = .window(newCenterWin)
+            let og = Config.outerGaps
+            let w  = screen.visibleFrame.width  - og.left! - og.right!
+            let h  = screen.visibleFrame.height - og.top!  - og.bottom!
+            position.recomputeSizes(&root, width: w, height: h)
+            store.roots[id] = .scrolling(root)
+            return newCenterWin
+        }
+    }
+
     // MARK: - Private
 
     /// Must be called inside a `store.queue` block.
