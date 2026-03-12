@@ -7,7 +7,8 @@ struct ReapplyHandler {
     /// Reapplies the layout for a single already-tracked window.
     /// No-op if the window is no longer in the slot tree.
     static func reapply(window: AXUIElement, key: WindowSlot) {
-        guard TileService.shared.isTracked(key) else { return }
+        guard TileService.shared.isTracked(key) || ScrollingTileService.shared.isTracked(key)
+        else { return }
         guard let screen = NSScreen.main else { return }
         LayoutService.shared.applyLayout(screen: screen)
     }
@@ -20,8 +21,9 @@ struct ReapplyHandler {
         let work = DispatchWorkItem {
             guard let screen = NSScreen.main else { return }
             pruneOffScreenWindows(screen: screen)
-            let leaves = TileService.shared.leavesInVisibleRoot()
-            let allWindows = Set(leaves.compactMap { leaf -> WindowSlot? in
+            let tilingLeaves = TileService.shared.leavesInVisibleRoot()
+            let scrollingLeaves = ScrollingTileService.shared.leavesInVisibleScrollingRoot()
+            let allWindows = Set((tilingLeaves + scrollingLeaves).compactMap { leaf -> WindowSlot? in
                 if case .window(let w) = leaf { return w }
                 return nil
             })

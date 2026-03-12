@@ -17,6 +17,25 @@ final class ScrollingTileService {
         }
     }
 
+    func leavesInVisibleScrollingRoot() -> [Slot] {
+        store.queue.sync {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(let root) = store.roots[id] else { return [] }
+            var leaves: [Slot] = []
+            func collect(_ slot: Slot) {
+                switch slot {
+                case .window:          leaves.append(slot)
+                case .stacking(let s): leaves.append(contentsOf: s.children.map { .window($0) })
+                default: break
+                }
+            }
+            if let left  = root.left  { collect(left) }
+            collect(root.center)
+            if let right = root.right { collect(right) }
+            return leaves
+        }
+    }
+
     func isTracked(_ key: WindowSlot) -> Bool {
         Logger.shared.log("isTracked: hash=\(key.windowHash)")
         return store.queue.sync {

@@ -63,10 +63,10 @@ final class ResizeObserver {
             elements[$0].map { CFEqual($0, element) } == true
         }) else { return }
 
-        if ScrollingTileService.shared.isTracked(key) { return }
+        let isScrolling = ScrollingTileService.shared.isTracked(key)
 
         let eventLabel = notification == (kAXWindowResizedNotification as String) ? "resize" : "move"
-        Logger.shared.log("[\(eventLabel)] key=\(key.windowHash) pid=\(pid)")
+        Logger.shared.log("[\(eventLabel)] key=\(key.windowHash) pid=\(pid) scrolling=\(isScrolling)")
 
         if notification == kElementDestroyed as String {
             WindowOpacityService.shared.restore(hash: key.windowHash)
@@ -81,19 +81,19 @@ final class ResizeObserver {
             return
         }
 
-        guard TileService.shared.isTracked(key) else { return }
+        guard TileService.shared.isTracked(key) || isScrolling else { return }
         guard !reapplying.contains(key) else { return }
 
         let isResize = notification == (kAXWindowResizedNotification as String)
 
-        // While a drag is in progress, update the drop-zone overlay in real time.
-        if !isResize && NSEvent.pressedMouseButtons != 0 {
+        // While a drag is in progress, update the drop-zone overlay in real time (tiling only).
+        if !isScrolling && !isResize && NSEvent.pressedMouseButtons != 0 {
             let drop = ReapplyHandler.findDropTarget(forKey: key)
             updateTrackedDropTarget(drop)
             overlay.update(dropTarget: drop, draggedWindow: element, elements: elements)
         }
 
-        scheduleReapplyWhenMouseUp(key: key, isResize: isResize)
+        scheduleReapplyWhenMouseUp(key: key, isResize: isResize, isScrolling: isScrolling)
     }
 
     // MARK: – Private
@@ -132,7 +132,9 @@ final class ResizeObserver {
     /// Any in-progress poll for the same key is cancelled before scheduling a new one.
     /// - Parameter isResize: true when triggered by a resize notification — accepts the
     ///   new size and reflows all snapped windows; false for move — restores position only.
-    func scheduleReapplyWhenMouseUp(key: WindowSlot, isResize: Bool) {
+    /// - Parameter isScrolling: true for windows in a ScrollingRootSlot — always snaps back
+    ///   to slot position/size without fraction adjustment or drop-zone logic.
+    func scheduleReapplyWhenMouseUp(key: WindowSlot, isResize: Bool, isScrolling: Bool) {
         pendingReapply[key]?.cancel()
 
         let work = DispatchWorkItem { [weak self] in
@@ -140,17 +142,29 @@ final class ResizeObserver {
             self.pendingReapply.removeValue(forKey: key)
 
             if NSEvent.pressedMouseButtons != 0 {
-                self.scheduleReapplyWhenMouseUp(key: key, isResize: isResize)
+                self.scheduleReapplyWhenMouseUp(key: key, isResize: isResize, isScrolling: isScrolling)
                 return
             }
 
             self.overlay.hide()
+
+            guard !self.reapplying.contains(key),
+                  self.elements[key] != nil else { return }
+
+            if isScrolling {
+                self.reapplying.insert(key)
+                if let screen = NSScreen.main {
+                    LayoutService.shared.applyLayout(screen: screen)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.reapplying.remove(key)
+                }
+                return
+            }
+
             let hoverStart = self.dropTargetEnteredAt
             self.lastDropTarget = nil
             self.dropTargetEnteredAt = nil
-
-            guard !self.reapplying.contains(key),
-                  let storedElement = self.elements[key] else { return }
 
             if isResize {
                 guard let screen = NSScreen.main,
@@ -172,6 +186,7 @@ final class ResizeObserver {
                     }
                     ReapplyHandler.reapplyAll()
                 } else {
+                    guard let storedElement = self.elements[key] else { return }
                     self.reapplying.insert(key)
                     ReapplyHandler.reapply(window: storedElement, key: key)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
