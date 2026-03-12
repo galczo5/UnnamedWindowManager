@@ -111,7 +111,7 @@ final class ScrollingTileService {
         }
     }
 
-    /// Scrolls right: first child of right slot becomes center, old center appended to left slot.
+    /// Scrolls right: last child of right slot becomes center, old center appended to left slot.
     /// Returns the new center WindowSlot, or nil if right slot is empty.
     func scrollRight(screen: NSScreen) -> WindowSlot? {
         store.queue.sync(flags: .barrier) {
@@ -119,7 +119,7 @@ final class ScrollingTileService {
                   case .scrolling(var root) = store.roots[id] else { return nil }
             guard case .stacking(var rightStack) = root.right else { return nil }
 
-            let newCenterWin = rightStack.children.removeFirst()
+            let newCenterWin = rightStack.children.removeLast()
             root.right = rightStack.children.isEmpty ? nil : .stacking(rightStack)
 
             if case .window(let oldCenter) = root.center {
@@ -145,7 +145,7 @@ final class ScrollingTileService {
         }
     }
 
-    /// Scrolls left: last child of left slot becomes center, old center inserted at front of right slot.
+    /// Scrolls left: last child of left slot becomes center, old center appended to right slot.
     /// Returns the new center WindowSlot, or nil if left slot is empty.
     func scrollLeft(screen: NSScreen) -> WindowSlot? {
         store.queue.sync(flags: .barrier) {
@@ -163,7 +163,7 @@ final class ScrollingTileService {
                                          children: [oldCenter], align: .left)
                     root.right = .stacking(s)
                 case .stacking(var s):
-                    s.children.insert(oldCenter, at: 0)
+                    s.children.append(oldCenter)
                     root.right = .stacking(s)
                 default: break
                 }
