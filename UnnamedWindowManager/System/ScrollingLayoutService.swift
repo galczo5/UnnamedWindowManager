@@ -7,20 +7,21 @@ final class ScrollingLayoutService {
     private init() {}
 
     func applyLayout(root: ScrollingRootSlot, origin: CGPoint,
-                     elements: [WindowSlot: AXUIElement]) {
+                     elements: [WindowSlot: AXUIElement],
+                     zonesChanged: Bool = true) {
         let centerWidth = (root.width * 0.8).rounded()
         let remaining   = root.width - centerWidth
         let bothSides   = root.left != nil && root.right != nil
         let sideWidth   = (bothSides ? remaining / 2 : remaining).rounded()
         let leftWidth   = root.left != nil ? sideWidth : 0
 
-        if let left = root.left {
+        if zonesChanged, let left = root.left {
             applySlot(left, origin: CGPoint(x: origin.x, y: origin.y), elements: elements)
         }
         applySlot(root.center,
                   origin: CGPoint(x: origin.x + leftWidth, y: origin.y),
                   elements: elements)
-        if let right = root.right {
+        if zonesChanged, let right = root.right {
             applySlot(right,
                       origin: CGPoint(x: origin.x + leftWidth + centerWidth, y: origin.y),
                       elements: elements)
@@ -47,7 +48,6 @@ final class ScrollingLayoutService {
                 Logger.shared.log("scroll key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
                 if let posVal  = AXValueCreate(.cgPoint, &pos)  { AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal) }
                 if let sizeVal = AXValueCreate(.cgSize,  &size) { AXUIElementSetAttributeValue(ax, kAXSizeAttribute  as CFString, sizeVal) }
-                AXUIElementPerformAction(ax, kAXRaiseAction as CFString)
             }
         default:
             break

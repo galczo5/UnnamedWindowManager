@@ -6,20 +6,28 @@ struct ScrollingFocusService {
 
     static func scrollLeft() {
         guard let screen = NSScreen.main else { return }
+        let before = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
         let newCenter = ScrollingTileService.shared.scrollLeft(screen: screen)
         Logger.shared.log("scrollLeft: newCenter=\(newCenter.map { "pid=\($0.pid) hash=\($0.windowHash)" } ?? "nil")")
         guard let newCenter else { return }
-        LayoutService.shared.applyLayout(screen: screen)
+        let after = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
+        LayoutService.shared.applyLayout(screen: screen, zonesChanged: zoneSignature(before) != zoneSignature(after))
         activateAfterLayout(newCenter)
     }
 
     static func scrollRight() {
         guard let screen = NSScreen.main else { return }
+        let before = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
         let newCenter = ScrollingTileService.shared.scrollRight(screen: screen)
         Logger.shared.log("scrollRight: newCenter=\(newCenter.map { "pid=\($0.pid) hash=\($0.windowHash)" } ?? "nil")")
         guard let newCenter else { return }
-        LayoutService.shared.applyLayout(screen: screen)
+        let after = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
+        LayoutService.shared.applyLayout(screen: screen, zonesChanged: zoneSignature(before) != zoneSignature(after))
         activateAfterLayout(newCenter)
+    }
+
+    private static func zoneSignature(_ root: ScrollingRootSlot?) -> (Bool, Bool) {
+        (root?.left != nil, root?.right != nil)
     }
 
     /// Activates the center window after the layout pass completes.

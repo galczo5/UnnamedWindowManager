@@ -12,10 +12,12 @@ final class MenuState {
     var parentOrientation: Orientation? = nil
     var isTiled: Bool = false
     var isFrontmostTiled: Bool = false
+    var isScrolled: Bool = false
 
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
         isTiled = TileService.shared.snapshotVisibleRoot() != nil
+        isScrolled = ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil
         isFrontmostTiled = {
             guard let frontApp = NSWorkspace.shared.frontmostApplication else { return false }
             let pid = frontApp.processIdentifier
@@ -99,8 +101,9 @@ struct UnnamedWindowManagerApp: App {
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {
             HStack(spacing: 4) {
-                if menuState.isTiled {
-                    Text("[tiled]")
+                if menuState.isTiled || menuState.isScrolled {
+                    if menuState.isTiled    { Text("[tiled]") }
+                    if menuState.isScrolled { Text("[scrolled]") }
                 } else {
                     Image(systemName: "rectangle.split.3x1.fill")
                 }
