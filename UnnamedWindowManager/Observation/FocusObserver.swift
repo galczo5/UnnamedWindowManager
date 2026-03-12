@@ -75,9 +75,14 @@ final class FocusObserver {
         let axWindow = ref as! AXUIElement
 
         let elements = ResizeObserver.shared.elements
-        if let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }),
-           !ScrollingTileService.shared.isTracked(key),
-           let rootID = TileService.shared.rootID(containing: key) {
+        guard let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }) else {
+            WindowOpacityService.shared.restoreAll()
+            return
+        }
+
+        if let info = ScrollingTileService.shared.scrollingRootInfo(containing: key) {
+            WindowOpacityService.shared.dim(rootID: info.rootID, focusedHash: info.centerHash)
+        } else if let rootID = TileService.shared.rootID(containing: key) {
             WindowOpacityService.shared.dim(rootID: rootID, focusedHash: key.windowHash)
         } else {
             WindowOpacityService.shared.restoreAll()

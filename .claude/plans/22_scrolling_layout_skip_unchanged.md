@@ -2,9 +2,9 @@
 
 ## Checklist
 
-- [ ] Remove `kAXRaiseAction` from stacking slot loop in `ScrollingLayoutService`
-- [ ] Pass `zonesChanged` flag from `ScrollingFocusService` through to `ScrollingLayoutService`
-- [ ] Skip position/size AX calls for stacking windows when their zone did not change
+- [x] Remove `kAXRaiseAction` from stacking slot loop in `ScrollingLayoutService`
+- [x] Pass `zonesChanged` flag from `ScrollingFocusService` through to `ScrollingLayoutService`
+- [x] Skip position/size AX calls for stacking windows when their zone did not change
 
 ---
 

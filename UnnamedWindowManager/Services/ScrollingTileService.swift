@@ -46,6 +46,21 @@ final class ScrollingTileService {
         }
     }
 
+    func scrollingRootInfo(containing key: WindowSlot) -> (rootID: UUID, centerHash: UInt)? {
+        store.queue.sync {
+            for (id, rootSlot) in store.roots {
+                guard case .scrolling(let root) = rootSlot,
+                      containsWindow(key, in: root) else { continue }
+                switch root.center {
+                case .window(let w):   return (id, w.windowHash)
+                case .stacking(let s): return s.children.first.map { (id, $0.windowHash) }
+                default:               return nil
+                }
+            }
+            return nil
+        }
+    }
+
     func createScrollingRoot(key: WindowSlot, screen: NSScreen) {
         Logger.shared.log("createScrollingRoot: hash=\(key.windowHash)")
         store.queue.sync(flags: .barrier) {
@@ -179,6 +194,73 @@ final class ScrollingTileService {
         }
     }
 
+    func removeVisibleScrollingRoot() -> [WindowSlot] {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(let root) = store.roots[id] else { return [] }
+            let slots = allWindowSlots(in: root)
+            store.roots.removeValue(forKey: id)
+            store.windowCounts.removeValue(forKey: id)
+            return slots
+        }
+    }
+
+    /// Removes a single window from the scrolling root and reflows. If the removed window
+    /// was the center, promotes the last child of the left stacking slot (or right if left empty).
+    /// Returns the stored WindowSlot (with preTileOrigin/preTileSize), or nil if not found.
+    func removeWindow(_ key: WindowSlot, screen: NSScreen) -> WindowSlot? {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(var root) = store.roots[id] else { return nil }
+
+            let og = Config.outerGaps
+            let w  = screen.visibleFrame.width  - og.left! - og.right!
+            let h  = screen.visibleFrame.height - og.top!  - og.bottom!
+
+            // Center?
+            if case .window(let center) = root.center, center.windowHash == key.windowHash {
+                if case .stacking(var leftStack) = root.left {
+                    let promoted = leftStack.children.removeLast()
+                    root.left    = leftStack.children.isEmpty ? nil : .stacking(leftStack)
+                    root.center  = .window(promoted)
+                } else if case .stacking(var rightStack) = root.right {
+                    let promoted = rightStack.children.removeLast()
+                    root.right   = rightStack.children.isEmpty ? nil : .stacking(rightStack)
+                    root.center  = .window(promoted)
+                } else {
+                    store.roots.removeValue(forKey: id)
+                    store.windowCounts.removeValue(forKey: id)
+                    return center
+                }
+                position.recomputeSizes(&root, width: w, height: h)
+                store.roots[id] = .scrolling(root)
+                return center
+            }
+
+            // Left stacking slot?
+            if case .stacking(var leftStack) = root.left,
+               let idx = leftStack.children.firstIndex(where: { $0.windowHash == key.windowHash }) {
+                let removed = leftStack.children.remove(at: idx)
+                root.left = leftStack.children.isEmpty ? nil : .stacking(leftStack)
+                position.recomputeSizes(&root, width: w, height: h)
+                store.roots[id] = .scrolling(root)
+                return removed
+            }
+
+            // Right stacking slot?
+            if case .stacking(var rightStack) = root.right,
+               let idx = rightStack.children.firstIndex(where: { $0.windowHash == key.windowHash }) {
+                let removed = rightStack.children.remove(at: idx)
+                root.right = rightStack.children.isEmpty ? nil : .stacking(rightStack)
+                position.recomputeSizes(&root, width: w, height: h)
+                store.roots[id] = .scrolling(root)
+                return removed
+            }
+
+            return nil
+        }
+    }
+
     // MARK: - Private
 
     /// Must be called inside a `store.queue` block.
@@ -206,6 +288,21 @@ final class ScrollingTileService {
 
     private func containsWindow(_ key: WindowSlot, in root: ScrollingRootSlot) -> Bool {
         windowHashes(in: root).contains(key.windowHash)
+    }
+
+    private func allWindowSlots(in root: ScrollingRootSlot) -> [WindowSlot] {
+        var slots: [WindowSlot] = []
+        func collect(_ slot: Slot) {
+            switch slot {
+            case .window(let w):    slots.append(w)
+            case .stacking(let s): slots.append(contentsOf: s.children)
+            default: break
+            }
+        }
+        if let left  = root.left  { collect(left) }
+        collect(root.center)
+        if let right = root.right { collect(right) }
+        return slots
     }
 
     private func windowHashes(in root: ScrollingRootSlot) -> [UInt] {

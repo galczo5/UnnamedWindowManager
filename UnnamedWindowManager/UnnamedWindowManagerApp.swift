@@ -13,20 +13,22 @@ final class MenuState {
     var isTiled: Bool = false
     var isFrontmostTiled: Bool = false
     var isScrolled: Bool = false
+    var isFrontmostScrolled: Bool = false
 
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
         isTiled = TileService.shared.snapshotVisibleRoot() != nil
         isScrolled = ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil
-        isFrontmostTiled = {
-            guard let frontApp = NSWorkspace.shared.frontmostApplication else { return false }
+        let frontmostKey: WindowSlot? = {
+            guard let frontApp = NSWorkspace.shared.frontmostApplication else { return nil }
             let pid = frontApp.processIdentifier
             let axApp = AXUIElementCreateApplication(pid)
             var focusedWindow: CFTypeRef?
-            guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return false }
-            let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
-            return TileService.shared.isTracked(key)
+            guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return nil }
+            return windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
         }()
+        isFrontmostTiled    = frontmostKey.map { TileService.shared.isTracked($0) } ?? false
+        isFrontmostScrolled = frontmostKey.map { ScrollingTileService.shared.isTracked($0) } ?? false
     }
 }
 
@@ -62,8 +64,16 @@ struct UnnamedWindowManagerApp: App {
             } else {
                 Button(menuLabel("Tile all",   Config.tileAllShortcut)) { OrganizeHandler.organize() }
             }
-            Button("Scroll") { ScrollingRootHandler.scroll() }
-            Button("Scroll all") { ScrollOrganizeHandler.organizeScrolling() }
+            if menuState.isFrontmostScrolled {
+                Button("Unscroll") { UnscrollHandler.unscroll() }
+            } else {
+                Button("Scroll") { ScrollingRootHandler.scroll() }
+            }
+            if menuState.isScrolled {
+                Button("Unscroll all") { UnscrollHandler.unscrollAll() }
+            } else {
+                Button("Scroll all") { ScrollOrganizeHandler.organizeScrolling() }
+            }
             Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }
             Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
