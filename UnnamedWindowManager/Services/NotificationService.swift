@@ -6,10 +6,12 @@ final class NotificationService {
     private init() {}
 
     func requestAuthorization() {
+        Logger.shared.log("requestAuthorization")
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
     }
 
     func post(title: String, body: String) {
+        Logger.shared.log("post: title=\(title)")
         let content = UNMutableNotificationContent()
         content.title = title
         content.body  = body

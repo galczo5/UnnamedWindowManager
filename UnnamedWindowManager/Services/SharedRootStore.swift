@@ -11,10 +11,12 @@ final class SharedRootStore {
     let queue = DispatchQueue(label: "snap.registry", attributes: .concurrent)
 
     func snapshotAllRoots() -> [UUID: RootSlot] {
-        queue.sync { roots }
+        Logger.shared.log("snapshotAllRoots")
+        return queue.sync { roots }
     }
 
     func snapshotRoot(id: UUID) -> RootSlot? {
-        queue.sync { roots[id] }
+        Logger.shared.log("snapshotRoot: id=\(id)")
+        return queue.sync { roots[id] }
     }
 }

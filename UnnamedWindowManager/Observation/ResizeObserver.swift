@@ -24,7 +24,11 @@ final class ResizeObserver {
     // MARK: – Public
 
     func observe(window: AXUIElement, pid: pid_t, key: WindowSlot) {
-        guard elements[key] == nil else { return }
+        Logger.shared.log("observe: hash=\(key.windowHash) pid=\(pid)")
+        guard elements[key] == nil else {
+            Logger.shared.log("observe: already observed, skipping")
+            return
+        }
 
         elements[key] = window
         keysByPid[pid, default: []].insert(key)
@@ -37,6 +41,7 @@ final class ResizeObserver {
     }
 
     func stopObserving(key: WindowSlot, pid: pid_t) {
+        Logger.shared.log("stopObserving: hash=\(key.windowHash) pid=\(pid)")
         guard let window = elements[key], let axObs = observers[pid] else { return }
         AXObserverRemoveNotification(axObs, window, kAXWindowMovedNotification   as CFString)
         AXObserverRemoveNotification(axObs, window, kAXWindowResizedNotification as CFString)
@@ -57,6 +62,8 @@ final class ResizeObserver {
         guard let key = keysByPid[pid]?.first(where: {
             elements[$0].map { CFEqual($0, element) } == true
         }) else { return }
+
+        if ScrollingTileService.shared.isTracked(key) { return }
 
         let eventLabel = notification == (kAXWindowResizedNotification as String) ? "resize" : "move"
         Logger.shared.log("[\(eventLabel)] key=\(key.windowHash) pid=\(pid)")

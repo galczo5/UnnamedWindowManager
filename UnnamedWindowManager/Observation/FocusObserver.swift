@@ -15,7 +15,8 @@ private func focusChangedCallback(
     DispatchQueue.main.async {
         NotificationCenter.default.post(name: .windowFocusChanged, object: nil)
     }
-    obs.applyDimForFrontmostWindow(pid: pid)
+    // TODO: Infinite loop here!
+    //    obs.applyDimForFrontmostWindow(pid: pid)
 }
 
 // Watches app activation and per-app focused-window changes to drive window dimming.
@@ -26,6 +27,7 @@ final class FocusObserver {
     private var appObservers: [pid_t: AXObserver] = [:]
 
     func start() {
+        Logger.shared.log("start")
         let nc = NSWorkspace.shared.notificationCenter
         nc.addObserver(self, selector: #selector(didActivateApp(_:)),
                        name: NSWorkspace.didActivateApplicationNotification, object: nil)
@@ -33,7 +35,8 @@ final class FocusObserver {
                        name: NSWorkspace.didTerminateApplicationNotification, object: nil)
         if let app = NSWorkspace.shared.frontmostApplication {
             observeApp(pid: app.processIdentifier)
-            applyDimForFrontmostWindow(pid: app.processIdentifier)
+            // TODO: Infinite loop here!
+//            applyDimForFrontmostWindow(pid: app.processIdentifier)
         }
     }
 
@@ -43,7 +46,8 @@ final class FocusObserver {
         let pid = app.processIdentifier
         observeApp(pid: pid)
         NotificationCenter.default.post(name: .windowFocusChanged, object: nil)
-        applyDimForFrontmostWindow(pid: pid)
+        // TODO: Infinite loop here!
+//        applyDimForFrontmostWindow(pid: pid)
     }
 
     @objc private func didTerminateApp(_ note: Notification) {
@@ -53,6 +57,7 @@ final class FocusObserver {
     }
 
     func applyDimForFrontmostWindow(pid: pid_t) {
+        Logger.shared.log("applyDimForFrontmostWindow: pid=\(pid)")
         let axApp = AXUIElementCreateApplication(pid)
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success
@@ -68,13 +73,14 @@ final class FocusObserver {
 
         let elements = ResizeObserver.shared.elements
         if let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }),
+           !ScrollingTileService.shared.isTracked(key),
            let rootID = TileService.shared.rootID(containing: key) {
             let hash = key.windowHash
             DispatchQueue.main.async {
                 WindowOpacityService.shared.dim(rootID: rootID, focusedHash: hash)
             }
         } else {
-            // Focused window is not managed; hide all dim overlays.
+            // Focused window is not managed or is in a scrolling root; hide all dim overlays.
             WindowOpacityService.shared.restoreAll()
         }
     }

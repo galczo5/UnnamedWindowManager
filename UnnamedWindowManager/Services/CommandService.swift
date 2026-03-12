@@ -3,6 +3,7 @@ import Foundation
 // Runs shell commands from user-configured keyboard shortcuts.
 struct CommandService {
     static func execute(_ command: String) {
+        Logger.shared.log("execute: \(command)")
         DispatchQueue.global(qos: .userInitiated).async {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/sh")

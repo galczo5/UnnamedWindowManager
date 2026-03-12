@@ -11,19 +11,34 @@ private enum Axis { case horizontal, vertical }
 struct FocusDirectionService {
 
     static func focus(_ direction: FocusDirection) {
-        guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
+        Logger.shared.log("focus: direction=\(direction)")
+        guard let frontApp = NSWorkspace.shared.frontmostApplication else {
+            Logger.shared.log("focus: no frontmost app, skipping")
+            return
+        }
         let pid = frontApp.processIdentifier
         let axApp = AXUIElementCreateApplication(pid)
         var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success else { return }
+        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success else {
+            Logger.shared.log("focus: could not get focused window, skipping")
+            return
+        }
         let axWindow = ref as! AXUIElement
         let currentKey = windowSlot(for: axWindow, pid: pid)
 
-        guard let root = TileService.shared.snapshotVisibleRoot() else { return }
+        guard let root = TileService.shared.snapshotVisibleRoot() else {
+            Logger.shared.log("focus: no visible root, skipping")
+            return
+        }
         let rects = leafRects(in: root)
-        guard let sourceRect = rects.first(where: { $0.key == currentKey })?.rect else { return }
-
-        guard let targetKey = nearest(from: sourceRect, direction: direction, candidates: rects, exclude: currentKey) else { return }
+        guard let sourceRect = rects.first(where: { $0.key == currentKey })?.rect else {
+            Logger.shared.log("focus: current window not in tree, skipping")
+            return
+        }
+        guard let targetKey = nearest(from: sourceRect, direction: direction, candidates: rects, exclude: currentKey) else {
+            Logger.shared.log("focus: no target in direction \(direction), skipping")
+            return
+        }
         activateWindow(targetKey)
     }
 

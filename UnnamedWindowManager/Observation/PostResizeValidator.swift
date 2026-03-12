@@ -4,6 +4,7 @@ import AppKit
 enum PostResizeValidator {
 
     static func checkAndFixRefusals(windows: Set<WindowSlot>, screen: NSScreen) {
+        Logger.shared.log("checkAndFixRefusals: windows=\(windows.count)")
         struct Refusal {
             let key: WindowSlot
             let actual: CGSize
@@ -28,7 +29,10 @@ enum PostResizeValidator {
             refusals.append(Refusal(key: w, actual: actual, appName: appName))
         }
 
-        guard !refusals.isEmpty else { return }
+        guard !refusals.isEmpty else {
+            Logger.shared.log("checkAndFixRefusals: no refusals, skipping")
+            return
+        }
 
         let allTracked = Set(leaves.compactMap { leaf -> WindowSlot? in
             if case .window(let w) = leaf { return w }

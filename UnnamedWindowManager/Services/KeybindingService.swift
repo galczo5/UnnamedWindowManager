@@ -129,6 +129,7 @@ final class KeybindingService {
     }
 
     func stop() {
+        Logger.shared.log("stop")
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
             if let source = runLoopSource {
@@ -141,6 +142,7 @@ final class KeybindingService {
     }
 
     func restart() {
+        Logger.shared.log("restart")
         stop()
         start()
     }

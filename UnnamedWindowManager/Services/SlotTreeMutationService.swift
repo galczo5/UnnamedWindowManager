@@ -7,6 +7,7 @@ struct SlotTreeMutationService {
     /// Returns `true` if the leaf was found and removed.
     @discardableResult
     func removeLeaf(_ key: WindowSlot, from root: inout TilingRootSlot) -> Bool {
+        Logger.shared.log("removeLeaf: hash=\(key.windowHash)")
         var found = false
         let newChildren: [Slot] = root.children.compactMap {
             let (newSlot, wasFound) = removeFromTree(key, slot: $0)
@@ -24,6 +25,7 @@ struct SlotTreeMutationService {
         newLeaf: Slot,
         orientation: Orientation
     ) {
+        Logger.shared.log("extractAndWrap: targetOrder=\(targetOrder) orientation=\(orientation)")
         for i in root.children.indices {
             if extractAndWrap(&root.children[i], targetOrder: targetOrder,
                               newLeaf: newLeaf, orientation: orientation) { return }
@@ -38,6 +40,7 @@ struct SlotTreeMutationService {
         in root: inout TilingRootSlot,
         update: (inout WindowSlot) -> Void
     ) -> Bool {
+        Logger.shared.log("updateLeaf: hash=\(key.windowHash)")
         for i in root.children.indices {
             if updateLeaf(key, in: &root.children[i], update: update) { return true }
         }
@@ -46,6 +49,7 @@ struct SlotTreeMutationService {
 
     /// Toggles the split orientation of the container that directly holds `key` (horizontal ↔ vertical).
     func flipParentOrientation(of key: WindowSlot, in root: inout TilingRootSlot) {
+        Logger.shared.log("flipParentOrientation: hash=\(key.windowHash)")
         if root.children.contains(where: {
             if case .window(let w) = $0 { return w == key }; return false
         }) {

@@ -13,6 +13,7 @@ final class WindowOpacityService {
     private var animationDuration: TimeInterval { TimeInterval(Config.dimAnimationDuration) }
 
     func dim(rootID: UUID, focusedHash: UInt) {
+        Logger.shared.log("dim: rootID=\(rootID) focusedHash=\(focusedHash)")
         guard Config.dimInactiveWindows else {
             scheduleFadeOut(rootID: rootID)
             return
@@ -45,10 +46,12 @@ final class WindowOpacityService {
     }
 
     func restore(hash: UInt) {
+        Logger.shared.log("restore: hash=\(hash)")
         restoreAll()
     }
 
     func restoreAll() {
+        Logger.shared.log("restoreAll")
         for rootID in overlays.keys {
             scheduleFadeOut(rootID: rootID)
         }

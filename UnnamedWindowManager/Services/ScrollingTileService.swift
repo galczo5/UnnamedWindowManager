@@ -9,7 +9,8 @@ final class ScrollingTileService {
     private let position = ScrollingPositionService()
 
     func snapshotVisibleScrollingRoot() -> ScrollingRootSlot? {
-        store.queue.sync {
+        Logger.shared.log("snapshotVisibleScrollingRoot")
+        return store.queue.sync {
             guard let id = visibleScrollingRootID(),
                   case .scrolling(let root) = store.roots[id] else { return nil }
             return root
@@ -17,7 +18,8 @@ final class ScrollingTileService {
     }
 
     func isTracked(_ key: WindowSlot) -> Bool {
-        store.queue.sync {
+        Logger.shared.log("isTracked: hash=\(key.windowHash)")
+        return store.queue.sync {
             store.roots.values.contains { rootSlot in
                 guard case .scrolling(let root) = rootSlot else { return false }
                 return containsWindow(key, in: root)
@@ -26,6 +28,7 @@ final class ScrollingTileService {
     }
 
     func createScrollingRoot(key: WindowSlot, screen: NSScreen) {
+        Logger.shared.log("createScrollingRoot: hash=\(key.windowHash)")
         store.queue.sync(flags: .barrier) {
             let id  = UUID()
             let og  = Config.outerGaps
@@ -44,10 +47,17 @@ final class ScrollingTileService {
     }
 
     func addWindow(_ key: WindowSlot, screen: NSScreen) {
+        Logger.shared.log("addWindow: hash=\(key.windowHash)")
         store.queue.sync(flags: .barrier) {
             guard let id = visibleScrollingRootID(),
-                  case .scrolling(var root) = store.roots[id] else { return }
-            guard !containsWindow(key, in: root) else { return }
+                  case .scrolling(var root) = store.roots[id] else {
+                Logger.shared.log("addWindow: no visible scrolling root, skipping")
+                return
+            }
+            guard !containsWindow(key, in: root) else {
+                Logger.shared.log("addWindow: already tracked, skipping")
+                return
+            }
 
             store.windowCounts[id, default: 0] += 1
             let order = store.windowCounts[id]!

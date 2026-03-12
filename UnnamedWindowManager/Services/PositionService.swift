@@ -4,6 +4,7 @@ import AppKit
 struct PositionService {
 
     func recomputeSizes(_ root: inout TilingRootSlot, width: CGFloat, height: CGFloat) {
+        Logger.shared.log("recomputeSizes(root): \(Int(width))×\(Int(height))")
         root.width = width
         root.height = height
         guard !root.children.isEmpty else { return }
@@ -15,6 +16,7 @@ struct PositionService {
     }
 
     func recomputeSizes(_ slot: inout Slot, width: CGFloat, height: CGFloat) {
+        Logger.shared.log("recomputeSizes(slot): \(Int(width))×\(Int(height))")
         switch slot {
         case .window(var w):
             w.width = width; w.height = height

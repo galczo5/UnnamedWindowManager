@@ -24,6 +24,7 @@ final class AutoTileObserver {
     private var appObservers: [pid_t: AXObserver] = [:]
 
     func start() {
+        Logger.shared.log("start")
         let nc = NSWorkspace.shared.notificationCenter
         nc.addObserver(self, selector: #selector(didActivateApp(_:)),
                        name: NSWorkspace.didActivateApplicationNotification, object: nil)
@@ -51,6 +52,7 @@ final class AutoTileObserver {
     }
 
     func handleWindowCreated(pid: pid_t) {
+        Logger.shared.log("handleWindowCreated: pid=\(pid)")
         // Capture screen state NOW — before the new window appears in CGWindowList.
         var screenWasEmpty = false
         if Config.autoOrganize {
