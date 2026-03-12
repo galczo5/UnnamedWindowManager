@@ -9,6 +9,5 @@ struct StackingSlot {
     var height: CGFloat
     var children: [WindowSlot]
     var align: StackingAlign
-    var order: StackingOrder
     var fraction: CGFloat = 1.0
 }

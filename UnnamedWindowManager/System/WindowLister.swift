@@ -94,7 +94,7 @@ struct WindowLister {
             Logger.shared.log("\(indent)vertical  size=\(v.width)x\(v.height)  fraction=\(v.fraction)  children=\(v.children.count)")
             for child in v.children { logSlot(child, depth: depth + 1) }
         case .stacking(let s):
-            Logger.shared.log("\(indent)stacking  size=\(s.width)x\(s.height)  fraction=\(s.fraction)  align=\(s.align)  order=\(s.order)  children=\(s.children.count)")
+            Logger.shared.log("\(indent)stacking  size=\(s.width)x\(s.height)  fraction=\(s.fraction)  align=\(s.align)  children=\(s.children.count)")
         }
     }
 }

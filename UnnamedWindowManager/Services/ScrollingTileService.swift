@@ -92,7 +92,7 @@ final class ScrollingTileService {
                     let stacking = StackingSlot(id: UUID(), parentId: id,
                                                 width: 0, height: 0,
                                                 children: [oldCenter],
-                                                align: .right, order: .lifo)
+                                                align: .right)
                     root.left = .stacking(stacking)
                 case .stacking(var s):
                     s.children.append(oldCenter)
@@ -126,7 +126,7 @@ final class ScrollingTileService {
                 switch root.left {
                 case nil:
                     let s = StackingSlot(id: UUID(), parentId: id, width: 0, height: 0,
-                                         children: [oldCenter], align: .right, order: .lifo)
+                                         children: [oldCenter], align: .right)
                     root.left = .stacking(s)
                 case .stacking(var s):
                     s.children.append(oldCenter)
@@ -160,7 +160,7 @@ final class ScrollingTileService {
                 switch root.right {
                 case nil:
                     let s = StackingSlot(id: UUID(), parentId: id, width: 0, height: 0,
-                                         children: [oldCenter], align: .left, order: .lifo)
+                                         children: [oldCenter], align: .left)
                     root.right = .stacking(s)
                 case .stacking(var s):
                     s.children.insert(oldCenter, at: 0)
