@@ -64,19 +64,6 @@ struct UnnamedWindowManagerApp: App {
             } else {
                 Button(menuLabel("Tile all",   Config.tileAllShortcut)) { OrganizeHandler.organize() }
             }
-            if menuState.isFrontmostScrolled {
-                Button("Unscroll") { UnscrollHandler.unscroll() }
-            } else {
-                Button("Scroll") { ScrollingRootHandler.scroll() }
-            }
-            if menuState.isScrolled {
-                Button("Unscroll all") { UnscrollHandler.unscrollAll() }
-            } else {
-                Button("Scroll all") { ScrollOrganizeHandler.organizeScrolling() }
-            }
-            Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }
-            Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
-            Divider()
             let orientLabel: String = {
                 switch menuState.parentOrientation {
                 case .horizontal: return "Change to vertical"
@@ -90,7 +77,19 @@ struct UnnamedWindowManagerApp: App {
             }
             .onAppear { menuState.refresh() }
             Divider()
-            Button("Debug")     { WindowLister.logSlotTree() }
+            if menuState.isFrontmostScrolled {
+                Button("Unscroll") { UnscrollHandler.unscroll() }
+            } else {
+                Button("Scroll") { ScrollingRootHandler.scroll() }
+            }
+            if menuState.isScrolled {
+                Button("Unscroll all") { UnscrollHandler.unscrollAll() }
+            } else {
+                Button("Scroll all") { ScrollOrganizeHandler.organizeScrolling() }
+            }
+            Divider()
+            Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }
+            Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
             Button("Open config file") {
                 NSWorkspace.shared.open(URL(fileURLWithPath: ConfigLoader.filePath))
@@ -108,6 +107,7 @@ struct UnnamedWindowManagerApp: App {
                 ReapplyHandler.reapplyAll()
             }
             Divider()
+            Button("Debug")     { WindowLister.logSlotTree() }
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {
             HStack(spacing: 4) {
