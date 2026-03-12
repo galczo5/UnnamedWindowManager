@@ -128,7 +128,7 @@ final class ResizeObserver {
 
     // MARK: - Reapply
 
-    /// Polls every 50 ms until no mouse button is held, then reapplies the tile.
+    /// Polls every 10 ms until no mouse button is held, then reapplies the tile.
     /// Any in-progress poll for the same key is cancelled before scheduling a new one.
     /// - Parameter isResize: true when triggered by a resize notification — accepts the
     ///   new size and reflows all snapped windows; false for move — restores position only.
@@ -197,7 +197,7 @@ final class ResizeObserver {
         }
 
         pendingReapply[key] = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01, execute: work)
     }
 
     private func updateTrackedDropTarget(_ newTarget: DropTarget?) {

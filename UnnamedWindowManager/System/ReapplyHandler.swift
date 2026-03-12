@@ -13,8 +13,8 @@ struct ReapplyHandler {
         LayoutService.shared.applyLayout(screen: screen)
     }
 
-    /// Reapplies the layout for all tiled windows, debounced to 100 ms.
-    /// Multiple calls within 100 ms collapse into one execution. After the layout
+    /// Reapplies the layout for all tiled windows, debounced to 10 ms.
+    /// Multiple calls within 10 ms collapse into one execution. After the layout
     /// runs, PostResizeValidator fires 300 ms later to catch any refusing windows.
     static func reapplyAll() {
         pendingLayout?.cancel()
@@ -42,7 +42,7 @@ struct ReapplyHandler {
             }
         }
         pendingLayout = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01, execute: work)
     }
 
     private static var pendingLayout: DispatchWorkItem?
