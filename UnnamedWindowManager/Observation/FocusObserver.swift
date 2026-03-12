@@ -24,7 +24,6 @@ final class FocusObserver {
     private init() {}
 
     private var appObservers: [pid_t: AXObserver] = [:]
-    private var pendingDim: DispatchWorkItem?
 
     func start() {
         Logger.shared.log("start")
@@ -55,13 +54,7 @@ final class FocusObserver {
     }
 
     func applyDimForFrontmostWindow(pid: pid_t) {
-        pendingDim?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            self?.pendingDim = nil
-            self?.executeDim(pid: pid)
-        }
-        pendingDim = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: work)
+        executeDim(pid: pid)
     }
 
     private func executeDim(pid: pid_t) {
