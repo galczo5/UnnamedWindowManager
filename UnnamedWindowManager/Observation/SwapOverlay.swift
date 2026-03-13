@@ -3,10 +3,20 @@ import AppKit
 // Manages the translucent overlay window shown over the drop target during a window drag.
 final class SwapOverlay {
     private var window: NSWindow?
+    private var currentTarget: DropTarget?
 
     func update(dropTarget: DropTarget?, draggedWindow: AXUIElement, elements: [WindowSlot: AXUIElement]) {
-        guard let drop = dropTarget,
-              let targetElement = elements[drop.window],
+        guard let drop = dropTarget else {
+            hide()
+            return
+        }
+
+        if let cur = currentTarget, cur.window == drop.window, cur.zone == drop.zone {
+            return
+        }
+        currentTarget = drop
+
+        guard let targetElement = elements[drop.window],
               let axOrigin = readOrigin(of: targetElement),
               let axSize   = readSize(of: targetElement) else {
             hide()
@@ -47,6 +57,7 @@ final class SwapOverlay {
     }
 
     func hide() {
+        currentTarget = nil
         window?.orderOut(nil)
     }
 

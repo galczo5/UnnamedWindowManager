@@ -284,21 +284,7 @@ final class TileService {
     /// Returns the UUID of the root that owns a window currently visible on screen, or `nil`.
     /// Must be called inside a `store.queue` barrier block.
     private func visibleRootID() -> UUID? {
-        let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
-        guard let cgList = CGWindowListCopyWindowInfo(
-            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
-        ) as? [[String: Any]] else { return nil }
-
-        var visibleHashes = Set<UInt>()
-        for info in cgList {
-            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
-                  let pid   = info[kCGWindowOwnerPID as String] as? Int,
-                  let wid   = info[kCGWindowNumber as String] as? CGWindowID,
-                  pid_t(pid) != ownPID
-            else { continue }
-            visibleHashes.insert(UInt(wid))
-        }
-
+        let visibleHashes = OnScreenWindowCache.visibleHashes()
         for (id, rootSlot) in store.roots {
             guard case .tiling(let root) = rootSlot else { continue }
             for leaf in treeQuery.allLeaves(in: root) {

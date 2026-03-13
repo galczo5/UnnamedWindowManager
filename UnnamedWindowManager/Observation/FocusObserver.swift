@@ -66,8 +66,8 @@ final class FocusObserver {
         }
         let axWindow = ref as! AXUIElement
 
-        let elements = ResizeObserver.shared.elements
-        guard let (key, _) = elements.first(where: { CFEqual($0.value, axWindow) }) else {
+        guard let wid = windowID(of: axWindow),
+              let key = ResizeObserver.shared.keysByHash[UInt(wid)] else {
             WindowOpacityService.shared.restoreAll()
             return
         }

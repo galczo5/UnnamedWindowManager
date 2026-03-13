@@ -51,21 +51,19 @@ struct ReapplyHandler {
     /// excluding `draggedKey` itself. Returns `nil` when the cursor is not over any
     /// managed window. `.center` triggers a swap; directional zones trigger insertion.
     static func findDropTarget(forKey draggedKey: WindowSlot) -> DropTarget? {
+        guard let screen = NSScreen.main else { return nil }
         let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
         let screenHeight = NSScreen.screens[0].frame.height
-        let leaves = TileService.shared.leavesInVisibleRoot()
-        let elements = ResizeObserver.shared.elements
+        // Use precomputed slot-tree frames instead of live AX reads.
+        let frames = LayoutService.shared.computeFrames(screen: screen)
 
-        for leaf in leaves {
-            guard case .window(let w) = leaf, w != draggedKey else { continue }
-            guard let axElement = elements[w],
-                  let axOrigin = readOrigin(of: axElement),
-                  let axSize   = readSize(of: axElement) else { continue }
+        for (w, axFrame) in frames {
+            guard w != draggedKey else { continue }
 
             // AX coords: top-left origin, y increases downward.
             // AppKit coords: bottom-left origin, y increases upward.
-            let appKitY = screenHeight - axOrigin.y - axSize.height
-            let frame = CGRect(x: axOrigin.x, y: appKitY, width: axSize.width, height: axSize.height)
+            let appKitY = screenHeight - axFrame.origin.y - axFrame.height
+            let frame = CGRect(x: axFrame.origin.x, y: appKitY, width: axFrame.width, height: axFrame.height)
 
             guard frame.contains(cursor) else { continue }
 
@@ -103,20 +101,7 @@ struct ReapplyHandler {
     }
 
     private static func onScreenWindowIDs() -> Set<UInt> {
-        let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
-        guard let list = CGWindowListCopyWindowInfo(
-            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
-        ) as? [[String: Any]] else { return [] }
-        var ids = Set<UInt>()
-        for info in list {
-            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
-                  let pid   = info[kCGWindowOwnerPID as String] as? Int,
-                  let wid   = info[kCGWindowNumber as String] as? CGWindowID,
-                  pid_t(pid) != ownPID
-            else { continue }
-            ids.insert(UInt(wid))
-        }
-        return ids
+        OnScreenWindowCache.visibleHashes()
     }
 
     /// Returns `size` clamped to the per-screen maximums defined in `Config`.

@@ -13,6 +13,7 @@ final class ResizeObserver {
     var observers:  [pid_t: AXObserver]                  = [:]
     var elements:   [WindowSlot: AXUIElement]             = [:]
     var keysByPid:  [pid_t: Set<WindowSlot>]              = [:]
+    var keysByHash: [UInt: WindowSlot]                    = [:]
     /// Keys whose reapply is in-flight; prevents re-entrancy from the resulting AX notification.
     var reapplying: Set<WindowSlot>                       = []
     var pendingReapply: [WindowSlot: DispatchWorkItem]    = [:]
@@ -30,6 +31,7 @@ final class ResizeObserver {
 
         elements[key] = window
         keysByPid[pid, default: []].insert(key)
+        keysByHash[key.windowHash] = key
 
         guard let axObs = axObserver(for: pid) else { return }
         let refcon = Unmanaged.passUnretained(self).toOpaque()
@@ -53,12 +55,8 @@ final class ResizeObserver {
     // MARK: – Internal (called from C callback on main thread)
 
     func handle(element: AXUIElement, notification: String, pid: pid_t) {
-        // Use CFEqual to find the stored key — avoids relying on CF pointer identity
-        // across API boundaries (the callback element may be a distinct Swift wrapper
-        // around the same underlying AXUIElementRef).
-        guard let key = keysByPid[pid]?.first(where: {
-            elements[$0].map { CFEqual($0, element) } == true
-        }) else { return }
+        guard let wid = windowID(of: element),
+              let key = keysByHash[UInt(wid)] else { return }
 
         let isScrolling = ScrollingTileService.shared.isTracked(key)
 
@@ -111,8 +109,11 @@ final class ResizeObserver {
         pendingReapply.removeValue(forKey: key)
         overlay.hide()
         elements.removeValue(forKey: key)
+        keysByHash.removeValue(forKey: key.windowHash)
         reapplying.remove(key)
         keysByPid[pid]?.remove(key)
+        LayoutService.shared.clearCache(for: key)
+        ScrollingLayoutService.shared.clearCache(for: key)
 
         if keysByPid[pid]?.isEmpty == true {
             if let axObs = observers[pid] {

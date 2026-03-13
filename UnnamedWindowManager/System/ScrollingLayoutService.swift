@@ -6,6 +6,11 @@ final class ScrollingLayoutService {
     static let shared = ScrollingLayoutService()
     private init() {}
 
+    private var lastApplied: [WindowSlot: (pos: CGPoint, size: CGSize)] = [:]
+
+    func clearCache() { lastApplied.removeAll() }
+    func clearCache(for key: WindowSlot) { lastApplied.removeValue(forKey: key) }
+
     func applyLayout(root: ScrollingRootSlot, origin: CGPoint,
                      elements: [WindowSlot: AXUIElement],
                      zonesChanged: Bool = true,
@@ -39,6 +44,12 @@ final class ScrollingLayoutService {
             let g = w.gaps ? Config.innerGap : 0
             var pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
             var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
+            if let last = lastApplied[w],
+               abs(last.pos.x - pos.x) < 1, abs(last.pos.y - pos.y) < 1,
+               abs(last.size.width - size.width) < 1, abs(last.size.height - size.height) < 1 {
+                return
+            }
+            lastApplied[w] = (pos, size)
             if let posVal  = AXValueCreate(.cgPoint, &pos)  { AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal) }
             if let sizeVal = AXValueCreate(.cgSize,  &size) { AXUIElementSetAttributeValue(ax, kAXSizeAttribute  as CFString, sizeVal) }
         case .stacking(let s):
@@ -48,6 +59,12 @@ final class ScrollingLayoutService {
                 let xOffset: CGFloat = s.align == .left ? 0 : s.width - w.width
                 var pos  = CGPoint(x: (origin.x + xOffset + g).rounded(), y: (origin.y + g).rounded())
                 var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
+                if let last = lastApplied[w],
+                   abs(last.pos.x - pos.x) < 1, abs(last.pos.y - pos.y) < 1,
+                   abs(last.size.width - size.width) < 1, abs(last.size.height - size.height) < 1 {
+                    continue
+                }
+                lastApplied[w] = (pos, size)
                 if let posVal  = AXValueCreate(.cgPoint, &pos)  { AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal) }
                 if let sizeVal = AXValueCreate(.cgSize,  &size) { AXUIElementSetAttributeValue(ax, kAXSizeAttribute  as CFString, sizeVal) }
             }

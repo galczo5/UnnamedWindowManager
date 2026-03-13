@@ -14,6 +14,8 @@ final class Config {
         data = ConfigLoader.load()
         Logger.shared.configure(path: Config.logPath)
         Logger.shared.log("Config: reloaded from disk")
+        LayoutService.shared.clearCache()
+        ScrollingLayoutService.shared.clearCache()
     }
 
     private var s: ConfigData.ConfigSection { data.config! }

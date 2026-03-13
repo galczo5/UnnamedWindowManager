@@ -259,20 +259,7 @@ final class ScrollingTileService {
 
     /// Must be called inside a `store.queue` block.
     private func visibleScrollingRootID() -> UUID? {
-        let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
-        guard let cgList = CGWindowListCopyWindowInfo(
-            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
-        ) as? [[String: Any]] else { return nil }
-
-        var visibleHashes = Set<UInt>()
-        for info in cgList {
-            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
-                  let pid  = info[kCGWindowOwnerPID as String] as? Int,
-                  let wid  = info[kCGWindowNumber as String] as? CGWindowID,
-                  pid_t(pid) != ownPID else { continue }
-            visibleHashes.insert(UInt(wid))
-        }
-
+        let visibleHashes = OnScreenWindowCache.visibleHashes()
         for (id, rootSlot) in store.roots {
             guard case .scrolling(let root) = rootSlot else { continue }
             if windowHashes(in: root).contains(where: { visibleHashes.contains($0) }) { return id }

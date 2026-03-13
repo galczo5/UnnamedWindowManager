@@ -17,6 +17,8 @@ final class ScreenChangeObserver {
 
     @objc private func screenParametersChanged() {
         guard let screen = NSScreen.main else { return }
+        LayoutService.shared.clearCache()
+        ScrollingLayoutService.shared.clearCache()
         TileService.shared.recomputeVisibleRootSizes(screen: screen)
         ReapplyHandler.reapplyAll()
     }
