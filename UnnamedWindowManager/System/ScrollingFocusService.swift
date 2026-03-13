@@ -10,7 +10,17 @@ struct ScrollingFocusService {
         let newCenter = ScrollingTileService.shared.scrollLeft(screen: screen)
         guard let newCenter else { return }
         let after = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
-        LayoutService.shared.applyLayout(screen: screen, zonesChanged: zoneSignature(before) != zoneSignature(after))
+        guard let after else { return }
+        let zonesChanged = zoneSignature(before) != zoneSignature(after)
+        let origin = layoutOrigin(screen: screen)
+        let elements = ResizeObserver.shared.elements
+
+        // Move 1: old center to side
+        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                   zonesChanged: zonesChanged, applyCenter: false)
+        // Move 2: new center to center position
+        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                   applySides: false)
         activateAfterLayout(newCenter)
     }
 
@@ -20,12 +30,29 @@ struct ScrollingFocusService {
         let newCenter = ScrollingTileService.shared.scrollRight(screen: screen)
         guard let newCenter else { return }
         let after = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
-        LayoutService.shared.applyLayout(screen: screen, zonesChanged: zoneSignature(before) != zoneSignature(after))
+        guard let after else { return }
+        let zonesChanged = zoneSignature(before) != zoneSignature(after)
+        let origin = layoutOrigin(screen: screen)
+        let elements = ResizeObserver.shared.elements
+
+        // Move 1: old center to side
+        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                   zonesChanged: zonesChanged, applyCenter: false)
+        // Move 2: new center to center position
+        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                   applySides: false)
         activateAfterLayout(newCenter)
     }
 
     private static func zoneSignature(_ root: ScrollingRootSlot?) -> (Bool, Bool) {
         (root?.left != nil, root?.right != nil)
+    }
+
+    private static func layoutOrigin(screen: NSScreen) -> CGPoint {
+        let visible = screen.visibleFrame
+        let primaryHeight = NSScreen.screens[0].frame.height
+        let og = Config.outerGaps
+        return CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
     }
 
     private static func activateAfterLayout(_ key: WindowSlot) {

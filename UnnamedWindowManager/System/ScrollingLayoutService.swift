@@ -8,20 +8,24 @@ final class ScrollingLayoutService {
 
     func applyLayout(root: ScrollingRootSlot, origin: CGPoint,
                      elements: [WindowSlot: AXUIElement],
-                     zonesChanged: Bool = true) {
+                     zonesChanged: Bool = true,
+                     applySides: Bool = true,
+                     applyCenter: Bool = true) {
         let centerWidth = (root.width * 0.8).rounded()
         let remaining   = root.width - centerWidth
         let bothSides   = root.left != nil && root.right != nil
         let sideWidth   = (bothSides ? remaining / 2 : remaining).rounded()
         let leftWidth   = root.left != nil ? sideWidth : 0
 
-        if zonesChanged, let left = root.left {
+        if applySides, zonesChanged, let left = root.left {
             applySlot(left, origin: CGPoint(x: origin.x, y: origin.y), elements: elements)
         }
-        applySlot(root.center,
-                  origin: CGPoint(x: origin.x + leftWidth, y: origin.y),
-                  elements: elements)
-        if zonesChanged, let right = root.right {
+        if applyCenter {
+            applySlot(root.center,
+                      origin: CGPoint(x: origin.x + leftWidth, y: origin.y),
+                      elements: elements)
+        }
+        if applySides, zonesChanged, let right = root.right {
             applySlot(right,
                       origin: CGPoint(x: origin.x + leftWidth + centerWidth, y: origin.y),
                       elements: elements)
