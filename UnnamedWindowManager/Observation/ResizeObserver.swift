@@ -24,9 +24,7 @@ final class ResizeObserver {
     // MARK: – Public
 
     func observe(window: AXUIElement, pid: pid_t, key: WindowSlot) {
-        Logger.shared.log("observe: hash=\(key.windowHash) pid=\(pid)")
         guard elements[key] == nil else {
-            Logger.shared.log("observe: already observed, skipping")
             return
         }
 
@@ -41,7 +39,6 @@ final class ResizeObserver {
     }
 
     func stopObserving(key: WindowSlot, pid: pid_t) {
-        Logger.shared.log("stopObserving: hash=\(key.windowHash) pid=\(pid)")
         guard let window = elements[key], let axObs = observers[pid] else { return }
         AXObserverRemoveNotification(axObs, window, kAXWindowMovedNotification   as CFString)
         AXObserverRemoveNotification(axObs, window, kAXWindowResizedNotification as CFString)

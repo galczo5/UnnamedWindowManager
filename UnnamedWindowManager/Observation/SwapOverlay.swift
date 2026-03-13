@@ -5,7 +5,6 @@ final class SwapOverlay {
     private var window: NSWindow?
 
     func update(dropTarget: DropTarget?, draggedWindow: AXUIElement, elements: [WindowSlot: AXUIElement]) {
-        Logger.shared.log("update: dropTarget=\(dropTarget.map { "window=\($0.window.windowHash) zone=\($0.zone)" } ?? "nil")")
         guard let drop = dropTarget,
               let targetElement = elements[drop.window],
               let axOrigin = readOrigin(of: targetElement),
@@ -23,7 +22,6 @@ final class SwapOverlay {
     }
 
     func show(frame: CGRect, belowWindow windowNumber: Int?) {
-        Logger.shared.log("show: frame=\(frame)")
         if window == nil {
             let win = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
             win.isOpaque = false
@@ -49,7 +47,6 @@ final class SwapOverlay {
     }
 
     func hide() {
-        Logger.shared.log("hide")
         window?.orderOut(nil)
     }
 

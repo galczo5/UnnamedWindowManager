@@ -25,7 +25,6 @@ struct TileHandler {
         var key = windowSlot(for: axWindow, pid: pid)
         key.preTileOrigin = readOrigin(of: axWindow)
         key.preTileSize = readSize(of: axWindow)
-        Logger.shared.log("tile: pid=\(pid) hash=\(key.windowHash)")
         TileService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
@@ -61,7 +60,6 @@ struct TileHandler {
 
         key.preTileOrigin = readOrigin(of: window)
         key.preTileSize = readSize(of: window)
-        Logger.shared.log("tileLeft: pid=\(pid) hash=\(key.windowHash)")
         TileService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()

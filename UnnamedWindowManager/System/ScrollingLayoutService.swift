@@ -35,7 +35,6 @@ final class ScrollingLayoutService {
             let g = w.gaps ? Config.innerGap : 0
             var pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
             var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
-            Logger.shared.log("scroll key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
             if let posVal  = AXValueCreate(.cgPoint, &pos)  { AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal) }
             if let sizeVal = AXValueCreate(.cgSize,  &size) { AXUIElementSetAttributeValue(ax, kAXSizeAttribute  as CFString, sizeVal) }
         case .stacking(let s):
@@ -45,7 +44,6 @@ final class ScrollingLayoutService {
                 let xOffset: CGFloat = s.align == .left ? 0 : s.width - w.width
                 var pos  = CGPoint(x: (origin.x + xOffset + g).rounded(), y: (origin.y + g).rounded())
                 var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
-                Logger.shared.log("scroll key=\(w.windowHash) origin=(\(Int(pos.x)),\(Int(pos.y))) size=(\(Int(size.width))×\(Int(size.height)))")
                 if let posVal  = AXValueCreate(.cgPoint, &pos)  { AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal) }
                 if let sizeVal = AXValueCreate(.cgSize,  &size) { AXUIElementSetAttributeValue(ax, kAXSizeAttribute  as CFString, sizeVal) }
             }

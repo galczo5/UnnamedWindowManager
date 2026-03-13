@@ -9,7 +9,6 @@ struct ResizeService {
     /// Apply a user resize to the tree.
     /// `actualSize` is the AX-reported rendered window size (gap insets excluded).
     func applyResize(key: WindowSlot, actualSize: CGSize, root: inout TilingRootSlot) {
-        Logger.shared.log("applyResize: hash=\(key.windowHash) actualSize=\(Int(actualSize.width))×\(Int(actualSize.height))")
         guard let leaf = SlotTreeQueryService().findLeafSlot(key, in: root),
               case .window(let w) = leaf else { return }
 

@@ -7,7 +7,6 @@ final class ScreenChangeObserver {
     private init() {}
 
     func start() {
-        Logger.shared.log("start")
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screenParametersChanged),

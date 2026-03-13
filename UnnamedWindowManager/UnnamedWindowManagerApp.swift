@@ -43,6 +43,7 @@ struct UnnamedWindowManagerApp: App {
     @State private var menuState = MenuState()
 
     init() {
+        Logger.shared.configure(path: Config.logPath)
         Logger.shared.log("=== UnnamedWindowManager started ===")
         NotificationService.shared.requestAuthorization()
         if Config.autoSnap || Config.autoOrganize {

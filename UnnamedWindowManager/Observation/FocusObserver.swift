@@ -26,7 +26,6 @@ final class FocusObserver {
     private var appObservers: [pid_t: AXObserver] = [:]
 
     func start() {
-        Logger.shared.log("start")
         let nc = NSWorkspace.shared.notificationCenter
         nc.addObserver(self, selector: #selector(didActivateApp(_:)),
                        name: NSWorkspace.didActivateApplicationNotification, object: nil)

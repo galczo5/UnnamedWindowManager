@@ -13,8 +13,12 @@ final class Logger {
     }()
     private var fileHandle: FileHandle?
 
-    private init() {
-        let path = Config.logFilePath
+    private init() {}
+
+    /// Opens the log file at path. Call after Config is loaded or reloaded. Pass nil or empty to disable logging.
+    func configure(path: String?) {
+        fileHandle?.closeFile()
+        guard let path, !path.isEmpty else { fileHandle = nil; return }
         if !FileManager.default.fileExists(atPath: path) {
             FileManager.default.createFile(atPath: path, contents: nil)
         }
@@ -23,6 +27,7 @@ final class Logger {
     }
 
     func log(_ message: String, file: String = #file, function: String = #function) {
+        guard fileHandle != nil else { return }
         let timestamp = formatter.string(from: Date())
         let filename = URL(fileURLWithPath: file).lastPathComponent
         let line = "[\(timestamp)] [\(filename)] \(function): \(message)\n"

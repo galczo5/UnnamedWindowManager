@@ -1,35 +1,28 @@
-import Foundation
-
 // Read-only traversal of the slot tree: finding, collecting, and inspecting leaves.
 struct SlotTreeQueryService {
 
     /// Returns `true` if `key` exists anywhere in the tree.
     func isTracked(_ key: WindowSlot, in root: TilingRootSlot) -> Bool {
-        Logger.shared.log("isTracked: hash=\(key.windowHash)")
         return findLeafSlot(key, in: root) != nil
     }
 
     /// Returns every window leaf in the tree, in depth-first order.
     func allLeaves(in root: TilingRootSlot) -> [Slot] {
-        Logger.shared.log("allLeaves")
         return root.children.flatMap { collectLeaves(in: $0) }
     }
 
     /// Returns the `Slot` wrapping `key`, or `nil` if it is not in the tree.
     func findLeafSlot(_ key: WindowSlot, in root: TilingRootSlot) -> Slot? {
-        Logger.shared.log("findLeafSlot: hash=\(key.windowHash)")
         return root.children.compactMap { findLeafSlot(key, in: $0) }.first
     }
 
     /// Returns the highest `order` value among all window leaves in the tree.
     func maxLeafOrder(in root: TilingRootSlot) -> Int {
-        Logger.shared.log("maxLeafOrder")
         return root.children.map { maxLeafOrder(in: $0) }.max() ?? 0
     }
 
     /// Returns the orientation of the container that directly holds `key`, or `nil` if not found.
     func findParentOrientation(of key: WindowSlot, in root: TilingRootSlot) -> Orientation? {
-        Logger.shared.log("findParentOrientation: hash=\(key.windowHash)")
         if root.children.contains(where: {
             if case .window(let w) = $0 { return w == key }; return false
         }) { return root.orientation }

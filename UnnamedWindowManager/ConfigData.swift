@@ -49,6 +49,7 @@ struct ConfigData: Codable {
         var dimInactiveOpacity: CGFloat?
         var dimAnimationDuration: CGFloat?
         var dimColor: String?
+        var logPath: String?
     }
 
     struct CommandConfig: Codable {
@@ -72,7 +73,7 @@ struct ConfigData: Codable {
         layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
-        behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black"),
+        behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black", logPath: ""),
         shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down"),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
@@ -104,6 +105,7 @@ struct ConfigData: Codable {
         check(s?.behavior?.dimInactiveOpacity,      "config.behavior.dimInactiveOpacity")
         check(s?.behavior?.dimAnimationDuration,       "config.behavior.dimAnimationDuration")
         check(s?.behavior?.dimColor,                   "config.behavior.dimColor")
+        check(s?.behavior?.logPath,                    "config.behavior.logPath")
         check(s?.shortcuts?.tileAll,             "config.shortcuts.tileAll")
         check(s?.shortcuts?.tile,               "config.shortcuts.tile")
         check(s?.shortcuts?.resetLayout,        "config.shortcuts.resetLayout")
@@ -151,7 +153,8 @@ struct ConfigData: Codable {
                 dimInactiveWindows:  s?.behavior?.dimInactiveWindows  ?? d.behavior!.dimInactiveWindows,
                 dimInactiveOpacity:       s?.behavior?.dimInactiveOpacity       ?? d.behavior!.dimInactiveOpacity,
                 dimAnimationDuration:     s?.behavior?.dimAnimationDuration     ?? d.behavior!.dimAnimationDuration,
-                dimColor:                 s?.behavior?.dimColor                 ?? d.behavior!.dimColor
+                dimColor:                 s?.behavior?.dimColor                 ?? d.behavior!.dimColor,
+                logPath:                  s?.behavior?.logPath                  ?? d.behavior!.logPath
             ),
             shortcuts: ShortcutsConfig(
                 tileAll:         s?.shortcuts?.tileAll         ?? d.shortcuts!.tileAll,

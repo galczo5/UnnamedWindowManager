@@ -115,6 +115,8 @@ struct ConfigLoader {
             dimAnimationDuration: \(num(bh.dimAnimationDuration))
             # Color of the dim overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
             dimColor: \(bh.dimColor ?? "black")
+            # Path to log file. Leave empty or omit to disable logging.
+            logPath: "\(bh.logPath ?? "")"
           shortcuts:
             # Global keyboard shortcut for Tile All / Untile All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             tileAll: "\(sh.tileAll ?? "cmd+'")"

@@ -12,6 +12,7 @@ final class Config {
 
     func reload() {
         data = ConfigLoader.load()
+        Logger.shared.configure(path: Config.logPath)
         Logger.shared.log("Config: reloaded from disk")
     }
 
@@ -41,6 +42,7 @@ final class Config {
     static var dimInactiveOpacity: CGFloat     { shared.s.behavior!.dimInactiveOpacity! }
     static var dimAnimationDuration: CGFloat   { shared.s.behavior!.dimAnimationDuration! }
     static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
+    static var logPath: String?                { let p = shared.s.behavior!.logPath!; return p.isEmpty ? nil : p }
     static var tileAllShortcut: String          { shared.s.shortcuts!.tileAll! }
     static var tileShortcut: String            { shared.s.shortcuts!.tile! }
     static var resetLayoutShortcut: String     { shared.s.shortcuts!.resetLayout! }
@@ -52,5 +54,4 @@ final class Config {
     static var focusDownShortcut: String       { shared.s.shortcuts!.focusDown! }
     static var commands: [ConfigData.CommandConfig] { shared.s.commands ?? [] }
 
-    static let logFilePath: String = NSHomeDirectory() + "/.unnamed.log"
 }

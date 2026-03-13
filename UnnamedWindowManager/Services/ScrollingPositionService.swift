@@ -6,7 +6,6 @@ struct ScrollingPositionService {
     private let centerFraction: CGFloat = 0.8
 
     func recomputeSizes(_ root: inout ScrollingRootSlot, width: CGFloat, height: CGFloat) {
-        Logger.shared.log("recomputeSizes: \(Int(width))×\(Int(height))")
         root.width  = width
         root.height = height
         let centerWidth = (width * centerFraction).rounded()
