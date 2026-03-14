@@ -142,6 +142,20 @@ final class TileService {
         }
     }
 
+    func removeAllTilingRoots() -> [WindowSlot] {
+        return store.queue.sync(flags: .barrier) {
+            let ids = store.roots.keys.filter { if case .tiling = store.roots[$0]! { return true }; return false }
+            var all: [WindowSlot] = []
+            for id in ids {
+                guard case .tiling(let root) = store.roots[id] else { continue }
+                all += treeQuery.allLeaves(in: root).compactMap { if case .window(let w) = $0 { return w } else { return nil } }
+                store.roots.removeValue(forKey: id)
+                store.windowCounts.removeValue(forKey: id)
+            }
+            return all
+        }
+    }
+
     func remove(_ key: WindowSlot) {
         store.queue.async(flags: .barrier) {
             guard let id = self.rootIDSync(containing: key),

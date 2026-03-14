@@ -39,4 +39,16 @@ struct UntileHandler {
         }
         NotificationCenter.default.post(name: .tileStateChanged, object: nil)
     }
+
+    static func untileAllSpaces() {
+        guard AXIsProcessTrusted() else { return }
+        let elements = ResizeObserver.shared.elements
+        let removed = TileService.shared.removeAllTilingRoots()
+        WindowOpacityService.shared.restoreAll()
+        for key in removed {
+            if let ax = elements[key] { RestoreService.restore(key, element: ax) }
+            WindowVisibilityManager.shared.restoreAndForget(key)
+            ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+        }
+    }
 }

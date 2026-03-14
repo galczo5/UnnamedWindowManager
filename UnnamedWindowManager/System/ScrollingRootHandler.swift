@@ -4,6 +4,22 @@ import ApplicationServices
 // Entry point for creating or extending the scrolling root from the menu.
 struct ScrollingRootHandler {
 
+    /// Scrolls the frontmost window if it is not scrolled, or unscrolls it if it is.
+    static func scrollToggle() {
+        guard AXIsProcessTrusted() else { return }
+        guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
+        let pid = frontApp.processIdentifier
+        let axApp = AXUIElementCreateApplication(pid)
+        var focusedWindow: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
+        let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
+        if ScrollingTileService.shared.isTracked(key) {
+            UnscrollHandler.unscroll()
+        } else {
+            scroll()
+        }
+    }
+
     /// Creates a scrolling root with the focused window in center, or adds the focused
     /// window to an existing scrolling root. No-op if a tiling root is active.
     static func scroll() {

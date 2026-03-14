@@ -40,6 +40,7 @@ private func menuLabel(_ base: String, _ shortcut: String) -> String {
 // App entry point; defines the menu bar extra and coordinates startup initialization.
 @main
 struct UnnamedWindowManagerApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var menuState = MenuState()
 
     init() {
@@ -79,14 +80,14 @@ struct UnnamedWindowManagerApp: App {
             .onAppear { menuState.refresh() }
             Divider()
             if menuState.isFrontmostScrolled {
-                Button("Unscroll") { UnscrollHandler.unscroll() }
+                Button(menuLabel("Unscroll", Config.scrollShortcut)) { UnscrollHandler.unscroll() }
             } else {
-                Button("Scroll") { ScrollingRootHandler.scroll() }
+                Button(menuLabel("Scroll", Config.scrollShortcut)) { ScrollingRootHandler.scroll() }
             }
             if menuState.isScrolled {
-                Button("Unscroll all") { UnscrollHandler.unscrollAll() }
+                Button(menuLabel("Unscroll all", Config.scrollAllShortcut)) { UnscrollHandler.unscrollAll() }
             } else {
-                Button("Scroll all") { ScrollOrganizeHandler.organizeScrolling() }
+                Button(menuLabel("Scroll all", Config.scrollAllShortcut)) { ScrollOrganizeHandler.organizeScrolling() }
             }
             Divider()
             Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }

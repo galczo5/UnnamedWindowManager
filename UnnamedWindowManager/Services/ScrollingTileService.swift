@@ -199,6 +199,20 @@ final class ScrollingTileService {
         }
     }
 
+    func removeAllScrollingRoots() -> [WindowSlot] {
+        return store.queue.sync(flags: .barrier) {
+            let ids = store.roots.keys.filter { if case .scrolling = store.roots[$0]! { return true }; return false }
+            var all: [WindowSlot] = []
+            for id in ids {
+                guard case .scrolling(let root) = store.roots[id] else { continue }
+                all += allWindowSlots(in: root)
+                store.roots.removeValue(forKey: id)
+                store.windowCounts.removeValue(forKey: id)
+            }
+            return all
+        }
+    }
+
     /// Removes a single window from the scrolling root and reflows. If the removed window
     /// was the center, promotes the last child of the left stacking slot (or right if left empty).
     /// Returns the stored WindowSlot (with preTileOrigin/preTileSize), or nil if not found.

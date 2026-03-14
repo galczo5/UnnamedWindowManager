@@ -67,6 +67,8 @@ struct ConfigData: Codable {
         var focusRight: String?
         var focusUp: String?
         var focusDown: String?
+        var scroll: String?
+        var scrollAll: String?
     }
 
     static let defaults = ConfigData(config: ConfigSection(
@@ -74,7 +76,7 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black", logPath: ""),
-        shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down"),
+        shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]"),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
 
@@ -115,6 +117,8 @@ struct ConfigData: Codable {
         check(s?.shortcuts?.focusRight,         "config.shortcuts.focusRight")
         check(s?.shortcuts?.focusUp,            "config.shortcuts.focusUp")
         check(s?.shortcuts?.focusDown,          "config.shortcuts.focusDown")
+        check(s?.shortcuts?.scroll,             "config.shortcuts.scroll")
+        check(s?.shortcuts?.scrollAll,          "config.shortcuts.scrollAll")
         return missing
     }
 
@@ -165,7 +169,9 @@ struct ConfigData: Codable {
                 focusLeft:       s?.shortcuts?.focusLeft       ?? d.shortcuts!.focusLeft,
                 focusRight:      s?.shortcuts?.focusRight      ?? d.shortcuts!.focusRight,
                 focusUp:         s?.shortcuts?.focusUp         ?? d.shortcuts!.focusUp,
-                focusDown:       s?.shortcuts?.focusDown       ?? d.shortcuts!.focusDown
+                focusDown:       s?.shortcuts?.focusDown       ?? d.shortcuts!.focusDown,
+                scroll:          s?.shortcuts?.scroll          ?? d.shortcuts!.scroll,
+                scrollAll:       s?.shortcuts?.scrollAll       ?? d.shortcuts!.scrollAll
             ),
             commands: s?.commands ?? d.commands
         ))

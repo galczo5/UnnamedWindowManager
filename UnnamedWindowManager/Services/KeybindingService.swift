@@ -42,6 +42,14 @@ final class KeybindingService {
             (Config.focusRightShortcut,      "focusRight",      { FocusRightHandler.focus() }),
             (Config.focusUpShortcut,         "focusUp",         { FocusUpHandler.focus() }),
             (Config.focusDownShortcut,       "focusDown",       { FocusDownHandler.focus() }),
+            (Config.scrollShortcut,    "scroll",    { ScrollingRootHandler.scrollToggle() }),
+            (Config.scrollAllShortcut, "scrollAll", {
+                if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
+                    UnscrollHandler.unscrollAll()
+                } else {
+                    ScrollOrganizeHandler.organizeScrolling()
+                }
+            }),
         ]
 
         let commandCandidates: [(String, String, () -> Void)] = Config.commands.compactMap { cmd in
