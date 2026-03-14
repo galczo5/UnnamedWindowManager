@@ -148,7 +148,11 @@ final class ScrollingTileService {
             let og = Config.outerGaps
             let w  = screen.visibleFrame.width  - og.left! - og.right!
             let h  = screen.visibleFrame.height - og.top!  - og.bottom!
-            position.recomputeSizes(&root, width: w, height: h)
+            if newCenterWin.width > 0 {
+                root.centerWidthFraction = ScrollingPositionService.clampedCenterFraction(
+                    proposedWidth: newCenterWin.width, screenWidth: w)
+            }
+            position.recomputeSizes(&root, width: w, height: h, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
             return newCenterWin
         }
@@ -182,7 +186,11 @@ final class ScrollingTileService {
             let og = Config.outerGaps
             let w  = screen.visibleFrame.width  - og.left! - og.right!
             let h  = screen.visibleFrame.height - og.top!  - og.bottom!
-            position.recomputeSizes(&root, width: w, height: h)
+            if newCenterWin.width > 0 {
+                root.centerWidthFraction = ScrollingPositionService.clampedCenterFraction(
+                    proposedWidth: newCenterWin.width, screenWidth: w)
+            }
+            position.recomputeSizes(&root, width: w, height: h, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
             return newCenterWin
         }
@@ -269,6 +277,32 @@ final class ScrollingTileService {
         }
     }
 
+    func updateCenterFraction(for key: WindowSlot, proposedWidth: CGFloat, screenWidth: CGFloat, screen: NSScreen) {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(var root) = store.roots[id] else { return }
+            guard isCenterWindow(key, in: root) else { return }
+
+            let fraction = ScrollingPositionService.clampedCenterFraction(
+                proposedWidth: proposedWidth,
+                screenWidth: screenWidth
+            )
+            root.centerWidthFraction = fraction
+            let og = Config.outerGaps
+            let h  = screen.visibleFrame.height - og.top! - og.bottom!
+            position.recomputeSizes(&root, width: screenWidth, height: h, updateSideWindowWidths: false)
+            store.roots[id] = .scrolling(root)
+        }
+    }
+
+    func isCenterWindow(_ key: WindowSlot) -> Bool {
+        store.queue.sync {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(let root) = store.roots[id] else { return false }
+            return isCenterWindow(key, in: root)
+        }
+    }
+
     // MARK: - Private
 
     /// Must be called inside a `store.queue` block.
@@ -283,6 +317,14 @@ final class ScrollingTileService {
 
     private func containsWindow(_ key: WindowSlot, in root: ScrollingRootSlot) -> Bool {
         windowHashes(in: root).contains(key.windowHash)
+    }
+
+    private func isCenterWindow(_ key: WindowSlot, in root: ScrollingRootSlot) -> Bool {
+        switch root.center {
+        case .window(let w):   return w.windowHash == key.windowHash
+        case .stacking(let s): return s.children.contains { $0.windowHash == key.windowHash }
+        default:               return false
+        }
     }
 
     private func allWindowSlots(in root: ScrollingRootSlot) -> [WindowSlot] {

@@ -13,7 +13,7 @@ final class LayoutService {
 
     /// Positions all tiled windows on `screen` by walking the current slot tree.
     /// The root origin is shifted inward by outer gaps; leaf windows are inset by inner gap.
-    func applyLayout(screen: NSScreen, zonesChanged: Bool = true) {
+    func applyLayout(screen: NSScreen, zonesChanged: Bool = true, scrollingSidesPositionOnly: Bool = false) {
         let visible       = screen.visibleFrame
         let primaryHeight = NSScreen.screens[0].frame.height
         // y is flipped: AX uses top-left origin, AppKit uses bottom-left.
@@ -25,7 +25,8 @@ final class LayoutService {
         }
         if let root = ScrollingTileService.shared.snapshotVisibleScrollingRoot() {
             ScrollingLayoutService.shared.applyLayout(root: root, origin: origin, elements: elements,
-                                                      zonesChanged: zonesChanged)
+                                                      zonesChanged: zonesChanged,
+                                                      sidesPositionOnly: scrollingSidesPositionOnly)
         }
     }
 

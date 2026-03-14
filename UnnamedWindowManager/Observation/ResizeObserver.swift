@@ -159,7 +159,23 @@ final class ResizeObserver {
             if isScrolling {
                 self.reapplying.insert(key)
                 if let screen = NSScreen.main {
-                    LayoutService.shared.applyLayout(screen: screen)
+                    let isCenterResize = isResize && ScrollingTileService.shared.isCenterWindow(key)
+                    if isCenterResize,
+                       let axElement = self.elements[key],
+                       let actualSize = readSize(of: axElement) {
+                        ScrollingResizeService().applyResize(
+                            centerKey: key, actualWidth: actualSize.width, screen: screen)
+                    }
+                    ScrollingLayoutService.shared.clearCache(for: key)
+                    LayoutService.shared.applyLayout(screen: screen, scrollingSidesPositionOnly: isCenterResize)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        let windows = Set(ScrollingTileService.shared.leavesInVisibleScrollingRoot()
+                            .compactMap { (slot: Slot) -> WindowSlot? in
+                                guard case .window(let w) = slot else { return nil }
+                                return w
+                            })
+                        PostResizeValidator.checkAndFixRefusals(windows: windows, screen: screen)
+                    }
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                     self?.reapplying.remove(key)
