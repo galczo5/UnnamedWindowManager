@@ -6,10 +6,10 @@ final class LayoutService {
     static let shared = LayoutService()
     private init() {}
 
-    private var lastApplied: [WindowSlot: (pos: CGPoint, size: CGSize)] = [:]
+    private var lastApplied: [UInt: (pos: CGPoint, size: CGSize)] = [:]
 
     func clearCache() { lastApplied.removeAll() }
-    func clearCache(for key: WindowSlot) { lastApplied.removeValue(forKey: key) }
+    func clearCache(for key: WindowSlot) { lastApplied.removeValue(forKey: key.windowHash) }
 
     /// Positions all tiled windows on `screen` by walking the current slot tree.
     /// The root origin is shifted inward by outer gaps; leaf windows are inset by inner gap.
@@ -113,12 +113,12 @@ final class LayoutService {
             let g = w.gaps ? Config.innerGap : 0
             var pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
             var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
-            if let last = lastApplied[w],
+            if let last = lastApplied[w.windowHash],
                abs(last.pos.x - pos.x) < 1, abs(last.pos.y - pos.y) < 1,
                abs(last.size.width - size.width) < 1, abs(last.size.height - size.height) < 1 {
                 return
             }
-            lastApplied[w] = (pos, size)
+            lastApplied[w.windowHash] = (pos, size)
             if let posVal = AXValueCreate(.cgPoint, &pos) {
                 AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal)
             }

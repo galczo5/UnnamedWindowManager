@@ -10,6 +10,7 @@ struct ReapplyHandler {
         guard TileService.shared.isTracked(key) || ScrollingTileService.shared.isTracked(key)
         else { return }
         guard let screen = NSScreen.main else { return }
+        LayoutService.shared.clearCache(for: key)
         LayoutService.shared.applyLayout(screen: screen)
     }
 
