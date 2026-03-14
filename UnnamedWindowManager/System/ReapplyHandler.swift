@@ -20,6 +20,8 @@ struct ReapplyHandler {
         pendingLayout?.cancel()
         let work = DispatchWorkItem {
             guard let screen = NSScreen.main else { return }
+            LayoutService.shared.clearCache()
+            ScrollingLayoutService.shared.clearCache()
             pruneOffScreenWindows(screen: screen)
             let tilingLeaves = TileService.shared.leavesInVisibleRoot()
             let scrollingLeaves = ScrollingTileService.shared.leavesInVisibleScrollingRoot()
@@ -97,6 +99,14 @@ struct ReapplyHandler {
             Logger.shared.log("pruning off-screen window: pid=\(w.pid) hash=\(w.windowHash)")
             ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
             TileService.shared.removeAndReflow(w, screen: screen)
+        }
+        let scrollingLeaves = ScrollingTileService.shared.leavesInVisibleScrollingRoot()
+        for leaf in scrollingLeaves {
+            guard case .window(let w) = leaf else { continue }
+            guard !onScreen.contains(w.windowHash) else { continue }
+            Logger.shared.log("pruning off-screen scrolling window: pid=\(w.pid) hash=\(w.windowHash)")
+            ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
+            ScrollingTileService.shared.removeWindow(w, screen: screen)
         }
     }
 

@@ -55,8 +55,11 @@ final class ResizeObserver {
     // MARK: – Internal (called from C callback on main thread)
 
     func handle(element: AXUIElement, notification: String, pid: pid_t) {
-        guard let wid = windowID(of: element),
-              let key = keysByHash[UInt(wid)] else { return }
+        // windowID(of:) fails for destroyed elements; fall back to CFEqual identity search.
+        guard let key: WindowSlot = {
+            if let wid = windowID(of: element) { return keysByHash[UInt(wid)] }
+            return keysByPid[pid]?.first { elements[$0].map { CFEqual($0, element) } == true }
+        }() else { return }
 
         let isScrolling = ScrollingTileService.shared.isTracked(key)
 
@@ -66,7 +69,11 @@ final class ResizeObserver {
         if notification == kElementDestroyed as String {
             WindowOpacityService.shared.restore(hash: key.windowHash)
             if let screen = NSScreen.main {
-                TileService.shared.removeAndReflow(key, screen: screen)
+                if isScrolling {
+                    ScrollingTileService.shared.removeWindow(key, screen: screen)
+                } else {
+                    TileService.shared.removeAndReflow(key, screen: screen)
+                }
             } else {
                 TileService.shared.remove(key)
             }

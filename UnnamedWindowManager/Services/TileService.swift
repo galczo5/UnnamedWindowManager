@@ -188,6 +188,7 @@ final class TileService {
     }
 
     func swap(_ keyA: WindowSlot, _ keyB: WindowSlot) {
+        guard keyA != keyB else { return }
         store.queue.sync(flags: .barrier) {
             guard let id = rootIDSync(containing: keyA),
                   case .tiling(var root) = store.roots[id],
@@ -226,6 +227,7 @@ final class TileService {
 
     func insertAdjacent(dragged: WindowSlot, target: WindowSlot,
                         zone: DropZone, screen: NSScreen) {
+        guard dragged != target else { return }
         store.queue.sync(flags: .barrier) {
             guard let draggedRootID = rootIDSync(containing: dragged),
                   let targetRootID  = rootIDSync(containing: target),
@@ -236,9 +238,13 @@ final class TileService {
                 return
             }
 
-            treeMutation.removeLeaf(dragged, from: &draggedRoot)
-            // Destroy source root only on cross-root drag that empties it.
-            if draggedRootID != targetRootID {
+            if draggedRootID == targetRootID {
+                // Same root: remove from targetRoot so both removal and insertion
+                // operate on the same struct, preventing duplicate window slots.
+                treeMutation.removeLeaf(dragged, from: &targetRoot)
+            } else {
+                treeMutation.removeLeaf(dragged, from: &draggedRoot)
+                // Destroy source root if the cross-root drag emptied it.
                 if draggedRoot.children.isEmpty {
                     store.roots.removeValue(forKey: draggedRootID)
                     store.windowCounts.removeValue(forKey: draggedRootID)
