@@ -70,6 +70,10 @@ struct ConfigData: Codable {
         var focusDown: String?
         var scroll: String?
         var scrollAll: String?
+        var swapLeft: String?
+        var swapRight: String?
+        var swapUp: String?
+        var swapDown: String?
     }
 
     static let defaults = ConfigData(config: ConfigSection(
@@ -77,7 +81,7 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black", logPath: ""),
-        shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]"),
+        shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down"),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
 
@@ -121,6 +125,10 @@ struct ConfigData: Codable {
         check(s?.shortcuts?.focusDown,          "config.shortcuts.focusDown")
         check(s?.shortcuts?.scroll,             "config.shortcuts.scroll")
         check(s?.shortcuts?.scrollAll,          "config.shortcuts.scrollAll")
+        check(s?.shortcuts?.swapLeft,           "config.shortcuts.swapLeft")
+        check(s?.shortcuts?.swapRight,          "config.shortcuts.swapRight")
+        check(s?.shortcuts?.swapUp,             "config.shortcuts.swapUp")
+        check(s?.shortcuts?.swapDown,           "config.shortcuts.swapDown")
         return missing
     }
 
@@ -174,7 +182,11 @@ struct ConfigData: Codable {
                 focusUp:         s?.shortcuts?.focusUp         ?? d.shortcuts!.focusUp,
                 focusDown:       s?.shortcuts?.focusDown       ?? d.shortcuts!.focusDown,
                 scroll:          s?.shortcuts?.scroll          ?? d.shortcuts!.scroll,
-                scrollAll:       s?.shortcuts?.scrollAll       ?? d.shortcuts!.scrollAll
+                scrollAll:       s?.shortcuts?.scrollAll       ?? d.shortcuts!.scrollAll,
+                swapLeft:        s?.shortcuts?.swapLeft        ?? d.shortcuts!.swapLeft,
+                swapRight:       s?.shortcuts?.swapRight       ?? d.shortcuts!.swapRight,
+                swapUp:          s?.shortcuts?.swapUp          ?? d.shortcuts!.swapUp,
+                swapDown:        s?.shortcuts?.swapDown        ?? d.shortcuts!.swapDown
             ),
             commands: s?.commands ?? d.commands
         ))

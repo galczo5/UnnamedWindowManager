@@ -57,6 +57,10 @@ final class Config {
     static var focusDownShortcut: String       { shared.s.shortcuts!.focusDown! }
     static var scrollShortcut: String          { shared.s.shortcuts!.scroll! }
     static var scrollAllShortcut: String       { shared.s.shortcuts!.scrollAll! }
+    static var swapLeftShortcut: String        { shared.s.shortcuts!.swapLeft! }
+    static var swapRightShortcut: String       { shared.s.shortcuts!.swapRight! }
+    static var swapUpShortcut: String          { shared.s.shortcuts!.swapUp! }
+    static var swapDownShortcut: String        { shared.s.shortcuts!.swapDown! }
     static var commands: [ConfigData.CommandConfig] { shared.s.commands ?? [] }
 
 }

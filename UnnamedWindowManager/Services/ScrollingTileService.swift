@@ -303,6 +303,58 @@ final class ScrollingTileService {
         }
     }
 
+    /// swapLeft: moves the last window of the left stacking slot to the end of the right stacking slot.
+    /// swapRight: moves the last window of the right stacking slot to the end of the left stacking slot.
+    /// The center window and all slot sizes are untouched. Returns the moved window, or nil if no swap occurred.
+    @discardableResult
+    func swapWindows(_ direction: FocusDirection, screen: NSScreen) -> WindowSlot? {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(var root) = store.roots[id] else { return nil }
+
+            let moved: WindowSlot
+            switch direction {
+            case .left:
+                guard case .stacking(var leftStack) = root.left else { return nil }
+                moved = leftStack.children.removeLast()
+                root.left = leftStack.children.isEmpty ? nil : .stacking(leftStack)
+                switch root.right {
+                case nil:
+                    root.right = .stacking(StackingSlot(id: UUID(), parentId: id,
+                                                        width: 0, height: 0,
+                                                        children: [moved], align: .left))
+                case .stacking(var s):
+                    s.children.append(moved)
+                    root.right = .stacking(s)
+                default: break
+                }
+            case .right:
+                guard case .stacking(var rightStack) = root.right else { return nil }
+                moved = rightStack.children.removeLast()
+                root.right = rightStack.children.isEmpty ? nil : .stacking(rightStack)
+                switch root.left {
+                case nil:
+                    root.left = .stacking(StackingSlot(id: UUID(), parentId: id,
+                                                       width: 0, height: 0,
+                                                       children: [moved], align: .right))
+                case .stacking(var s):
+                    s.children.append(moved)
+                    root.left = .stacking(s)
+                default: break
+                }
+            case .up, .down:
+                return nil
+            }
+
+            let og = Config.outerGaps
+            let w  = screen.visibleFrame.width  - og.left! - og.right!
+            let h  = screen.visibleFrame.height - og.top!  - og.bottom!
+            position.recomputeSizes(&root, width: w, height: h, updateSideWindowWidths: false)
+            store.roots[id] = .scrolling(root)
+            return moved
+        }
+    }
+
     // MARK: - Private
 
     /// Must be called inside a `store.queue` block.

@@ -133,6 +133,15 @@ struct ConfigLoader {
             focusRight: "\(sh.focusRight ?? "ctrl+opt+right")"
             focusUp: "\(sh.focusUp ?? "ctrl+opt+up")"
             focusDown: "\(sh.focusDown ?? "ctrl+opt+down")"
+            # Global keyboard shortcuts for swapping the focused window with its directional neighbour.
+            swapLeft: "\(sh.swapLeft ?? "ctrl+shift+left")"
+            swapRight: "\(sh.swapRight ?? "ctrl+shift+right")"
+            swapUp: "\(sh.swapUp ?? "ctrl+shift+up")"
+            swapDown: "\(sh.swapDown ?? "ctrl+shift+down")"
+            # Global keyboard shortcut for toggling scroll mode on a single window.
+            scroll: "\(sh.scroll ?? "cmd+[")"
+            # Global keyboard shortcut for Scroll All / Unscroll All toggle.
+            scrollAll: "\(sh.scrollAll ?? "cmd+]")"
           # Custom keyboard shortcuts that run shell commands.
           # Format: shortcut uses modifier+key (e.g. cmd+enter, cmd+shift+t). run is a shell command.
           commands:

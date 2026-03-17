@@ -55,6 +55,10 @@ final class KeybindingService {
             (Config.focusRightShortcut,      "focusRight",      { FocusRightHandler.focus() }),
             (Config.focusUpShortcut,         "focusUp",         { FocusUpHandler.focus() }),
             (Config.focusDownShortcut,       "focusDown",       { FocusDownHandler.focus() }),
+            (Config.swapLeftShortcut,        "swapLeft",        { SwapLeftHandler.swap() }),
+            (Config.swapRightShortcut,       "swapRight",       { SwapRightHandler.swap() }),
+            (Config.swapUpShortcut,          "swapUp",          { SwapUpHandler.swap() }),
+            (Config.swapDownShortcut,        "swapDown",        { SwapDownHandler.swap() }),
             (Config.scrollShortcut, "scroll", {
                 if TileService.shared.snapshotVisibleRoot() != nil {
                     NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")
