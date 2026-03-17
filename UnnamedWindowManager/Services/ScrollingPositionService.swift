@@ -11,7 +11,7 @@ struct ScrollingPositionService {
                         updateSideWindowWidths: Bool = true) {
         root.width  = width
         root.height = height
-        let fraction    = root.centerWidthFraction ?? 0.8
+        let fraction    = root.centerWidthFraction ?? Config.scrollCenterDefaultWidthFraction
         let centerWidth = (width * fraction).rounded()
         let remaining   = width - centerWidth
         let bothSides   = root.left != nil && root.right != nil

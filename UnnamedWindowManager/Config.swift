@@ -25,6 +25,7 @@ final class Config {
     static var fallbackWidthFraction: CGFloat  { shared.s.layout!.fallbackWidthFraction! }
     static var maxWidthFraction: CGFloat       { shared.s.layout!.maxWidthFraction! }
     static var maxHeightFraction: CGFloat      { shared.s.layout!.maxHeightFraction! }
+    static var scrollCenterDefaultWidthFraction: CGFloat { shared.s.layout!.scrollCenterDefaultWidthFraction! }
     static var dropZoneLeftFraction: CGFloat   { shared.s.dropZones!.leftFraction! }
     static var dropZoneRightFraction: CGFloat  { shared.s.dropZones!.rightFraction! }
     static var dropZoneBottomFraction: CGFloat { shared.s.dropZones!.bottomFraction! }

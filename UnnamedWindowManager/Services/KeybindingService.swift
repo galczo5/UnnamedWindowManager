@@ -27,38 +27,65 @@ final class KeybindingService {
             Logger.shared.log("KeybindingService: Accessibility trust not granted — global shortcuts inactive")
             return
         }
+        let all = makeBuiltInCandidates() + makeCommandCandidates()
+        guard buildBindings(from: all) else { return }
+        installEventTap()
+    }
 
-        let candidates: [(String, String, () -> Void)] = [
+    private func makeBuiltInCandidates() -> [(String, String, () -> Void)] {
+        [
             (Config.tileAllShortcut, "tileAll", {
                 if TileService.shared.snapshotVisibleRoot() != nil {
                     UntileHandler.untileAll()
+                } else if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
+                    NotificationService.shared.post(title: "Cannot tile", body: "Unscroll all windows first.")
                 } else {
                     OrganizeHandler.organize()
                 }
             }),
-            (Config.tileShortcut,            "tile",            { TileHandler.tileToggle() }),
+            (Config.tileShortcut, "tile", {
+                if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
+                    NotificationService.shared.post(title: "Cannot tile", body: "Unscroll all windows first.")
+                    return
+                }
+                TileHandler.tileToggle()
+            }),
             (Config.flipOrientationShortcut, "flipOrientation", { OrientFlipHandler.flipOrientation() }),
             (Config.focusLeftShortcut,       "focusLeft",       { FocusLeftHandler.focus() }),
             (Config.focusRightShortcut,      "focusRight",      { FocusRightHandler.focus() }),
             (Config.focusUpShortcut,         "focusUp",         { FocusUpHandler.focus() }),
             (Config.focusDownShortcut,       "focusDown",       { FocusDownHandler.focus() }),
-            (Config.scrollShortcut,    "scroll",    { ScrollingRootHandler.scrollToggle() }),
+            (Config.scrollShortcut, "scroll", {
+                if TileService.shared.snapshotVisibleRoot() != nil {
+                    NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")
+                    return
+                }
+                ScrollingRootHandler.scrollToggle()
+            }),
             (Config.scrollAllShortcut, "scrollAll", {
                 if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
                     UnscrollHandler.unscrollAll()
+                } else if TileService.shared.snapshotVisibleRoot() != nil {
+                    NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")
                 } else {
                     ScrollOrganizeHandler.organizeScrolling()
                 }
             }),
         ]
+    }
 
-        let commandCandidates: [(String, String, () -> Void)] = Config.commands.compactMap { cmd in
+    private func makeCommandCandidates() -> [(String, String, () -> Void)] {
+        Config.commands.compactMap { cmd in
             guard let shortcut = cmd.shortcut, !shortcut.isEmpty,
                   let run = cmd.run, !run.isEmpty else { return nil }
             return (shortcut, "cmd:\(run)", { CommandService.execute(run) })
         }
+    }
 
-        let allShortcuts = (candidates + commandCandidates).compactMap { s, _, _ in s.isEmpty ? nil : s }
+    /// Validates candidates for duplicate shortcuts and parses them into Bindings.
+    /// Returns false if a duplicate was found or no bindings were configured.
+    private func buildBindings(from candidates: [(String, String, () -> Void)]) -> Bool {
+        let allShortcuts = candidates.compactMap { s, _, _ in s.isEmpty ? nil : s }
         if let duplicate = findDuplicate(allShortcuts) {
             NotificationService.shared.post(
                 title: "Shortcut conflict",
@@ -66,20 +93,23 @@ final class KeybindingService {
             )
             Logger.shared.log("KeybindingService: duplicate shortcut '\(duplicate)' — all shortcuts disabled")
             bindings = []
-            return
+            return false
         }
 
         bindings = []
-        for (shortcut, label, action) in candidates + commandCandidates {
+        for (shortcut, label, action) in candidates {
             guard !shortcut.isEmpty, let parsed = parse(shortcut) else { continue }
             bindings.append(Binding(label: label, modifiers: parsed.modifiers, key: parsed.key, keyCode: parsed.keyCode, action: action))
         }
 
         guard !bindings.isEmpty else {
             Logger.shared.log("KeybindingService: no shortcuts configured")
-            return
+            return false
         }
+        return true
+    }
 
+    private func installEventTap() {
         let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
         let userInfo = Unmanaged.passUnretained(self).toOpaque()
 
@@ -117,7 +147,7 @@ final class KeybindingService {
                         Logger.shared.log("shortcut captured: \(label)")
                         action()
                     }
-                    return nil // consume the event
+                    return nil
                 }
                 return Unmanaged.passRetained(event)
             },

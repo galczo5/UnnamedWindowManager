@@ -60,11 +60,13 @@ struct UnnamedWindowManagerApp: App {
                 Button(menuLabel("Untile", Config.tileShortcut)) { UntileHandler.untile() }
             } else {
                 Button(menuLabel("Tile", Config.tileShortcut)) { TileHandler.tile() }
+                    .disabled(menuState.isScrolled)
             }
             if menuState.isTiled {
                 Button(menuLabel("Untile all", Config.tileAllShortcut)) { UntileHandler.untileAll() }
             } else {
                 Button(menuLabel("Tile all",   Config.tileAllShortcut)) { OrganizeHandler.organize() }
+                    .disabled(menuState.isScrolled)
             }
             let orientLabel: String = {
                 switch menuState.parentOrientation {
@@ -83,11 +85,13 @@ struct UnnamedWindowManagerApp: App {
                 Button(menuLabel("Unscroll", Config.scrollShortcut)) { UnscrollHandler.unscroll() }
             } else {
                 Button(menuLabel("Scroll", Config.scrollShortcut)) { ScrollingRootHandler.scroll() }
+                    .disabled(menuState.isTiled)
             }
             if menuState.isScrolled {
                 Button(menuLabel("Unscroll all", Config.scrollAllShortcut)) { UnscrollHandler.unscrollAll() }
             } else {
                 Button(menuLabel("Scroll all", Config.scrollAllShortcut)) { ScrollOrganizeHandler.organizeScrolling() }
+                    .disabled(menuState.isTiled)
             }
             Divider()
             Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }

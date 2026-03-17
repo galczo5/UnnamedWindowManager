@@ -26,6 +26,7 @@ struct ConfigData: Codable {
         var fallbackWidthFraction: CGFloat?
         var maxWidthFraction: CGFloat?
         var maxHeightFraction: CGFloat?
+        var scrollCenterDefaultWidthFraction: CGFloat?
     }
 
     struct DropZoneConfig: Codable {
@@ -72,7 +73,7 @@ struct ConfigData: Codable {
     }
 
     static let defaults = ConfigData(config: ConfigSection(
-        layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0),
+        layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0, scrollCenterDefaultWidthFraction: 0.9),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black", logPath: ""),
@@ -93,6 +94,7 @@ struct ConfigData: Codable {
         check(s?.layout?.fallbackWidthFraction,  "config.layout.fallbackWidthFraction")
         check(s?.layout?.maxWidthFraction,       "config.layout.maxWidthFraction")
         check(s?.layout?.maxHeightFraction,      "config.layout.maxHeightFraction")
+        check(s?.layout?.scrollCenterDefaultWidthFraction, "config.layout.scrollCenterDefaultWidthFraction")
         check(s?.dropZones?.leftFraction,        "config.dropZones.leftFraction")
         check(s?.dropZones?.rightFraction,       "config.dropZones.rightFraction")
         check(s?.dropZones?.bottomFraction,      "config.dropZones.bottomFraction")
@@ -137,7 +139,8 @@ struct ConfigData: Codable {
                 ),
                 fallbackWidthFraction:  s?.layout?.fallbackWidthFraction  ?? d.layout!.fallbackWidthFraction,
                 maxWidthFraction:       s?.layout?.maxWidthFraction       ?? d.layout!.maxWidthFraction,
-                maxHeightFraction:      s?.layout?.maxHeightFraction      ?? d.layout!.maxHeightFraction
+                maxHeightFraction:      s?.layout?.maxHeightFraction      ?? d.layout!.maxHeightFraction,
+                scrollCenterDefaultWidthFraction: s?.layout?.scrollCenterDefaultWidthFraction ?? d.layout!.scrollCenterDefaultWidthFraction
             ),
             dropZones: DropZoneConfig(
                 leftFraction:   s?.dropZones?.leftFraction   ?? d.dropZones!.leftFraction,
