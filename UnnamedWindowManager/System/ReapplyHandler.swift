@@ -38,7 +38,34 @@ struct ReapplyHandler {
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 guard let screen = NSScreen.main else { return }
-                PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+                let pass2Refusals = PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+
+                for key in pass2Refusals {
+                    let appName = NSRunningApplication(processIdentifier: key.pid)?.localizedName ?? "Unknown"
+                    NotificationService.shared.post(
+                        title: "Window refused to resize",
+                        body: "\(appName) could not be resized to fit its slot."
+                    )
+                }
+
+                guard !pass2Refusals.isEmpty else { return }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    guard let screen = NSScreen.main else { return }
+                    let pass3Refusals = PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+                    let persistent = pass2Refusals.intersection(pass3Refusals)
+                    guard !persistent.isEmpty else { return }
+
+                    for key in persistent {
+                        UntileHandler.untileByKey(key, screen: screen)
+                        let appName = NSRunningApplication(processIdentifier: key.pid)?.localizedName ?? "Unknown"
+                        NotificationService.shared.post(
+                            title: "Window untiled",
+                            body: "\(appName) was untiled because it repeatedly refused to resize."
+                        )
+                    }
+                    ReapplyHandler.reapplyAll()
+                }
             }
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .tileStateChanged, object: nil)

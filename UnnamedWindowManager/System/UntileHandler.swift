@@ -40,6 +40,21 @@ struct UntileHandler {
         NotificationCenter.default.post(name: .tileStateChanged, object: nil)
     }
 
+    static func untileByKey(_ key: WindowSlot, screen: NSScreen) {
+        let isScrolling = ScrollingTileService.shared.isTracked(key)
+        WindowOpacityService.shared.restore(hash: key.windowHash)
+        WindowVisibilityManager.shared.restoreAndForget(key)
+        if let ax = ResizeObserver.shared.elements[key] {
+            RestoreService.restore(key, element: ax)
+        }
+        if isScrolling {
+            ScrollingTileService.shared.removeWindow(key, screen: screen)
+        } else {
+            TileService.shared.removeAndReflow(key, screen: screen)
+        }
+        ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+    }
+
     static func untileAllSpaces() {
         guard AXIsProcessTrusted() else { return }
         let elements = ResizeObserver.shared.elements

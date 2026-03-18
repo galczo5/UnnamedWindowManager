@@ -3,12 +3,12 @@ import AppKit
 // Checks tiled windows after a resize and corrects any that refused the target size.
 enum PostResizeValidator {
 
-    static func checkAndFixRefusals(windows: Set<WindowSlot>, screen: NSScreen) {
+    @discardableResult
+    static func checkAndFixRefusals(windows: Set<WindowSlot>, screen: NSScreen) -> Set<WindowSlot> {
         Logger.shared.log("checkAndFixRefusals: windows=\(windows.count)")
         struct Refusal {
             let key: WindowSlot
             let actual: CGSize
-            let appName: String
         }
 
         let observer = ResizeObserver.shared
@@ -26,13 +26,12 @@ enum PostResizeValidator {
 
             guard abs(actual.width - targetW) > 2 || abs(actual.height - targetH) > 2 else { continue }
 
-            let appName = NSRunningApplication(processIdentifier: w.pid)?.localizedName ?? "Unknown"
-            refusals.append(Refusal(key: w, actual: actual, appName: appName))
+            refusals.append(Refusal(key: w, actual: actual))
         }
 
         guard !refusals.isEmpty else {
             Logger.shared.log("checkAndFixRefusals: no refusals, skipping")
-            return
+            return []
         }
 
         let allTracked = Set(leaves.compactMap { leaf -> WindowSlot? in
@@ -50,11 +49,6 @@ enum PostResizeValidator {
             observer.reapplying.subtract(allTracked)
         }
 
-        for r in refusals {
-            NotificationService.shared.post(
-                title: "Window refused to resize",
-                body: "\(r.appName) could not be resized to fit its slot."
-            )
-        }
+        return Set(refusals.map(\.key))
     }
 }
