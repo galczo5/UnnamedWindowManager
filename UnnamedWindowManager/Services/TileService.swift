@@ -209,7 +209,11 @@ final class TileService {
                   treeQuery.isTracked(keyB, in: root) else {
                 return
             }
-            treeInsert.swap(keyA, keyB, in: &root)
+            let resolvedA: WindowSlot
+            if let s = treeQuery.findLeafSlot(keyA, in: root), case .window(let w) = s { resolvedA = w } else { resolvedA = keyA }
+            let resolvedB: WindowSlot
+            if let s = treeQuery.findLeafSlot(keyB, in: root), case .window(let w) = s { resolvedB = w } else { resolvedB = keyB }
+            treeInsert.swap(resolvedA, resolvedB, in: &root)
             store.roots[id] = .tiling(root)
         }
     }

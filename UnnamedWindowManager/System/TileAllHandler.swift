@@ -2,11 +2,11 @@ import AppKit
 import ApplicationServices
 
 // Snaps all visible on-screen windows into the layout in one batch, ordered by position.
-struct OrganizeHandler {
+struct TileAllHandler {
 
     /// Snaps all visible on-screen windows into the layout, ordered left-to-right by their x-origin.
     /// Skips windows that are already tracked, minimised, owned by this process, or smaller than 100×100 pts.
-    static func organize() {
+    static func tileAll() {
         guard AXIsProcessTrusted() else {
             let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
             AXIsProcessTrustedWithOptions(opts as CFDictionary)

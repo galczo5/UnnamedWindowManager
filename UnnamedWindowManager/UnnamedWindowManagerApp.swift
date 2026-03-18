@@ -65,7 +65,7 @@ struct UnnamedWindowManagerApp: App {
             if menuState.isTiled {
                 Button(menuLabel("Untile all", Config.tileAllShortcut)) { UntileHandler.untileAll() }
             } else {
-                Button(menuLabel("Tile all",   Config.tileAllShortcut)) { OrganizeHandler.organize() }
+                Button(menuLabel("Tile all",   Config.tileAllShortcut)) { TileAllHandler.tileAll() }
                     .disabled(menuState.isScrolled)
             }
             let orientLabel: String = {
@@ -94,7 +94,7 @@ struct UnnamedWindowManagerApp: App {
                     .disabled(menuState.isTiled)
             }
             Divider()
-            Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); OrganizeHandler.organize() }
+            Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); TileAllHandler.tileAll() }
             Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
             Button("Open config file") {

@@ -35,15 +35,17 @@ final class ResizeObserver {
 
         guard let axObs = axObserver(for: pid) else { return }
         let refcon = Unmanaged.passUnretained(self).toOpaque()
-        AXObserverAddNotification(axObs, window, kAXWindowMovedNotification   as CFString, refcon)
-        AXObserverAddNotification(axObs, window, kAXWindowResizedNotification as CFString, refcon)
-        AXObserverAddNotification(axObs, window, kElementDestroyed,                        refcon)
+        AXObserverAddNotification(axObs, window, kAXWindowMovedNotification        as CFString, refcon)
+        AXObserverAddNotification(axObs, window, kAXWindowResizedNotification    as CFString, refcon)
+        AXObserverAddNotification(axObs, window, kAXWindowMiniaturizedNotification as CFString, refcon)
+        AXObserverAddNotification(axObs, window, kElementDestroyed,                             refcon)
     }
 
     func stopObserving(key: WindowSlot, pid: pid_t) {
         guard let window = elements[key], let axObs = observers[pid] else { return }
-        AXObserverRemoveNotification(axObs, window, kAXWindowMovedNotification   as CFString)
-        AXObserverRemoveNotification(axObs, window, kAXWindowResizedNotification as CFString)
+        AXObserverRemoveNotification(axObs, window, kAXWindowMovedNotification        as CFString)
+        AXObserverRemoveNotification(axObs, window, kAXWindowResizedNotification    as CFString)
+        AXObserverRemoveNotification(axObs, window, kAXWindowMiniaturizedNotification as CFString)
         AXObserverRemoveNotification(axObs, window, kElementDestroyed)
         cleanup(key: key, pid: pid)
     }
@@ -81,6 +83,45 @@ final class ResizeObserver {
             WindowVisibilityManager.shared.windowRemoved(key)
             ReapplyHandler.reapplyAll()
             return
+        }
+
+        if notification == (kAXWindowMiniaturizedNotification as String) {
+            WindowOpacityService.shared.restore(hash: key.windowHash)
+            if let screen = NSScreen.main {
+                if isScrolling {
+                    ScrollingTileService.shared.removeWindow(key, screen: screen)
+                } else {
+                    TileService.shared.removeAndReflow(key, screen: screen)
+                }
+            } else {
+                TileService.shared.remove(key)
+            }
+            cleanup(key: key, pid: pid)
+            WindowVisibilityManager.shared.windowRemoved(key)
+            ReapplyHandler.reapplyAll()
+            return
+        }
+
+        if notification == (kAXWindowResizedNotification as String) {
+            var ref: CFTypeRef?
+            let isFullScreen = AXUIElementCopyAttributeValue(element, "AXFullScreen" as CFString, &ref) == .success
+                               && (ref as? Bool) == true
+            if isFullScreen {
+                WindowOpacityService.shared.restore(hash: key.windowHash)
+                if let screen = NSScreen.main {
+                    if isScrolling {
+                        ScrollingTileService.shared.removeWindow(key, screen: screen)
+                    } else {
+                        TileService.shared.removeAndReflow(key, screen: screen)
+                    }
+                } else {
+                    TileService.shared.remove(key)
+                }
+                cleanup(key: key, pid: pid)
+                WindowVisibilityManager.shared.windowRemoved(key)
+                ReapplyHandler.reapplyAll()
+                return
+            }
         }
 
         guard TileService.shared.isTracked(key) || isScrolling else { return }

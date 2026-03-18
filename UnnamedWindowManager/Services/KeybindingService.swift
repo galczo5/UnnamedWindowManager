@@ -40,7 +40,7 @@ final class KeybindingService {
                 } else if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
                     NotificationService.shared.post(title: "Cannot tile", body: "Unscroll all windows first.")
                 } else {
-                    OrganizeHandler.organize()
+                    TileAllHandler.tileAll()
                 }
             }),
             (Config.tileShortcut, "tile", {

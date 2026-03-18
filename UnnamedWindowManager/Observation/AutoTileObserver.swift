@@ -92,7 +92,7 @@ final class AutoTileObserver {
     private func tileFocusedWindow(pid: pid_t, screenWasEmpty: Bool = false) {
         if Config.autoOrganize && screenWasEmpty {
             Logger.shared.log("autoOrganize triggered for pid=\(pid)")
-            OrganizeHandler.organize()
+            TileAllHandler.tileAll()
             return
         }
 
