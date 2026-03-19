@@ -17,12 +17,8 @@ final class ScrollingLayoutService {
                      applySides: Bool = true,
                      applyCenter: Bool = true,
                      sidesPositionOnly: Bool = false) {
-        let fraction    = root.centerWidthFraction ?? 0.8
-        let centerWidth = (root.size.width * fraction).rounded()
-        let remaining   = root.size.width - centerWidth
-        let bothSides   = root.left != nil && root.right != nil
-        let sideWidth   = (bothSides ? remaining / 2 : remaining).rounded()
-        let leftWidth   = root.left != nil ? sideWidth : 0
+        let leftWidth   = root.left?.size.width ?? 0
+        let centerWidth = root.center.size.width
 
         if applySides, zonesChanged, let left = root.left {
             applySlot(left, origin: CGPoint(x: origin.x, y: origin.y), elements: elements,

@@ -1,7 +1,7 @@
 import CoreGraphics
 
 // Computes pixel dimensions for all zones of a ScrollingRootSlot.
-// Center width is determined by centerWidthFraction (default 0.8); left and right split the remaining width.
+// Computes pixel dimensions for all zones of a ScrollingRootSlot.
 struct ScrollingPositionService {
 
     // When updateSideWindowWidths is false, only slot boundaries (s.size.width) are updated for side slots —
