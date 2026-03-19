@@ -63,17 +63,15 @@ final class LayoutService {
             let pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
             let size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
             frames[w] = CGRect(origin: pos, size: size)
-        case .horizontal(let h):
+        case .split(let s):
             var cursor = origin
-            for child in h.children {
+            for child in s.children {
                 collectFrames(child, origin: cursor, into: &frames)
-                cursor.x += child.width
-            }
-        case .vertical(let v):
-            var cursor = origin
-            for child in v.children {
-                collectFrames(child, origin: cursor, into: &frames)
-                cursor.y += child.height
+                if s.orientation == .horizontal {
+                    cursor.x += child.width
+                } else {
+                    cursor.y += child.height
+                }
             }
         case .stacking:
             break
@@ -100,8 +98,7 @@ final class LayoutService {
 
     /// Recursively positions a slot subtree starting at `origin`.
     /// - Window leaf: applies gap insets, then writes position and size via AX.
-    /// - Horizontal container: lays children left-to-right.
-    /// - Vertical container: lays children top-to-bottom.
+    /// - Split container: lays children along its orientation axis.
     private func applyLayout(
         _ slot: Slot,
         origin: CGPoint,
@@ -125,17 +122,15 @@ final class LayoutService {
             if let sizeVal = AXValueCreate(.cgSize, &size) {
                 AXUIElementSetAttributeValue(ax, kAXSizeAttribute as CFString, sizeVal)
             }
-        case .horizontal(let h):
+        case .split(let s):
             var cursor = origin
-            for child in h.children {
+            for child in s.children {
                 applyLayout(child, origin: cursor, elements: elements)
-                cursor.x += child.width
-            }
-        case .vertical(let v):
-            var cursor = origin
-            for child in v.children {
-                applyLayout(child, origin: cursor, elements: elements)
-                cursor.y += child.height
+                if s.orientation == .horizontal {
+                    cursor.x += child.width
+                } else {
+                    cursor.y += child.height
+                }
             }
         case .stacking:
             fatalError("StackingSlot encountered in tiling layout — stacking slots are only supported in scrolling roots")

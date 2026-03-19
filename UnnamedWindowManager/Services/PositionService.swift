@@ -19,20 +19,15 @@ struct PositionService {
         case .window(var w):
             w.width = width; w.height = height
             slot = .window(w)
-        case .horizontal(var h):
-            h.width = width; h.height = height
-            guard !h.children.isEmpty else { slot = .horizontal(h); return }
-            for i in h.children.indices {
-                recomputeSizes(&h.children[i], width: (width * h.children[i].fraction).rounded(), height: height)
+        case .split(var s):
+            s.width = width; s.height = height
+            guard !s.children.isEmpty else { slot = .split(s); return }
+            for i in s.children.indices {
+                let cw = s.orientation == .horizontal ? (width * s.children[i].fraction).rounded() : width
+                let ch = s.orientation == .horizontal ? height : (height * s.children[i].fraction).rounded()
+                recomputeSizes(&s.children[i], width: cw, height: ch)
             }
-            slot = .horizontal(h)
-        case .vertical(var v):
-            v.width = width; v.height = height
-            guard !v.children.isEmpty else { slot = .vertical(v); return }
-            for i in v.children.indices {
-                recomputeSizes(&v.children[i], width: width, height: (height * v.children[i].fraction).rounded())
-            }
-            slot = .vertical(v)
+            slot = .split(s)
         case .stacking(var s):
             s.width = width; s.height = height
             for i in s.children.indices {

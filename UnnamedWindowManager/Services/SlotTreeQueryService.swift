@@ -38,11 +38,8 @@ struct SlotTreeQueryService {
         switch slot {
         case .window(let w):
             return w == key ? slot : nil
-        case .horizontal(let h):
-            for child in h.children { if let f = findLeafSlot(key, in: child) { return f } }
-            return nil
-        case .vertical(let v):
-            for child in v.children { if let f = findLeafSlot(key, in: child) { return f } }
+        case .split(let s):
+            for child in s.children { if let f = findLeafSlot(key, in: child) { return f } }
             return nil
         case .stacking:
             fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")
@@ -51,9 +48,8 @@ struct SlotTreeQueryService {
 
     private func collectLeaves(in slot: Slot) -> [Slot] {
         switch slot {
-        case .window:            return [slot]
-        case .horizontal(let h): return h.children.flatMap { collectLeaves(in: $0) }
-        case .vertical(let v):   return v.children.flatMap { collectLeaves(in: $0) }
+        case .window:        return [slot]
+        case .split(let s):  return s.children.flatMap { collectLeaves(in: $0) }
         case .stacking:
             fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")
         }
@@ -61,9 +57,8 @@ struct SlotTreeQueryService {
 
     private func maxLeafOrder(in slot: Slot) -> Int {
         switch slot {
-        case .window(let w):     return w.order
-        case .horizontal(let h): return h.children.map { maxLeafOrder(in: $0) }.max() ?? 0
-        case .vertical(let v):   return v.children.map { maxLeafOrder(in: $0) }.max() ?? 0
+        case .window(let w): return w.order
+        case .split(let s):  return s.children.map { maxLeafOrder(in: $0) }.max() ?? 0
         case .stacking:
             fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")
         }
@@ -72,17 +67,11 @@ struct SlotTreeQueryService {
     private func findParentOrientation(of key: WindowSlot, in slot: Slot) -> Orientation? {
         switch slot {
         case .window: return nil
-        case .horizontal(let h):
-            if h.children.contains(where: {
+        case .split(let s):
+            if s.children.contains(where: {
                 if case .window(let w) = $0 { return w == key }; return false
-            }) { return .horizontal }
-            for child in h.children { if let o = findParentOrientation(of: key, in: child) { return o } }
-            return nil
-        case .vertical(let v):
-            if v.children.contains(where: {
-                if case .window(let w) = $0 { return w == key }; return false
-            }) { return .vertical }
-            for child in v.children { if let o = findParentOrientation(of: key, in: child) { return o } }
+            }) { return s.orientation }
+            for child in s.children { if let o = findParentOrientation(of: key, in: child) { return o } }
             return nil
         case .stacking:
             fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")

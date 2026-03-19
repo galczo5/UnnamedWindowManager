@@ -53,17 +53,15 @@ struct DirectionalNeighborService {
                 height: (w.height - g * 2).rounded()
             )
             results.append(LeafRect(key: w, rect: rect))
-        case .horizontal(let h):
+        case .split(let s):
             var cursor = origin
-            for child in h.children {
+            for child in s.children {
                 collectLeafRects(child, origin: cursor, into: &results)
-                cursor.x += child.width
-            }
-        case .vertical(let v):
-            var cursor = origin
-            for child in v.children {
-                collectLeafRects(child, origin: cursor, into: &results)
-                cursor.y += child.height
+                if s.orientation == .horizontal {
+                    cursor.x += child.width
+                } else {
+                    cursor.y += child.height
+                }
             }
         case .stacking:
             fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by DirectionalNeighborService")

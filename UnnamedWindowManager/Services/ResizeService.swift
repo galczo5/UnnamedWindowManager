@@ -79,37 +79,17 @@ struct ResizeService {
             case .window:
                 continue
 
-            case .horizontal(var h):
+            case .split(var s):
+                let isHoriz = s.orientation == .horizontal
                 let result = adjustInChildren(
-                    &h.children, targetId: targetId, delta: delta, horizontal: horizontal,
-                    splitsHorizontal: true, sizeInAxis: h.width
+                    &s.children, targetId: targetId, delta: delta, horizontal: horizontal,
+                    splitsHorizontal: isHoriz, sizeInAxis: isHoriz ? s.width : s.height
                 )
                 switch result {
                 case .notFound:
                     continue
                 case .adjusted:
-                    children[i] = .horizontal(h)
-                    return .adjusted
-                case .foundWrongAxis:
-                    // Target is inside h but h's axis was wrong for the resize.
-                    // Try adjusting h itself within this (the caller's) container.
-                    guard splitsHorizontal == horizontal, sizeInAxis > 0 else {
-                        return .foundWrongAxis
-                    }
-                    applyFractionDelta(&children, targetIndex: i, fractionDelta: delta / sizeInAxis)
-                    return .adjusted
-                }
-
-            case .vertical(var v):
-                let result = adjustInChildren(
-                    &v.children, targetId: targetId, delta: delta, horizontal: horizontal,
-                    splitsHorizontal: false, sizeInAxis: v.height
-                )
-                switch result {
-                case .notFound:
-                    continue
-                case .adjusted:
-                    children[i] = .vertical(v)
+                    children[i] = .split(s)
                     return .adjusted
                 case .foundWrongAxis:
                     guard splitsHorizontal == horizontal, sizeInAxis > 0 else {

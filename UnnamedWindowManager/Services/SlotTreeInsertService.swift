@@ -82,13 +82,9 @@ struct SlotTreeInsertService {
         var d = dragged; d.parentId = containerId; d.fraction = 0.5
         var t = target;  t.parentId = containerId; t.fraction = 0.5
         let kids: [Slot] = draggedFirst ? [d, t] : [t, d]
-        return orientation == .horizontal
-            ? .horizontal(HorizontalSlot(id: containerId, parentId: target.parentId,
-                                         width: 0, height: 0, children: kids,
-                                         fraction: target.fraction))
-            : .vertical(VerticalSlot(id: containerId, parentId: target.parentId,
-                                     width: 0, height: 0, children: kids,
-                                     fraction: target.fraction))
+        return .split(SplitSlot(id: containerId, parentId: target.parentId,
+                                width: 0, height: 0, orientation: orientation,
+                                children: kids, fraction: target.fraction))
     }
 
     @discardableResult
@@ -102,45 +98,24 @@ struct SlotTreeInsertService {
         switch slot {
         case .window:
             return false
-        case .horizontal(var h):
-            if let idx = h.children.firstIndex(where: {
+        case .split(var s):
+            if let idx = s.children.firstIndex(where: {
                 if case .window(let w) = $0 { return w == targetKey }; return false
             }) {
-                if needed == .horizontal {
-                    insertIntoChildren(&h.children, parentId: h.id,
+                if needed == s.orientation {
+                    insertIntoChildren(&s.children, parentId: s.id,
                                        dragged: dragged, at: idx, draggedFirst: draggedFirst)
                 } else {
-                    h.children[idx] = makeWrapper(target: h.children[idx], dragged: dragged,
+                    s.children[idx] = makeWrapper(target: s.children[idx], dragged: dragged,
                                                   orientation: needed, draggedFirst: draggedFirst)
                 }
-                slot = .horizontal(h); return true
+                slot = .split(s); return true
             }
-            for i in h.children.indices {
-                if insertAdjacentInSlot(&h.children[i], targetKey: targetKey,
+            for i in s.children.indices {
+                if insertAdjacentInSlot(&s.children[i], targetKey: targetKey,
                                         dragged: dragged, needed: needed,
                                         draggedFirst: draggedFirst) {
-                    slot = .horizontal(h); return true
-                }
-            }
-            return false
-        case .vertical(var v):
-            if let idx = v.children.firstIndex(where: {
-                if case .window(let w) = $0 { return w == targetKey }; return false
-            }) {
-                if needed == .vertical {
-                    insertIntoChildren(&v.children, parentId: v.id,
-                                       dragged: dragged, at: idx, draggedFirst: draggedFirst)
-                } else {
-                    v.children[idx] = makeWrapper(target: v.children[idx], dragged: dragged,
-                                                  orientation: needed, draggedFirst: draggedFirst)
-                }
-                slot = .vertical(v); return true
-            }
-            for i in v.children.indices {
-                if insertAdjacentInSlot(&v.children[i], targetKey: targetKey,
-                                        dragged: dragged, needed: needed,
-                                        draggedFirst: draggedFirst) {
-                    slot = .vertical(v); return true
+                    slot = .split(s); return true
                 }
             }
             return false
@@ -165,17 +140,10 @@ struct SlotTreeInsertService {
                 preTileOrigin: replacement.preTileOrigin, preTileSize: replacement.preTileSize
             )
             slot = .window(swapped); return true
-        case .horizontal(var h):
-            for i in h.children.indices {
-                if replaceWindowInLeaf(&h.children[i], target: target, with: replacement) {
-                    slot = .horizontal(h); return true
-                }
-            }
-            return false
-        case .vertical(var v):
-            for i in v.children.indices {
-                if replaceWindowInLeaf(&v.children[i], target: target, with: replacement) {
-                    slot = .vertical(v); return true
+        case .split(var s):
+            for i in s.children.indices {
+                if replaceWindowInLeaf(&s.children[i], target: target, with: replacement) {
+                    slot = .split(s); return true
                 }
             }
             return false

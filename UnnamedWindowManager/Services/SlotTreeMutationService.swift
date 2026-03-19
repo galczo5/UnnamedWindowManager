@@ -49,7 +49,7 @@ struct SlotTreeMutationService {
         if root.children.contains(where: {
             if case .window(let w) = $0 { return w == key }; return false
         }) {
-            root.orientation = root.orientation == .horizontal ? .vertical : .horizontal
+            root.orientation = root.orientation.flipped
             return
         }
         for i in root.children.indices {
@@ -63,36 +63,21 @@ struct SlotTreeMutationService {
         switch slot {
         case .window(let w):
             return w == key ? (nil, true) : (slot, false)
-        case .horizontal(let h):
+        case .split(let s):
             var found = false
-            let newChildren: [Slot] = h.children.compactMap {
-                let (s, wasFound) = removeFromTree(key, slot: $0)
+            let newChildren: [Slot] = s.children.compactMap {
+                let (child, wasFound) = removeFromTree(key, slot: $0)
                 if wasFound { found = true }
-                return s
+                return child
             }
             guard found else { return (slot, false) }
             if newChildren.isEmpty { return (nil, true) }
             if newChildren.count == 1 {
-                var child = newChildren[0]; child.parentId = h.parentId; child.fraction = h.fraction
+                var child = newChildren[0]; child.parentId = s.parentId; child.fraction = s.fraction
                 return (child, true)
             }
-            var updated = h; updated.children = redistributed(newChildren)
-            return (.horizontal(updated), true)
-        case .vertical(let v):
-            var found = false
-            let newChildren: [Slot] = v.children.compactMap {
-                let (s, wasFound) = removeFromTree(key, slot: $0)
-                if wasFound { found = true }
-                return s
-            }
-            guard found else { return (slot, false) }
-            if newChildren.isEmpty { return (nil, true) }
-            if newChildren.count == 1 {
-                var child = newChildren[0]; child.parentId = v.parentId; child.fraction = v.fraction
-                return (child, true)
-            }
-            var updated = v; updated.children = redistributed(newChildren)
-            return (.vertical(updated), true)
+            var updated = s; updated.children = redistributed(newChildren)
+            return (.split(updated), true)
         case .stacking:
             fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
         }
@@ -111,30 +96,19 @@ struct SlotTreeMutationService {
             let containerFraction = slot.fraction
             var existing = slot;  existing.parentId = containerId; existing.fraction = 0.5
             var wrapped  = newLeaf; wrapped.parentId = containerId; wrapped.fraction = 0.5
-            slot = orientation == .horizontal
-                ? .horizontal(HorizontalSlot(id: containerId, parentId: containerParentId,
-                                             width: 0, height: 0, children: [existing, wrapped],
-                                             fraction: containerFraction))
-                : .vertical(VerticalSlot(id: containerId, parentId: containerParentId,
-                                         width: 0, height: 0, children: [existing, wrapped],
-                                         fraction: containerFraction))
+            slot = .split(SplitSlot(id: containerId, parentId: containerParentId,
+                                    width: 0, height: 0, orientation: orientation,
+                                    children: [existing, wrapped],
+                                    fraction: containerFraction))
             return true
         }
         switch slot {
         case .window: return false
-        case .horizontal(var h):
-            for i in h.children.indices {
-                if extractAndWrap(&h.children[i], targetOrder: targetOrder,
+        case .split(var s):
+            for i in s.children.indices {
+                if extractAndWrap(&s.children[i], targetOrder: targetOrder,
                                   newLeaf: newLeaf, orientation: orientation) {
-                    slot = .horizontal(h); return true
-                }
-            }
-            return false
-        case .vertical(var v):
-            for i in v.children.indices {
-                if extractAndWrap(&v.children[i], targetOrder: targetOrder,
-                                  newLeaf: newLeaf, orientation: orientation) {
-                    slot = .vertical(v); return true
+                    slot = .split(s); return true
                 }
             }
             return false
@@ -153,17 +127,10 @@ struct SlotTreeMutationService {
         case .window(var w):
             guard w == key else { return false }
             update(&w); slot = .window(w); return true
-        case .horizontal(var h):
-            for i in h.children.indices {
-                if updateLeaf(key, in: &h.children[i], update: update) {
-                    slot = .horizontal(h); return true
-                }
-            }
-            return false
-        case .vertical(var v):
-            for i in v.children.indices {
-                if updateLeaf(key, in: &v.children[i], update: update) {
-                    slot = .vertical(v); return true
+        case .split(var s):
+            for i in s.children.indices {
+                if updateLeaf(key, in: &s.children[i], update: update) {
+                    slot = .split(s); return true
                 }
             }
             return false
@@ -176,35 +143,17 @@ struct SlotTreeMutationService {
     private func flipParentOrientation(of key: WindowSlot, in slot: inout Slot) -> Bool {
         switch slot {
         case .window: return false
-        case .horizontal(var h):
-            if h.children.contains(where: {
+        case .split(var s):
+            if s.children.contains(where: {
                 if case .window(let w) = $0 { return w == key }; return false
             }) {
-                slot = .vertical(VerticalSlot(id: h.id, parentId: h.parentId,
-                                              width: h.width, height: h.height,
-                                              children: h.children, gaps: h.gaps,
-                                              fraction: h.fraction))
+                s.orientation = s.orientation.flipped
+                slot = .split(s)
                 return true
             }
-            for i in h.children.indices {
-                if flipParentOrientation(of: key, in: &h.children[i]) {
-                    slot = .horizontal(h); return true
-                }
-            }
-            return false
-        case .vertical(var v):
-            if v.children.contains(where: {
-                if case .window(let w) = $0 { return w == key }; return false
-            }) {
-                slot = .horizontal(HorizontalSlot(id: v.id, parentId: v.parentId,
-                                                  width: v.width, height: v.height,
-                                                  children: v.children, gaps: v.gaps,
-                                                  fraction: v.fraction))
-                return true
-            }
-            for i in v.children.indices {
-                if flipParentOrientation(of: key, in: &v.children[i]) {
-                    slot = .vertical(v); return true
+            for i in s.children.indices {
+                if flipParentOrientation(of: key, in: &s.children[i]) {
+                    slot = .split(s); return true
                 }
             }
             return false

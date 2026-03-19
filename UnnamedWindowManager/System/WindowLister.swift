@@ -87,12 +87,9 @@ struct WindowLister {
             let actualSize = ax.flatMap { readSize(of: $0) }
             let actualStr = actualSize.map { "\(Int($0.width))x\(Int($0.height))" } ?? (ax == nil ? "no-element" : "no-size")
             Logger.shared.log("\(indent)window  size=\(w.width)x\(w.height)  actual=\(actualStr)  fraction=\(w.fraction)  pid=\(w.pid)  hash=\(w.windowHash)")
-        case .horizontal(let h):
-            Logger.shared.log("\(indent)horizontal  size=\(h.width)x\(h.height)  fraction=\(h.fraction)  children=\(h.children.count)")
-            for child in h.children { logSlot(child, depth: depth + 1) }
-        case .vertical(let v):
-            Logger.shared.log("\(indent)vertical  size=\(v.width)x\(v.height)  fraction=\(v.fraction)  children=\(v.children.count)")
-            for child in v.children { logSlot(child, depth: depth + 1) }
+        case .split(let s):
+            Logger.shared.log("\(indent)\(s.orientation)  size=\(s.width)x\(s.height)  fraction=\(s.fraction)  children=\(s.children.count)")
+            for child in s.children { logSlot(child, depth: depth + 1) }
         case .stacking(let s):
             Logger.shared.log("\(indent)stacking  size=\(s.width)x\(s.height)  fraction=\(s.fraction)  align=\(s.align)  children=\(s.children.count)")
         }
