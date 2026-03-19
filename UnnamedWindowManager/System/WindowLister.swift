@@ -67,10 +67,10 @@ struct WindowLister {
         for (id, rootSlot) in roots.sorted(by: { $0.key.uuidString < $1.key.uuidString }) {
             switch rootSlot {
             case .tiling(let root):
-                Logger.shared.log("root \(id.uuidString.prefix(8))  size=\(Int(root.width))x\(Int(root.height))  orientation=\(root.orientation)  children=\(root.children.count)")
+                Logger.shared.log("root \(id.uuidString.prefix(8))  size=\(Int(root.size.width))x\(Int(root.size.height))  orientation=\(root.orientation)  children=\(root.children.count)")
                 for child in root.children { logSlot(child, depth: 1) }
             case .scrolling(let root):
-                Logger.shared.log("scrolling root \(id.uuidString.prefix(8))  size=\(Int(root.width))x\(Int(root.height))")
+                Logger.shared.log("scrolling root \(id.uuidString.prefix(8))  size=\(Int(root.size.width))x\(Int(root.size.height))")
                 if let left = root.left  { Logger.shared.log("  [left]");   logSlot(left,        depth: 1) }
                 Logger.shared.log("  [center]"); logSlot(root.center, depth: 1)
                 if let right = root.right { Logger.shared.log("  [right]");  logSlot(right, depth: 1) }
@@ -86,12 +86,12 @@ struct WindowLister {
             let ax = ResizeObserver.shared.elements[w]
             let actualSize = ax.flatMap { readSize(of: $0) }
             let actualStr = actualSize.map { "\(Int($0.width))x\(Int($0.height))" } ?? (ax == nil ? "no-element" : "no-size")
-            Logger.shared.log("\(indent)window  size=\(w.width)x\(w.height)  actual=\(actualStr)  fraction=\(w.fraction)  pid=\(w.pid)  hash=\(w.windowHash)")
+            Logger.shared.log("\(indent)window  size=\(w.size.width)x\(w.size.height)  actual=\(actualStr)  fraction=\(w.fraction)  pid=\(w.pid)  hash=\(w.windowHash)")
         case .split(let s):
-            Logger.shared.log("\(indent)\(s.orientation)  size=\(s.width)x\(s.height)  fraction=\(s.fraction)  children=\(s.children.count)")
+            Logger.shared.log("\(indent)\(s.orientation)  size=\(s.size.width)x\(s.size.height)  fraction=\(s.fraction)  children=\(s.children.count)")
             for child in s.children { logSlot(child, depth: depth + 1) }
         case .stacking(let s):
-            Logger.shared.log("\(indent)stacking  size=\(s.width)x\(s.height)  fraction=\(s.fraction)  align=\(s.align)  children=\(s.children.count)")
+            Logger.shared.log("\(indent)stacking  size=\(s.size.width)x\(s.size.height)  fraction=\(s.fraction)  align=\(s.align)  children=\(s.children.count)")
         }
     }
 }

@@ -67,9 +67,9 @@ final class ScrollingTileService {
             let h   = screen.visibleFrame.height - og.top!  - og.bottom!
             let win = WindowSlot(pid: key.pid, windowHash: key.windowHash,
                                  id: UUID(), parentId: id, order: 1,
-                                 width: 0, height: 0, gaps: true,
+                                 size: .zero, gaps: true,
                                  preTileOrigin: key.preTileOrigin, preTileSize: key.preTileSize)
-            var root = ScrollingRootSlot(id: id, width: w, height: h,
+            var root = ScrollingRootSlot(id: id, size: CGSize(width: w, height: h),
                                          left: nil, center: .window(win), right: nil)
             position.recomputeSizes(&root, width: w, height: h)
             store.roots[id] = .scrolling(root)
@@ -91,7 +91,7 @@ final class ScrollingTileService {
             let order = store.windowCounts[id]!
             let newWin = WindowSlot(pid: key.pid, windowHash: key.windowHash,
                                     id: UUID(), parentId: id, order: order,
-                                    width: 0, height: 0, gaps: true,
+                                    size: .zero, gaps: true,
                                     preTileOrigin: key.preTileOrigin, preTileSize: key.preTileSize)
 
             // Move old center into left StackingSlot, then put new window in center.
@@ -99,7 +99,7 @@ final class ScrollingTileService {
                 switch root.left {
                 case nil:
                     let stacking = StackingSlot(id: UUID(), parentId: id,
-                                                width: 0, height: 0,
+                                                size: .zero,
                                                 children: [oldCenter],
                                                 align: .right)
                     root.left = .stacking(stacking)
@@ -134,7 +134,7 @@ final class ScrollingTileService {
             if case .window(let oldCenter) = root.center {
                 switch root.left {
                 case nil:
-                    let s = StackingSlot(id: UUID(), parentId: id, width: 0, height: 0,
+                    let s = StackingSlot(id: UUID(), parentId: id, size: .zero,
                                          children: [oldCenter], align: .right)
                     root.left = .stacking(s)
                 case .stacking(var s):
@@ -148,9 +148,9 @@ final class ScrollingTileService {
             let og = Config.outerGaps
             let w  = screen.visibleFrame.width  - og.left! - og.right!
             let h  = screen.visibleFrame.height - og.top!  - og.bottom!
-            if newCenterWin.width > 0 {
+            if newCenterWin.size.width > 0 {
                 root.centerWidthFraction = ScrollingPositionService.clampedCenterFraction(
-                    proposedWidth: newCenterWin.width, screenWidth: w)
+                    proposedWidth: newCenterWin.size.width, screenWidth: w)
             }
             position.recomputeSizes(&root, width: w, height: h, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
@@ -172,7 +172,7 @@ final class ScrollingTileService {
             if case .window(let oldCenter) = root.center {
                 switch root.right {
                 case nil:
-                    let s = StackingSlot(id: UUID(), parentId: id, width: 0, height: 0,
+                    let s = StackingSlot(id: UUID(), parentId: id, size: .zero,
                                          children: [oldCenter], align: .left)
                     root.right = .stacking(s)
                 case .stacking(var s):
@@ -186,9 +186,9 @@ final class ScrollingTileService {
             let og = Config.outerGaps
             let w  = screen.visibleFrame.width  - og.left! - og.right!
             let h  = screen.visibleFrame.height - og.top!  - og.bottom!
-            if newCenterWin.width > 0 {
+            if newCenterWin.size.width > 0 {
                 root.centerWidthFraction = ScrollingPositionService.clampedCenterFraction(
-                    proposedWidth: newCenterWin.width, screenWidth: w)
+                    proposedWidth: newCenterWin.size.width, screenWidth: w)
             }
             position.recomputeSizes(&root, width: w, height: h, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
@@ -321,7 +321,7 @@ final class ScrollingTileService {
                 switch root.right {
                 case nil:
                     root.right = .stacking(StackingSlot(id: UUID(), parentId: id,
-                                                        width: 0, height: 0,
+                                                        size: .zero,
                                                         children: [moved], align: .left))
                 case .stacking(var s):
                     s.children.append(moved)
@@ -335,7 +335,7 @@ final class ScrollingTileService {
                 switch root.left {
                 case nil:
                     root.left = .stacking(StackingSlot(id: UUID(), parentId: id,
-                                                       width: 0, height: 0,
+                                                       size: .zero,
                                                        children: [moved], align: .right))
                 case .stacking(var s):
                     s.children.append(moved)

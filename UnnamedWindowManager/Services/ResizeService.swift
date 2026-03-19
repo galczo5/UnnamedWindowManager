@@ -17,8 +17,8 @@ struct ResizeService {
         let newSlotWidth  = actualSize.width  + gap
         let newSlotHeight = actualSize.height + gap
 
-        let dw = newSlotWidth  - w.width
-        let dh = newSlotHeight - w.height
+        let dw = newSlotWidth  - w.size.width
+        let dh = newSlotHeight - w.size.height
 
         // Choose the axis with the larger delta.
         let resizeHorizontal = abs(dw) >= abs(dh)
@@ -38,7 +38,7 @@ struct ResizeService {
         root: inout TilingRootSlot
     ) {
         let splitsHorizontal = root.orientation == .horizontal
-        let sizeInAxis = splitsHorizontal ? root.width : root.height
+        let sizeInAxis = splitsHorizontal ? root.size.width : root.size.height
         adjustInChildren(&root.children,
                          targetId: id, delta: delta, horizontal: horizontal,
                          splitsHorizontal: splitsHorizontal, sizeInAxis: sizeInAxis)
@@ -83,7 +83,7 @@ struct ResizeService {
                 let isHoriz = s.orientation == .horizontal
                 let result = adjustInChildren(
                     &s.children, targetId: targetId, delta: delta, horizontal: horizontal,
-                    splitsHorizontal: isHoriz, sizeInAxis: isHoriz ? s.width : s.height
+                    splitsHorizontal: isHoriz, sizeInAxis: isHoriz ? s.size.width : s.size.height
                 )
                 switch result {
                 case .notFound:

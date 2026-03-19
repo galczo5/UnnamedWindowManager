@@ -9,8 +9,7 @@ struct WindowSlot: Hashable, Sendable {
     var parentId: UUID
     /// Insertion order; used to identify the last-added leaf.
     var order: Int
-    var width: CGFloat
-    var height: CGFloat
+    var size: CGSize
     var gaps: Bool = true
     /// Share of the parent container's space in the split direction. Siblings sum to 1.0.
     var fraction: CGFloat = 1.0

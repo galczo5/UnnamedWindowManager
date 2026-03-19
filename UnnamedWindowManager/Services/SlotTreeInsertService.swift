@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 // Insertion and swap operations on the slot tree: placing slots adjacent to targets and swapping window identities.
 struct SlotTreeInsertService {
@@ -50,7 +51,7 @@ struct SlotTreeInsertService {
         // sentinel that is guaranteed not to match any real window (pid=0, hash=.max).
         let sentinel = WindowSlot(pid: 0, windowHash: .max,
                                   id: UUID(), parentId: UUID(),
-                                  order: -1, width: 0, height: 0)
+                                  order: -1, size: .zero)
         for i in root.children.indices { replaceWindowInLeaf(&root.children[i], target: keyA, with: sentinel) }
         for i in root.children.indices { replaceWindowInLeaf(&root.children[i], target: keyB, with: keyA) }
         for i in root.children.indices { replaceWindowInLeaf(&root.children[i], target: sentinel, with: keyB) }
@@ -83,7 +84,7 @@ struct SlotTreeInsertService {
         var t = target;  t.parentId = containerId; t.fraction = 0.5
         let kids: [Slot] = draggedFirst ? [d, t] : [t, d]
         return .split(SplitSlot(id: containerId, parentId: target.parentId,
-                                width: 0, height: 0, orientation: orientation,
+                                size: .zero, orientation: orientation,
                                 children: kids, fraction: target.fraction))
     }
 
@@ -136,7 +137,7 @@ struct SlotTreeInsertService {
             let swapped = WindowSlot(
                 pid: replacement.pid, windowHash: replacement.windowHash,
                 id: w.id, parentId: w.parentId, order: w.order,
-                width: w.width, height: w.height, gaps: w.gaps, fraction: w.fraction,
+                size: w.size, gaps: w.gaps, fraction: w.fraction,
                 preTileOrigin: replacement.preTileOrigin, preTileSize: replacement.preTileSize
             )
             slot = .window(swapped); return true

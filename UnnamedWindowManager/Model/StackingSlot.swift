@@ -5,8 +5,7 @@ import Foundation
 struct StackingSlot {
     var id: UUID
     var parentId: UUID
-    var width: CGFloat
-    var height: CGFloat
+    var size: CGSize
     var children: [WindowSlot]
     var align: StackingAlign
     var fraction: CGFloat = 1.0

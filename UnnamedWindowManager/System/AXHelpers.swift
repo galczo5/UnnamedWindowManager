@@ -39,5 +39,5 @@ func readOrigin(of window: AXUIElement) -> CGPoint? {
 func windowSlot(for window: AXUIElement, pid: pid_t) -> WindowSlot {
     let hash = windowID(of: window).map(UInt.init)
                ?? UInt(bitPattern: Unmanaged.passUnretained(window).toOpaque())
-    return WindowSlot(pid: pid, windowHash: hash, id: UUID(), parentId: UUID(), order: 0, width: 0, height: 0)
+    return WindowSlot(pid: pid, windowHash: hash, id: UUID(), parentId: UUID(), order: 0, size: .zero)
 }

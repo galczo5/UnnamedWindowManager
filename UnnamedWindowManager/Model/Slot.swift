@@ -31,19 +31,11 @@ indirect enum Slot {
         }
     }
 
-    var width: CGFloat {
+    var size: CGSize {
         switch self {
-        case .window(let w):   return w.width
-        case .split(let s):    return s.width
-        case .stacking(let s): return s.width
-        }
-    }
-
-    var height: CGFloat {
-        switch self {
-        case .window(let w):   return w.height
-        case .split(let s):    return s.height
-        case .stacking(let s): return s.height
+        case .window(let w):   return w.size
+        case .split(let s):    return s.size
+        case .stacking(let s): return s.size
         }
     }
 

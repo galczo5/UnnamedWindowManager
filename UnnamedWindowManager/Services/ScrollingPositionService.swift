@@ -4,13 +4,12 @@ import CoreGraphics
 // Center width is determined by centerWidthFraction (default 0.8); left and right split the remaining width.
 struct ScrollingPositionService {
 
-    // When updateSideWindowWidths is false, only slot boundaries (s.width) are updated for side slots —
+    // When updateSideWindowWidths is false, only slot boundaries (s.size.width) are updated for side slots —
     // window widths inside them are left unchanged. Used during center-only resize so side windows
     // keep their rendered size while their position is still recalculated correctly.
     func recomputeSizes(_ root: inout ScrollingRootSlot, width: CGFloat, height: CGFloat,
                         updateSideWindowWidths: Bool = true) {
-        root.width  = width
-        root.height = height
+        root.size = CGSize(width: width, height: height)
         let fraction    = root.centerWidthFraction ?? Config.scrollCenterDefaultWidthFraction
         let centerWidth = (width * fraction).rounded()
         let remaining   = width - centerWidth
@@ -34,13 +33,13 @@ struct ScrollingPositionService {
     private func setSideSizes(_ slot: inout Slot, slotWidth: CGFloat, windowWidth: CGFloat?, height: CGFloat) {
         switch slot {
         case .window(var w):
-            if let ww = windowWidth { w.width = ww }
-            w.height = height
+            if let ww = windowWidth { w.size.width = ww }
+            w.size.height = height
             slot = .window(w)
         case .stacking(var s):
-            s.width = slotWidth; s.height = height
+            s.size = CGSize(width: slotWidth, height: height)
             if let ww = windowWidth {
-                for i in s.children.indices { s.children[i].width = ww; s.children[i].height = height }
+                for i in s.children.indices { s.children[i].size = CGSize(width: ww, height: height) }
             }
             slot = .stacking(s)
         default:
@@ -51,11 +50,11 @@ struct ScrollingPositionService {
     private func setSizes(_ slot: inout Slot, width: CGFloat, height: CGFloat) {
         switch slot {
         case .window(var w):
-            w.width = width; w.height = height
+            w.size = CGSize(width: width, height: height)
             slot = .window(w)
         case .stacking(var s):
-            s.width = width; s.height = height
-            for i in s.children.indices { s.children[i].width = width; s.children[i].height = height }
+            s.size = CGSize(width: width, height: height)
+            for i in s.children.indices { s.children[i].size = CGSize(width: width, height: height) }
             slot = .stacking(s)
         default:
             break

@@ -20,21 +20,21 @@
 
 ### Part B: Replace `width`/`height` with `size: CGSize` across all slot types
 
-- [ ] Update `WindowSlot` — replace `width`/`height` with `size: CGSize`
-- [ ] Update `StackingSlot` — replace `width`/`height` with `size: CGSize`
-- [ ] Update `TilingRootSlot` — replace `width`/`height` with `size: CGSize`
-- [ ] Update `ScrollingRootSlot` — replace `width`/`height` with `size: CGSize`
-- [ ] Update `Slot` enum computed properties — expose `size` instead of `width`/`height`
-- [ ] Update `PositionService.swift` — use `.size.width`/`.size.height`
-- [ ] Update `ScrollingPositionService.swift` — use `.size`
-- [ ] Update `ResizeService.swift` — use `.size`
-- [ ] Update `LayoutService.swift` — use `.size`
-- [ ] Update `ScrollingLayoutService.swift` — use `.size`
-- [ ] Update `DirectionalNeighborService.swift` — use `.size`
-- [ ] Update `PostResizeValidator.swift` — use `.size`
-- [ ] Update `SlotTreeInsertService.swift` — use `.size`
-- [ ] Update `WindowLister.swift` — use `.size`
-- [ ] Build and verify
+- [x] Update `WindowSlot` — replace `width`/`height` with `size: CGSize`
+- [x] Update `StackingSlot` — replace `width`/`height` with `size: CGSize`
+- [x] Update `TilingRootSlot` — replace `width`/`height` with `size: CGSize`
+- [x] Update `ScrollingRootSlot` — replace `width`/`height` with `size: CGSize`
+- [x] Update `Slot` enum computed properties — expose `size` instead of `width`/`height`
+- [x] Update `PositionService.swift` — use `.size.width`/`.size.height`
+- [x] Update `ScrollingPositionService.swift` — use `.size`
+- [x] Update `ResizeService.swift` — use `.size`
+- [x] Update `LayoutService.swift` — use `.size`
+- [x] Update `ScrollingLayoutService.swift` — use `.size`
+- [x] Update `DirectionalNeighborService.swift` — use `.size`
+- [x] Update `PostResizeValidator.swift` — use `.size`
+- [x] Update `SlotTreeInsertService.swift` — use `.size`
+- [x] Update `WindowLister.swift` — use `.size`
+- [x] Build and verify
 
 ---
 

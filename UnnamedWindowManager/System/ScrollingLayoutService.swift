@@ -18,8 +18,8 @@ final class ScrollingLayoutService {
                      applyCenter: Bool = true,
                      sidesPositionOnly: Bool = false) {
         let fraction    = root.centerWidthFraction ?? 0.8
-        let centerWidth = (root.width * fraction).rounded()
-        let remaining   = root.width - centerWidth
+        let centerWidth = (root.size.width * fraction).rounded()
+        let remaining   = root.size.width - centerWidth
         let bothSides   = root.left != nil && root.right != nil
         let sideWidth   = (bothSides ? remaining / 2 : remaining).rounded()
         let leftWidth   = root.left != nil ? sideWidth : 0
@@ -48,7 +48,7 @@ final class ScrollingLayoutService {
             guard let ax = elements[w] else { return }
             let g = w.gaps ? Config.innerGap : 0
             var pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
-            var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
+            var size = CGSize(width: (w.size.width - g * 2).rounded(), height: (w.size.height - g * 2).rounded())
             if positionOnly {
                 if let last = lastApplied[w.windowHash],
                    abs(last.pos.x - pos.x) < 1, abs(last.pos.y - pos.y) < 1 { return }
@@ -66,9 +66,9 @@ final class ScrollingLayoutService {
             for w in s.children {
                 guard let ax = elements[w] else { continue }
                 let g = w.gaps ? Config.innerGap : 0
-                let xOffset: CGFloat = s.align == .left ? 0 : s.width - w.width
+                let xOffset: CGFloat = s.align == .left ? 0 : s.size.width - w.size.width
                 var pos  = CGPoint(x: (origin.x + xOffset + g).rounded(), y: (origin.y + g).rounded())
-                var size = CGSize(width: (w.width - g * 2).rounded(), height: (w.height - g * 2).rounded())
+                var size = CGSize(width: (w.size.width - g * 2).rounded(), height: (w.size.height - g * 2).rounded())
                 if positionOnly {
                     if let last = lastApplied[w.windowHash],
                        abs(last.pos.x - pos.x) < 1, abs(last.pos.y - pos.y) < 1 { continue }

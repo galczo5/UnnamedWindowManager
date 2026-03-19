@@ -4,8 +4,7 @@ import Foundation
 struct SplitSlot {
     var id: UUID
     var parentId: UUID
-    var width: CGFloat
-    var height: CGFloat
+    var size: CGSize
     var orientation: Orientation
     var children: [Slot]
     /// Share of the parent container's space in the split direction. Siblings sum to 1.0.

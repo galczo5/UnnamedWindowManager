@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 // Structural mutations of the slot tree: removing leaves, updating leaves, flipping orientation, and wrapping slots.
 struct SlotTreeMutationService {
@@ -97,7 +98,7 @@ struct SlotTreeMutationService {
             var existing = slot;  existing.parentId = containerId; existing.fraction = 0.5
             var wrapped  = newLeaf; wrapped.parentId = containerId; wrapped.fraction = 0.5
             slot = .split(SplitSlot(id: containerId, parentId: containerParentId,
-                                    width: 0, height: 0, orientation: orientation,
+                                    size: .zero, orientation: orientation,
                                     children: [existing, wrapped],
                                     fraction: containerFraction))
             return true

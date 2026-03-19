@@ -21,8 +21,8 @@ enum PostResizeValidator {
             guard let axEl = observer.elements[w], let actual = readSize(of: axEl) else { continue }
 
             let gap     = w.gaps ? Config.innerGap * 2 : 0
-            let targetW = w.width  - gap
-            let targetH = w.height - gap
+            let targetW = w.size.width  - gap
+            let targetH = w.size.height - gap
 
             guard abs(actual.width - targetW) > 2 || abs(actual.height - targetH) > 2 else { continue }
 

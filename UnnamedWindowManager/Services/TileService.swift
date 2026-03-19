@@ -78,7 +78,7 @@ final class TileService {
             } else {
                 let id = UUID()
                 let f  = screen.visibleFrame
-                store.roots[id] = .tiling(TilingRootSlot(id: id, width: f.width, height: f.height,
+                store.roots[id] = .tiling(TilingRootSlot(id: id, size: f.size,
                                                          orientation: .horizontal, children: []))
                 targetRootID = id
             }
@@ -112,7 +112,7 @@ final class TileService {
             let newLeaf = Slot.window(WindowSlot(
                 pid: key.pid, windowHash: key.windowHash,
                 id: UUID(), parentId: targetRoot.id,
-                order: order, width: 0, height: 0, gaps: true,
+                order: order, size: .zero, gaps: true,
                 preTileOrigin: preTileOrigin, preTileSize: preTileSize
             ))
             if targetRoot.children.isEmpty {
@@ -274,7 +274,7 @@ final class TileService {
             let newLeaf = Slot.window(WindowSlot(
                 pid: draggedWindow.pid, windowHash: draggedWindow.windowHash,
                 id: UUID(), parentId: targetRoot.id,
-                order: draggedWindow.order, width: 0, height: 0, gaps: true,
+                order: draggedWindow.order, size: .zero, gaps: true,
                 preTileOrigin: draggedWindow.preTileOrigin, preTileSize: draggedWindow.preTileSize
             ))
             treeInsert.insertAdjacentTo(newLeaf, adjacentTo: target, zone: zone, in: &targetRoot)

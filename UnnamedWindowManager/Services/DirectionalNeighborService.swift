@@ -34,9 +34,9 @@ struct DirectionalNeighborService {
         for child in root.children {
             collectLeafRects(child, origin: cursor, into: &results)
             if root.orientation == .horizontal {
-                cursor.x += child.width
+                cursor.x += child.size.width
             } else {
-                cursor.y += child.height
+                cursor.y += child.size.height
             }
         }
         return results
@@ -49,8 +49,8 @@ struct DirectionalNeighborService {
             let rect = CGRect(
                 x: (origin.x + g).rounded(),
                 y: (origin.y + g).rounded(),
-                width: (w.width - g * 2).rounded(),
-                height: (w.height - g * 2).rounded()
+                width: (w.size.width - g * 2).rounded(),
+                height: (w.size.height - g * 2).rounded()
             )
             results.append(LeafRect(key: w, rect: rect))
         case .split(let s):
@@ -58,9 +58,9 @@ struct DirectionalNeighborService {
             for child in s.children {
                 collectLeafRects(child, origin: cursor, into: &results)
                 if s.orientation == .horizontal {
-                    cursor.x += child.width
+                    cursor.x += child.size.width
                 } else {
-                    cursor.y += child.height
+                    cursor.y += child.size.height
                 }
             }
         case .stacking:
