@@ -1,3 +1,7 @@
+# Project Structure
+
+See [CODE.md](UnnamedWindowManager/CODE.md) for the full directory layout, file descriptions, and domain groupings.
+
 # Code Style
 
 ## File Size & Decomposition
