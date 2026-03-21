@@ -25,7 +25,7 @@ struct TileHandler {
         var key = windowSlot(for: axWindow, pid: pid)
         key.preTileOrigin = readOrigin(of: axWindow)
         key.preTileSize = readSize(of: axWindow)
-        TileService.shared.snap(key, screen: screen)
+        TilingSnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }
@@ -39,7 +39,7 @@ struct TileHandler {
         var focusedWindow: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
-        if TileService.shared.isTracked(key) {
+        if TilingRootStore.shared.isTracked(key) {
             UntileHandler.untile()
         } else {
             tile()
@@ -60,7 +60,7 @@ struct TileHandler {
 
         key.preTileOrigin = readOrigin(of: window)
         key.preTileSize = readSize(of: window)
-        TileService.shared.snap(key, screen: screen)
+        TilingSnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }

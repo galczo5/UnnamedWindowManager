@@ -13,7 +13,7 @@ enum PostResizeValidator {
 
         let observer = ResizeObserver.shared
         var refusals: [Refusal] = []
-        let leaves = TileService.shared.leavesInVisibleRoot()
+        let leaves = TilingRootStore.shared.leavesInVisibleRoot()
                     + ScrollingTileService.shared.leavesInVisibleScrollingRoot()
 
         for leaf in leaves {
@@ -41,7 +41,7 @@ enum PostResizeValidator {
         observer.reapplying.formUnion(allTracked)
 
         for r in refusals {
-            TileService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
+            TilingEditService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
         }
         LayoutService.shared.applyLayout(screen: screen)
 

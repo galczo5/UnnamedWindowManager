@@ -84,7 +84,7 @@ final class ResizeObserver {
             }
         }
 
-        guard TileService.shared.isTracked(key) || isScrolling else { return }
+        guard TilingRootStore.shared.isTracked(key) || isScrolling else { return }
         guard !reapplying.contains(key) else { return }
 
         let isResize = notification == (kAXWindowResizedNotification as String)
@@ -116,10 +116,10 @@ final class ResizeObserver {
             if isScrolling {
                 ScrollingTileService.shared.removeWindow(key, screen: screen)
             } else {
-                TileService.shared.removeAndReflow(key, screen: screen)
+                TilingSnapService.shared.removeAndReflow(key, screen: screen)
             }
         } else {
-            TileService.shared.remove(key)
+            TilingSnapService.shared.remove(key)
         }
         cleanup(key: key, pid: pid)
         WindowVisibilityManager.shared.windowRemoved(key)

@@ -31,9 +31,9 @@ struct SwapDirectionService {
     }
 
     private static func swapInTilingRoot(direction: FocusDirection, currentKey: WindowSlot) {
-        guard let root = TileService.shared.snapshotVisibleRoot() else { return }
-        guard let targetKey = DirectionalNeighborService.findNeighbor(of: currentKey, direction: direction, in: root) else { return }
-        TileService.shared.swap(currentKey, targetKey)
+        guard let root = TilingRootStore.shared.snapshotVisibleRoot() else { return }
+        guard let targetKey = TilingNeighborService.findNeighbor(of: currentKey, direction: direction, in: root) else { return }
+        TilingEditService.shared.swap(currentKey, targetKey)
         ReapplyHandler.reapplyAll()
     }
 }

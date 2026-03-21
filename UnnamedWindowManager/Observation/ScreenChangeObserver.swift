@@ -19,7 +19,7 @@ final class ScreenChangeObserver {
         guard let screen = NSScreen.main else { return }
         LayoutService.shared.clearCache()
         ScrollingLayoutService.shared.clearCache()
-        TileService.shared.recomputeVisibleRootSizes(screen: screen)
+        TilingEditService.shared.recomputeVisibleRootSizes(screen: screen)
         ReapplyHandler.reapplyAll()
     }
 }

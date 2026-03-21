@@ -84,7 +84,7 @@ final class AutoTileObserver {
         }
 
         guard Config.autoSnap else { return }
-        let hasLayout = TileService.shared.snapshotVisibleRoot() != nil
+        let hasLayout = TilingRootStore.shared.snapshotVisibleRoot() != nil
         guard hasLayout else {
             Logger.shared.log("autoTile skipped — no layout active (pid=\(pid))")
             return
@@ -95,7 +95,7 @@ final class AutoTileObserver {
               let ref
         else { return }
         let window = ref as! AXUIElement
-        guard !TileService.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
+        guard !TilingRootStore.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
         // If a tracked window for this pid is at the same position, the new window is a tab — skip.
         guard !isTabOfTrackedWindow(window, pid: pid) else {
             Logger.shared.log("autoTile skipped — new window is a tab of a tracked window (pid=\(pid))")
@@ -132,9 +132,9 @@ final class AutoTileObserver {
             Logger.shared.log("pruning stale slot: pid=\(pid) hash=\(key.windowHash)")
             ResizeObserver.shared.stopObserving(key: key, pid: pid)
             if let screen {
-                TileService.shared.removeAndReflow(key, screen: screen)
+                TilingSnapService.shared.removeAndReflow(key, screen: screen)
             } else {
-                TileService.shared.remove(key)
+                TilingSnapService.shared.remove(key)
             }
         }
     }

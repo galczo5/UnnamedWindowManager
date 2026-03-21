@@ -10,7 +10,7 @@ struct OrientFlipHandler {
     /// which is unreliable when a menu bar extra menu is open (the menu activates our process).
     static func parentOrientation() -> Orientation? {
         guard let key = focusedTrackedKey() else { return nil }
-        return TileService.shared.parentOrientation(of: key)
+        return TilingRootStore.shared.parentOrientation(of: key)
     }
 
     /// Flips the orientation of the focused tracked window's parent container and reapplies layout.
@@ -18,7 +18,7 @@ struct OrientFlipHandler {
     static func flipOrientation() {
         guard AXIsProcessTrusted(), let screen = NSScreen.main else { return }
         guard let key = focusedTrackedKey() else { return }
-        TileService.shared.flipParentOrientation(key, screen: screen)
+        TilingEditService.shared.flipParentOrientation(key, screen: screen)
         ReapplyHandler.reapplyAll()
     }
 

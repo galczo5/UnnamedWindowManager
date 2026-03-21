@@ -5,7 +5,7 @@ enum FocusDirection {
     case left, right, up, down
 }
 
-// Directional window focus: finds the nearest neighbour via DirectionalNeighborService and activates it.
+// Directional window focus: finds the nearest neighbour via TilingNeighborService and activates it.
 struct FocusDirectionService {
 
     static func focus(_ direction: FocusDirection) {
@@ -21,10 +21,10 @@ struct FocusDirectionService {
         let axWindow = ref as! AXUIElement
         let currentKey = windowSlot(for: axWindow, pid: pid)
 
-        guard let root = TileService.shared.snapshotVisibleRoot() else {
+        guard let root = TilingRootStore.shared.snapshotVisibleRoot() else {
             return
         }
-        guard let targetKey = DirectionalNeighborService.findNeighbor(of: currentKey, direction: direction, in: root) else {
+        guard let targetKey = TilingNeighborService.findNeighbor(of: currentKey, direction: direction, in: root) else {
             return
         }
         activateWindow(targetKey)

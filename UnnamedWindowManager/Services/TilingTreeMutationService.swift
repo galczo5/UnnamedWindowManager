@@ -2,7 +2,7 @@ import Foundation
 import CoreGraphics
 
 // Structural mutations of the slot tree: removing leaves, updating leaves, flipping orientation, and wrapping slots.
-struct SlotTreeMutationService {
+struct TilingTreeMutationService {
 
     /// Removes the window leaf matching `key` from the tree, collapsing any single-child containers left behind.
     /// Returns `true` if the leaf was found and removed.
@@ -80,7 +80,7 @@ struct SlotTreeMutationService {
             var updated = s; updated.children = redistributed(newChildren)
             return (.split(updated), true)
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by TilingTreeMutationService")
         }
     }
 
@@ -114,7 +114,7 @@ struct SlotTreeMutationService {
             }
             return false
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by TilingTreeMutationService")
         }
     }
 
@@ -136,7 +136,7 @@ struct SlotTreeMutationService {
             }
             return false
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by TilingTreeMutationService")
         }
     }
 
@@ -159,7 +159,7 @@ struct SlotTreeMutationService {
             }
             return false
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeMutationService")
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by TilingTreeMutationService")
         }
     }
 

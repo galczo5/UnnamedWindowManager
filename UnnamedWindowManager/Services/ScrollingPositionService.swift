@@ -1,7 +1,6 @@
 import CoreGraphics
 
 // Computes pixel dimensions for all zones of a ScrollingRootSlot.
-// Computes pixel dimensions for all zones of a ScrollingRootSlot.
 struct ScrollingPositionService {
 
     // When updateSideWindowWidths is false, only slot boundaries (s.size.width) are updated for side slots —

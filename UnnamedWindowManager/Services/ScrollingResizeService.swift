@@ -4,8 +4,7 @@ import AppKit
 struct ScrollingResizeService {
 
     func applyResize(centerKey: WindowSlot, actualWidth: CGFloat, screen: NSScreen) {
-        let og = Config.outerGaps
-        let screenWidth = screen.visibleFrame.width - og.left! - og.right!
+        let screenWidth = screenTilingArea(screen).width
         ScrollingTileService.shared.updateCenterFraction(
             for: centerKey,
             proposedWidth: actualWidth,

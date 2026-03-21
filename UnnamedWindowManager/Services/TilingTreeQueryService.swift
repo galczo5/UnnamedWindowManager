@@ -1,5 +1,5 @@
 // Read-only traversal of the slot tree: finding, collecting, and inspecting leaves.
-struct SlotTreeQueryService {
+struct TilingTreeQueryService {
 
     /// Returns `true` if `key` exists anywhere in the tree.
     func isTracked(_ key: WindowSlot, in root: TilingRootSlot) -> Bool {
@@ -42,7 +42,7 @@ struct SlotTreeQueryService {
             for child in s.children { if let f = findLeafSlot(key, in: child) { return f } }
             return nil
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")
+            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by TilingTreeQueryService")
         }
     }
 
@@ -51,7 +51,7 @@ struct SlotTreeQueryService {
         case .window:        return [slot]
         case .split(let s):  return s.children.flatMap { collectLeaves(in: $0) }
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")
+            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by TilingTreeQueryService")
         }
     }
 
@@ -60,7 +60,7 @@ struct SlotTreeQueryService {
         case .window(let w): return w.order
         case .split(let s):  return s.children.map { maxLeafOrder(in: $0) }.max() ?? 0
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")
+            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by TilingTreeQueryService")
         }
     }
 
@@ -74,7 +74,7 @@ struct SlotTreeQueryService {
             for child in s.children { if let o = findParentOrientation(of: key, in: child) { return o } }
             return nil
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by SlotTreeQueryService")
+            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by TilingTreeQueryService")
         }
     }
 }

@@ -10,11 +10,13 @@ final class SharedRootStore {
     var windowCounts: [UUID: Int] = [:]
     let queue = DispatchQueue(label: "snap.registry", attributes: .concurrent)
 
-    func snapshotAllRoots() -> [UUID: RootSlot] {
-        return queue.sync { roots }
+    /// Removes a root and its window counter. Must be called inside a barrier block on `queue`.
+    func removeRoot(id: UUID) {
+        roots.removeValue(forKey: id)
+        windowCounts.removeValue(forKey: id)
     }
 
-    func snapshotRoot(id: UUID) -> RootSlot? {
-        return queue.sync { roots[id] }
+    func snapshotAllRoots() -> [UUID: RootSlot] {
+        return queue.sync { roots }
     }
 }

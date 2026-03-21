@@ -56,7 +56,7 @@ struct TileAllHandler {
             var key = windowSlot(for: item.window, pid: item.pid)
             key.preTileOrigin = readOrigin(of: item.window)
             key.preTileSize = readSize(of: item.window)
-            TileService.shared.snap(key, screen: screen)
+            TilingSnapService.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
             snappedKeys.insert(key)
         }

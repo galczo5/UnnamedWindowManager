@@ -89,7 +89,7 @@ final class DragReapplyScheduler {
               let axElement = observer.elements[key],
               let actualSize = readSize(of: axElement) else { return }
 
-        TileService.shared.resize(key: key, actualSize: actualSize, screen: screen)
+        TilingEditService.shared.resize(key: key, actualSize: actualSize, screen: screen)
         ReapplyHandler.reapplyAll()
     }
 
@@ -103,9 +103,9 @@ final class DragReapplyScheduler {
         let dropAllowed = hoverDuration >= Config.dropZoneHoverDelay
         if dropAllowed, let drop = ReapplyHandler.findDropTarget(forKey: key) {
             if drop.zone == .center {
-                TileService.shared.swap(key, drop.window)
+                TilingEditService.shared.swap(key, drop.window)
             } else if let screen = NSScreen.main {
-                TileService.shared.insertAdjacent(dragged: key, target: drop.window,
+                TilingEditService.shared.insertAdjacent(dragged: key, target: drop.window,
                                                   zone: drop.zone, screen: screen)
             }
             ReapplyHandler.reapplyAll()

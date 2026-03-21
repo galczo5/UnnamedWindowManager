@@ -24,7 +24,7 @@ struct ScrollingRootHandler {
     /// window to an existing scrolling root. No-op if a tiling root is active.
     static func scroll() {
         guard AXIsProcessTrusted() else { return }
-        guard TileService.shared.snapshotVisibleRoot() == nil else { return }
+        guard TilingRootStore.shared.snapshotVisibleRoot() == nil else { return }
 
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
         let pid = frontApp.processIdentifier

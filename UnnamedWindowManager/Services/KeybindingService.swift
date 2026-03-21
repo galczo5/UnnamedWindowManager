@@ -35,7 +35,7 @@ final class KeybindingService {
     private func makeBuiltInCandidates() -> [(String, String, () -> Void)] {
         [
             (Config.tileAllShortcut, "tileAll", {
-                if TileService.shared.snapshotVisibleRoot() != nil {
+                if TilingRootStore.shared.snapshotVisibleRoot() != nil {
                     UntileHandler.untileAll()
                 } else if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
                     NotificationService.shared.post(title: "Cannot tile", body: "Unscroll all windows first.")
@@ -60,7 +60,7 @@ final class KeybindingService {
             (Config.swapUpShortcut,          "swapUp",          { SwapUpHandler.swap() }),
             (Config.swapDownShortcut,        "swapDown",        { SwapDownHandler.swap() }),
             (Config.scrollShortcut, "scroll", {
-                if TileService.shared.snapshotVisibleRoot() != nil {
+                if TilingRootStore.shared.snapshotVisibleRoot() != nil {
                     NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")
                     return
                 }
@@ -69,7 +69,7 @@ final class KeybindingService {
             (Config.scrollAllShortcut, "scrollAll", {
                 if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
                     UnscrollHandler.unscrollAll()
-                } else if TileService.shared.snapshotVisibleRoot() != nil {
+                } else if TilingRootStore.shared.snapshotVisibleRoot() != nil {
                     NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")
                 } else {
                     ScrollOrganizeHandler.organizeScrolling()

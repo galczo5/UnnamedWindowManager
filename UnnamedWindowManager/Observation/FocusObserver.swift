@@ -75,7 +75,7 @@ final class FocusObserver {
 
         if let info = ScrollingTileService.shared.scrollingRootInfo(containing: key) {
             WindowOpacityService.shared.dim(rootID: info.rootID, focusedHash: info.centerHash)
-        } else if let rootID = TileService.shared.rootID(containing: key) {
+        } else if let rootID = TilingRootStore.shared.rootID(containing: key) {
             WindowOpacityService.shared.dim(rootID: rootID, focusedHash: key.windowHash)
         } else {
             WindowOpacityService.shared.restoreAll()

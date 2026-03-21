@@ -1,7 +1,7 @@
 import AppKit
 
 // Spatial neighbour-finding for directional window operations: leaf rect computation and nearest-neighbour search.
-struct DirectionalNeighborService {
+struct TilingNeighborService {
 
     struct LeafRect {
         let key: WindowSlot
@@ -64,7 +64,7 @@ struct DirectionalNeighborService {
                 }
             }
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by DirectionalNeighborService")
+            fatalError("StackingSlot encountered in tiling tree traversal — stacking slots are not supported by TilingNeighborService")
         }
     }
 

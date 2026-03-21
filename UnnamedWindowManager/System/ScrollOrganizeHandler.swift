@@ -9,7 +9,7 @@ struct ScrollOrganizeHandler {
     /// No-op if a tiling root is active.
     static func organizeScrolling() {
         guard AXIsProcessTrusted() else { return }
-        guard TileService.shared.snapshotVisibleRoot() == nil else { return }
+        guard TilingRootStore.shared.snapshotVisibleRoot() == nil else { return }
         guard let screen = NSScreen.main else { return }
         let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
 

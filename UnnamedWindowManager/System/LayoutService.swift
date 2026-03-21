@@ -20,7 +20,7 @@ final class LayoutService {
         let og = Config.outerGaps
         let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
         let elements = ResizeObserver.shared.elements
-        if let root = TileService.shared.snapshotVisibleRoot() {
+        if let root = TilingRootStore.shared.snapshotVisibleRoot() {
             applyLayout(root, origin: origin, elements: elements)
         }
         if let root = ScrollingTileService.shared.snapshotVisibleScrollingRoot() {
@@ -38,7 +38,7 @@ final class LayoutService {
         let og = Config.outerGaps
         let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
         var frames: [WindowSlot: CGRect] = [:]
-        if let root = TileService.shared.snapshotVisibleRoot() {
+        if let root = TilingRootStore.shared.snapshotVisibleRoot() {
             collectFrames(root, origin: origin, into: &frames)
         }
         return frames

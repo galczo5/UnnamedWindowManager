@@ -1,7 +1,7 @@
 import AppKit
 
 // Adjusts slot fractions in the tree when the user manually resizes a snapped window.
-struct ResizeService {
+struct TilingResizeService {
 
     /// Minimum fraction any slot may shrink to (prevents zero-size tiles).
     private let minFraction: CGFloat = 0.05
@@ -9,7 +9,7 @@ struct ResizeService {
     /// Apply a user resize to the tree.
     /// `actualSize` is the AX-reported rendered window size (gap insets excluded).
     func applyResize(key: WindowSlot, actualSize: CGSize, root: inout TilingRootSlot) {
-        guard let leaf = SlotTreeQueryService().findLeafSlot(key, in: root),
+        guard let leaf = TilingTreeQueryService().findLeafSlot(key, in: root),
               case .window(let w) = leaf else { return }
 
         // Convert AX size (gap-excluded) back to slot space (gap-included).
@@ -100,7 +100,7 @@ struct ResizeService {
                 }
 
             case .stacking:
-                fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by ResizeService")
+                fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by TilingResizeService")
             }
         }
         return .notFound

@@ -2,7 +2,7 @@ import Foundation
 import CoreGraphics
 
 // Insertion and swap operations on the slot tree: placing slots adjacent to targets and swapping window identities.
-struct SlotTreeInsertService {
+struct TilingTreeInsertService {
 
     /// Inserts `dragged` adjacent to the window identified by `targetKey`, honouring
     /// the directional `zone`. If the target's parent already has the matching orientation
@@ -42,7 +42,7 @@ struct SlotTreeInsertService {
 
     /// Swaps the pid and windowHash of two window leaves in place, preserving their positions and fractions.
     func swap(_ keyA: WindowSlot, _ keyB: WindowSlot, in root: inout TilingRootSlot) {
-        let query = SlotTreeQueryService()
+        let query = TilingTreeQueryService()
         guard query.findLeafSlot(keyA, in: root) != nil,
               query.findLeafSlot(keyB, in: root) != nil else { return }
         // Two-pass replacement collides when the windows are in different subtrees:
@@ -121,7 +121,7 @@ struct SlotTreeInsertService {
             }
             return false
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeInsertService")
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by TilingTreeInsertService")
         }
     }
 
@@ -149,7 +149,7 @@ struct SlotTreeInsertService {
             }
             return false
         case .stacking:
-            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by SlotTreeInsertService")
+            fatalError("StackingSlot encountered in tiling tree mutation — stacking slots are not supported by TilingTreeInsertService")
         }
     }
 }
