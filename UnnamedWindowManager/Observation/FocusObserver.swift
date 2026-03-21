@@ -14,7 +14,7 @@ private func focusChangedCallback(
     let obs = Unmanaged<FocusObserver>.fromOpaque(refcon).takeUnretainedValue()
     DispatchQueue.main.async {
         NotificationCenter.default.post(name: .windowFocusChanged, object: nil)
-        obs.applyDimForFrontmostWindow(pid: pid)
+        obs.applyDim(pid: pid)
     }
 }
 
@@ -23,17 +23,21 @@ final class FocusObserver {
     static let shared = FocusObserver()
     private init() {}
 
-    private var appObservers: [pid_t: AXObserver] = [:]
+    private var observerManager: AppObserverManager?
 
     func start() {
+        observerManager = AppObserverManager(
+            callback: focusChangedCallback,
+            notification: kAXFocusedWindowChangedNotification as CFString,
+            refcon: Unmanaged.passUnretained(self).toOpaque())
         let nc = NSWorkspace.shared.notificationCenter
         nc.addObserver(self, selector: #selector(didActivateApp(_:)),
                        name: NSWorkspace.didActivateApplicationNotification, object: nil)
         nc.addObserver(self, selector: #selector(didTerminateApp(_:)),
                        name: NSWorkspace.didTerminateApplicationNotification, object: nil)
         if let app = NSWorkspace.shared.frontmostApplication {
-            observeApp(pid: app.processIdentifier)
-            executeDim(pid: app.processIdentifier)
+            observerManager?.observeApp(pid: app.processIdentifier)
+            applyDim(pid: app.processIdentifier)
         }
     }
 
@@ -41,25 +45,22 @@ final class FocusObserver {
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
         else { return }
         let pid = app.processIdentifier
-        observeApp(pid: pid)
+        observerManager?.observeApp(pid: pid)
         NotificationCenter.default.post(name: .windowFocusChanged, object: nil)
-        applyDimForFrontmostWindow(pid: pid)
+        applyDim(pid: pid)
     }
 
     @objc private func didTerminateApp(_ note: Notification) {
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
         else { return }
-        removeAppObserver(pid: app.processIdentifier)
+        observerManager?.removeAppObserver(pid: app.processIdentifier)
     }
 
-    func applyDimForFrontmostWindow(pid: pid_t) {
-        executeDim(pid: pid)
-    }
-
-    private func executeDim(pid: pid_t) {
+    func applyDim(pid: pid_t) {
         let axApp = AXUIElementCreateApplication(pid)
         var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success
+        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success,
+              let ref
         else {
             WindowOpacityService.shared.restoreAll()
             return
@@ -81,20 +82,4 @@ final class FocusObserver {
         }
     }
 
-    private func observeApp(pid: pid_t) {
-        guard appObservers[pid] == nil else { return }
-        var axObs: AXObserver?
-        guard AXObserverCreate(pid, focusChangedCallback, &axObs) == .success, let axObs else { return }
-        let appEl = AXUIElementCreateApplication(pid)
-        let refcon = Unmanaged.passUnretained(self).toOpaque()
-        AXObserverAddNotification(axObs, appEl, kAXFocusedWindowChangedNotification as CFString, refcon)
-        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(axObs), .commonModes)
-        appObservers[pid] = axObs
-    }
-
-    private func removeAppObserver(pid: pid_t) {
-        guard let axObs = appObservers[pid] else { return }
-        CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(axObs), .commonModes)
-        appObservers.removeValue(forKey: pid)
-    }
 }

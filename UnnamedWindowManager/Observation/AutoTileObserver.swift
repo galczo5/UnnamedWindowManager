@@ -21,10 +21,14 @@ final class AutoTileObserver {
     static let shared = AutoTileObserver()
     private init() {}
 
-    private var appObservers: [pid_t: AXObserver] = [:]
+    private var observerManager: AppObserverManager?
 
     func start() {
         Logger.shared.log("start")
+        observerManager = AppObserverManager(
+            callback: autoTileCallback,
+            notification: kAXWindowCreatedNotification as CFString,
+            refcon: Unmanaged.passUnretained(self).toOpaque())
         let nc = NSWorkspace.shared.notificationCenter
         nc.addObserver(self, selector: #selector(didActivateApp(_:)),
                        name: NSWorkspace.didActivateApplicationNotification, object: nil)
@@ -33,7 +37,7 @@ final class AutoTileObserver {
         // Observe the already-frontmost app so kAXWindowCreatedNotification is
         // registered even if the user never switches away from it.
         if let app = NSWorkspace.shared.frontmostApplication {
-            observeApp(pid: app.processIdentifier)
+            observerManager?.observeApp(pid: app.processIdentifier)
         }
     }
 
@@ -41,14 +45,14 @@ final class AutoTileObserver {
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
         else { return }
         let pid = app.processIdentifier
-        observeApp(pid: pid)
+        observerManager?.observeApp(pid: pid)
         tileFocusedWindow(pid: pid)
     }
 
     @objc private func didTerminateApp(_ note: Notification) {
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
         else { return }
-        removeAppObserver(pid: app.processIdentifier)
+        observerManager?.removeAppObserver(pid: app.processIdentifier)
     }
 
     func handleWindowCreated(pid: pid_t) {
@@ -72,23 +76,6 @@ final class AutoTileObserver {
 
     // MARK: - Private
 
-    private func observeApp(pid: pid_t) {
-        guard appObservers[pid] == nil else { return }
-        var axObs: AXObserver?
-        guard AXObserverCreate(pid, autoTileCallback, &axObs) == .success, let axObs else { return }
-        let appEl = AXUIElementCreateApplication(pid)
-        let refcon = Unmanaged.passUnretained(self).toOpaque()
-        AXObserverAddNotification(axObs, appEl, kAXWindowCreatedNotification as CFString, refcon)
-        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(axObs), .commonModes)
-        appObservers[pid] = axObs
-    }
-
-    private func removeAppObserver(pid: pid_t) {
-        guard let axObs = appObservers[pid] else { return }
-        CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(axObs), .commonModes)
-        appObservers.removeValue(forKey: pid)
-    }
-
     private func tileFocusedWindow(pid: pid_t, screenWasEmpty: Bool = false) {
         if Config.autoOrganize && screenWasEmpty {
             Logger.shared.log("autoOrganize triggered for pid=\(pid)")
@@ -104,7 +91,8 @@ final class AutoTileObserver {
         }
         let axApp = AXUIElementCreateApplication(pid)
         var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success
+        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success,
+              let ref
         else { return }
         let window = ref as! AXUIElement
         guard !TileService.shared.isTracked(windowSlot(for: window, pid: pid)) else { return }
