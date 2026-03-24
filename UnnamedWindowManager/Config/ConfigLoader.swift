@@ -84,6 +84,8 @@ struct ConfigLoader {
             maxWidthFraction: \(num(l.maxWidthFraction))
             # Maximum height of a snapped window as a fraction of the visible screen height.
             maxHeightFraction: \(num(l.maxHeightFraction))
+            # Default width of the center slot in scroll mode as a fraction of the screen.
+            scrollCenterDefaultWidthFraction: \(num(l.scrollCenterDefaultWidthFraction))
           dropZones:
             # Fraction of a window's width that counts as the left drop zone.
             leftFraction: \(num(dz.leftFraction))

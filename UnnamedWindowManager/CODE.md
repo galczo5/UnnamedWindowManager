@@ -6,14 +6,23 @@
 UnnamedWindowManager/
 ├── UnnamedWindowManagerApp.swift   # App entry point
 ├── AppDelegate.swift               # Lifecycle, observer startup, menu bar
-├── Config.swift                    # Static config accessors (reads ConfigData)
-├── ConfigData.swift                # Codable config model (maps to YAML)
-├── ConfigLoader.swift              # Loads/watches ~/.config/unnamed/config.yml
 ├── Logger.swift                    # File-based debug logger
+├── Config/                         # Configuration loading and accessors
 ├── Model/                          # Data types (slots, orientations, enums)
 ├── Services/                       # All business logic (see below)
 └── build.sh                        # CLI build script (xcodebuild wrapper)
 ```
+
+## Config
+
+Reads, parses, and exposes `~/.config/unnamed/config.yml`.
+
+| File | Description |
+|------|-------------|
+| `Config.swift` | Singleton with static accessors for all config values |
+| `ConfigData.swift` | Codable model mapping to YAML structure, with defaults and merge logic |
+| `ConfigLoader.swift` | Loads/writes `~/.config/unnamed/config.yml`, creates from defaults when absent |
+| `SystemColor.swift` | Maps config color name strings to NSColor values |
 
 ## Model
 
@@ -131,4 +140,3 @@ Cross-cutting services that don't belong to a single domain.
 | `CommandService.swift` | Executes shell commands from user-configured shortcuts |
 | `NotificationService.swift` | Posts user-facing system notifications |
 | `ScreenHelper.swift` | Computes usable tiling area after outer gaps |
-| `SystemColor.swift` | Maps config color names to NSColor |
