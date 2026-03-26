@@ -103,10 +103,6 @@ struct ConfigLoader {
             # Accent color of the drop-zone overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
             overlayColor: \(ov.overlayColor ?? "blue")
           behavior:
-            # Automatically snap new windows into the layout when at least one snapped window is visible.
-            autoSnap: \(bh.autoSnap ?? false)
-            # Automatically snap the first window on an empty screen (bootstrap when no layout exists).
-            autoOrganize: \(bh.autoOrganize ?? false)
             # Time in seconds a window must hover over a drop zone before the operation is allowed (0 to disable).
             dropZoneHoverDelay: \(num(bh.dropZoneHoverDelay))
             # Dim non-focused managed windows when a layout is active.

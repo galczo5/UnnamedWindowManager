@@ -49,9 +49,6 @@ struct UnnamedWindowManagerApp: App {
         Logger.shared.log("=== UnnamedWindowManager started ===")
         LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
         NotificationService.shared.requestAuthorization()
-        if Config.autoSnap || Config.autoOrganize {
-            AutoTileObserver.shared.start()
-        }
         FocusObserver.shared.start()
         ScreenChangeObserver.shared.start()
     }

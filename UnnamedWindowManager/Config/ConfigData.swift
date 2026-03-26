@@ -43,8 +43,6 @@ struct ConfigData: Codable {
     }
 
     struct BehaviorConfig: Codable {
-        var autoSnap: Bool?
-        var autoOrganize: Bool?
         var dropZoneHoverDelay: CGFloat?
         var dimInactiveWindows: Bool?
         var dimInactiveOpacity: CGFloat?
@@ -80,7 +78,7 @@ struct ConfigData: Codable {
         layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0, scrollCenterDefaultWidthFraction: 0.9),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
-        behavior: BehaviorConfig(autoSnap: false, autoOrganize: false, dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black", logPath: ""),
+        behavior: BehaviorConfig(dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, dimColor: "black", logPath: ""),
         shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down"),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
@@ -106,8 +104,6 @@ struct ConfigData: Codable {
         check(s?.overlay?.cornerRadius,          "config.overlay.cornerRadius")
         check(s?.overlay?.borderWidth,           "config.overlay.borderWidth")
         check(s?.overlay?.overlayColor,          "config.overlay.overlayColor")
-        check(s?.behavior?.autoSnap,             "config.behavior.autoSnap")
-        check(s?.behavior?.autoOrganize,         "config.behavior.autoOrganize")
         check(s?.behavior?.dropZoneHoverDelay,   "config.behavior.dropZoneHoverDelay")
         check(s?.behavior?.dimInactiveWindows,   "config.behavior.dimInactiveWindows")
         check(s?.behavior?.dimInactiveOpacity,      "config.behavior.dimInactiveOpacity")
@@ -162,8 +158,6 @@ struct ConfigData: Codable {
                 overlayColor: s?.overlay?.overlayColor ?? d.overlay!.overlayColor
             ),
             behavior: BehaviorConfig(
-                autoSnap:            s?.behavior?.autoSnap            ?? d.behavior!.autoSnap,
-                autoOrganize:        s?.behavior?.autoOrganize        ?? d.behavior!.autoOrganize,
                 dropZoneHoverDelay:  s?.behavior?.dropZoneHoverDelay  ?? d.behavior!.dropZoneHoverDelay,
                 dimInactiveWindows:  s?.behavior?.dimInactiveWindows  ?? d.behavior!.dimInactiveWindows,
                 dimInactiveOpacity:       s?.behavior?.dimInactiveOpacity       ?? d.behavior!.dimInactiveOpacity,

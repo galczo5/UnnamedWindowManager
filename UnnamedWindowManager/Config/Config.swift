@@ -38,8 +38,6 @@ final class Config {
     static var overlayBorderColor: NSColor {
         (SystemColor.resolve(shared.s.overlay!.overlayColor!) ?? .systemBlue).withAlphaComponent(0.8)
     }
-    static var autoSnap: Bool                  { shared.s.behavior!.autoSnap! }
-    static var autoOrganize: Bool              { shared.s.behavior!.autoOrganize! }
     static var dropZoneHoverDelay: CGFloat     { shared.s.behavior!.dropZoneHoverDelay! }
     static var dimInactiveWindows: Bool        { shared.s.behavior!.dimInactiveWindows! }
     static var dimInactiveOpacity: CGFloat     { shared.s.behavior!.dimInactiveOpacity! }

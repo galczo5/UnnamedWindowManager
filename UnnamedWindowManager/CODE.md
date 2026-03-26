@@ -111,7 +111,6 @@ Event-driven observers that react to AX notifications, app lifecycle, and screen
 | `AXCallback.swift` | C-compatible callback that dispatches to ResizeObserver |
 | `AppObserverManager.swift` | Per-app AXObserver lifecycle (create, run-loop, cleanup) |
 | `FocusObserver.swift` | Watches app/window focus changes to drive dimming |
-| `AutoTileObserver.swift` | Auto-tiles new windows when a layout is active |
 | `ScreenChangeObserver.swift` | Reflows layout on screen resolution/display changes |
 
 ### Services/Window/
