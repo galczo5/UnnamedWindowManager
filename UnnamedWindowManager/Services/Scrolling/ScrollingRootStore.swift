@@ -297,7 +297,7 @@ final class ScrollingRootStore {
                 root.right = stack.children.isEmpty ? nil : .stacking(stack)
 
                 appendToSide(oldCenter, side: &root.left, parentId: id, align: .right)
-                for win in removed.reversed().dropFirst() {
+                for win in removed.dropFirst().reversed() {
                     appendToSide(win, side: &root.left, parentId: id, align: .right)
                 }
                 target = removed.first!
@@ -309,7 +309,7 @@ final class ScrollingRootStore {
                 root.left = stack.children.isEmpty ? nil : .stacking(stack)
 
                 appendToSide(oldCenter, side: &root.right, parentId: id, align: .left)
-                for win in removed.reversed().dropFirst() {
+                for win in removed.dropFirst().reversed() {
                     appendToSide(win, side: &root.right, parentId: id, align: .left)
                 }
                 target = removed.first!
