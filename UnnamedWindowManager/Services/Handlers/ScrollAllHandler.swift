@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 
 // Scrolls all visible on-screen windows into the scrolling root in one batch, ordered by position.
-struct ScrollOrganizeHandler {
+struct ScrollAllHandler {
 
     /// Scrolls all visible on-screen windows into the scrolling root, ordered left-to-right by x-origin.
     /// Skips windows already tracked, minimised, owned by this process, or smaller than 100×100 pts.

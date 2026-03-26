@@ -86,13 +86,13 @@ struct UnnamedWindowManagerApp: App {
             if menuState.isFrontmostScrolled {
                 Button(menuLabel("Unscroll", Config.scrollShortcut)) { UnscrollHandler.unscroll() }
             } else {
-                Button(menuLabel("Scroll", Config.scrollShortcut)) { ScrollingRootHandler.scroll() }
+                Button(menuLabel("Scroll", Config.scrollShortcut)) { ScrollHandler.scroll() }
                     .disabled(menuState.isTiled)
             }
             if menuState.isScrolled {
                 Button(menuLabel("Unscroll all", Config.scrollAllShortcut)) { UnscrollHandler.unscrollAll() }
             } else {
-                Button(menuLabel("Scroll all", Config.scrollAllShortcut)) { ScrollOrganizeHandler.organizeScrolling() }
+                Button(menuLabel("Scroll all", Config.scrollAllShortcut)) { ScrollAllHandler.organizeScrolling() }
                     .disabled(menuState.isTiled)
             }
             Divider()

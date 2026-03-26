@@ -85,8 +85,8 @@ Keyboard shortcut entry points. Each handler is invoked by `KeybindingService` a
 | `TileHandler.swift` | Tile focused window (tile, toggle, drag-tile) |
 | `TileAllHandler.swift` | Batch-tile all visible windows |
 | `UntileHandler.swift` | Remove windows from tiling layout |
-| `ScrollingRootHandler.swift` | Create/toggle scrolling root |
-| `ScrollOrganizeHandler.swift` | Batch-scroll all visible windows |
+| `ScrollHandler.swift` | Create/toggle scrolling root |
+| `ScrollAllHandler.swift` | Batch-scroll all visible windows |
 | `UnscrollHandler.swift` | Remove windows from scrolling layout |
 | `OrientFlipHandler.swift` | Read/flip parent container orientation |
 

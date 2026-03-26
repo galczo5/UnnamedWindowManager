@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 
 // Entry point for creating or extending the scrolling root from the menu.
-struct ScrollingRootHandler {
+struct ScrollHandler {
 
     /// Scrolls the frontmost window if it is not scrolled, or unscrolls it if it is.
     static func scrollToggle() {

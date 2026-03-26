@@ -64,7 +64,7 @@ final class KeybindingService {
                     NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")
                     return
                 }
-                ScrollingRootHandler.scrollToggle()
+                ScrollHandler.scrollToggle()
             }),
             (Config.scrollAllShortcut, "scrollAll", {
                 if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
@@ -72,7 +72,7 @@ final class KeybindingService {
                 } else if TilingRootStore.shared.snapshotVisibleRoot() != nil {
                     NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")
                 } else {
-                    ScrollOrganizeHandler.organizeScrolling()
+                    ScrollAllHandler.organizeScrolling()
                 }
             }),
         ]
