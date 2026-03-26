@@ -1,8 +1,15 @@
 import AppKit
 
+// Which slot a window occupies in a scrolling root.
+enum ScrollingSlotLocation {
+    case center
+    case left(index: Int, count: Int)
+    case right(index: Int, count: Int)
+}
+
 // Manages ScrollingRootSlot creation and mutation in SharedRootStore.
-final class ScrollingTileService {
-    static let shared = ScrollingTileService()
+final class ScrollingRootStore {
+    static let shared = ScrollingRootStore()
     private init() {}
 
     private let store    = SharedRootStore.shared
@@ -262,6 +269,65 @@ final class ScrollingTileService {
         }
     }
 
+    func location(of key: WindowSlot) -> ScrollingSlotLocation? {
+        store.queue.sync {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(let root) = store.roots[id] else { return nil }
+            return location(of: key, in: root)
+        }
+    }
+
+    /// Batch-scrolls so that `key` becomes center. Returns the new center WindowSlot, or nil if already center / not found.
+    func scrollToWindow(_ key: WindowSlot, screen: NSScreen) -> WindowSlot? {
+        store.queue.sync(flags: .barrier) {
+            guard let id = visibleScrollingRootID(),
+                  case .scrolling(var root) = store.roots[id] else { return nil }
+            guard let location = location(of: key, in: root) else { return nil }
+            guard case .window(let oldCenter) = root.center else { return nil }
+
+            let target: WindowSlot
+            switch location {
+            case .center:
+                return nil
+
+            case .right(let index, _):
+                guard case .stacking(var stack) = root.right else { return nil }
+                let removed = Array(stack.children[index...])
+                stack.children.removeSubrange(index...)
+                root.right = stack.children.isEmpty ? nil : .stacking(stack)
+
+                appendToSide(oldCenter, side: &root.left, parentId: id, align: .right)
+                for win in removed.reversed().dropFirst() {
+                    appendToSide(win, side: &root.left, parentId: id, align: .right)
+                }
+                target = removed.first!
+
+            case .left(let index, _):
+                guard case .stacking(var stack) = root.left else { return nil }
+                let removed = Array(stack.children[index...])
+                stack.children.removeSubrange(index...)
+                root.left = stack.children.isEmpty ? nil : .stacking(stack)
+
+                appendToSide(oldCenter, side: &root.right, parentId: id, align: .left)
+                for win in removed.reversed().dropFirst() {
+                    appendToSide(win, side: &root.right, parentId: id, align: .left)
+                }
+                target = removed.first!
+            }
+
+            root.center = .window(target)
+            let area = screenTilingArea(screen)
+            if target.size.width > 0 {
+                root.centerWidthFraction = ScrollingPositionService.clampedCenterFraction(
+                    proposedWidth: target.size.width, screenWidth: area.width)
+            }
+            position.recomputeSizes(&root, width: area.width, height: area.height,
+                                    updateSideWindowWidths: false)
+            store.roots[id] = .scrolling(root)
+            return target
+        }
+    }
+
     /// swapLeft: moves the last window of the left stacking slot to the end of the right stacking slot.
     /// swapRight: moves the last window of the right stacking slot to the end of the left stacking slot.
     /// The center window and all slot sizes are untouched. Returns the moved window, or nil if no swap occurred.
@@ -317,6 +383,19 @@ final class ScrollingTileService {
         for (id, rootSlot) in store.roots {
             guard case .scrolling(let root) = rootSlot else { continue }
             if allWindowSlots(in: root).contains(where: { visibleHashes.contains($0.windowHash) }) { return id }
+        }
+        return nil
+    }
+
+    private func location(of key: WindowSlot, in root: ScrollingRootSlot) -> ScrollingSlotLocation? {
+        if isCenterWindow(key, in: root) { return .center }
+        if case .stacking(let s) = root.left,
+           let idx = s.children.firstIndex(where: { $0.windowHash == key.windowHash }) {
+            return .left(index: idx, count: s.children.count)
+        }
+        if case .stacking(let s) = root.right,
+           let idx = s.children.firstIndex(where: { $0.windowHash == key.windowHash }) {
+            return .right(index: idx, count: s.children.count)
         }
         return nil
     }

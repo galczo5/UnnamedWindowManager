@@ -5,7 +5,7 @@ import ApplicationServices
 struct SwapDirectionService {
 
     static func swap(_ direction: FocusDirection) {
-        if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
+        if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
             swapInScrollRoot(direction: direction)
             return
         }
@@ -24,7 +24,7 @@ struct SwapDirectionService {
 
     private static func swapInScrollRoot(direction: FocusDirection) {
         guard let screen = NSScreen.main else { return }
-        guard let moved = ScrollingTileService.shared.swapWindows(direction, screen: screen) else { return }
+        guard let moved = ScrollingRootStore.shared.swapWindows(direction, screen: screen) else { return }
         ReapplyHandler.reapplyAll()
         guard let ax = ResizeObserver.shared.elements[moved] else { return }
         AXUIElementPerformAction(ax, kAXRaiseAction as CFString)

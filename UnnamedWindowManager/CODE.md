@@ -68,7 +68,7 @@ Scrolling layout management (left/center/right zones with stacking sides).
 
 | File | Description |
 |------|-------------|
-| `ScrollingTileService.swift` | Creates/mutates ScrollingRootSlot in SharedRootStore |
+| `ScrollingRootStore.swift` | Creates/mutates ScrollingRootSlot in SharedRootStore |
 | `ScrollingPositionService.swift` | Computes pixel dimensions for all scrolling zones |
 | `ScrollingResizeService.swift` | Handles user-initiated resizes of the center slot |
 | `ScrollingLayoutService.swift` | Applies window positions for scrolling roots via AX API |

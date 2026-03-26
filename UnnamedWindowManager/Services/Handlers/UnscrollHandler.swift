@@ -16,7 +16,7 @@ struct UnscrollHandler {
 
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
-        let stored = ScrollingTileService.shared.removeWindow(key, screen: screen)
+        let stored = ScrollingRootStore.shared.removeWindow(key, screen: screen)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         WindowVisibilityManager.shared.restoreAndForget(key)
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
@@ -28,7 +28,7 @@ struct UnscrollHandler {
     static func unscrollAll() {
         guard AXIsProcessTrusted() else { return }
         let elements = ResizeObserver.shared.elements
-        let removed = ScrollingTileService.shared.removeVisibleScrollingRoot()
+        let removed = ScrollingRootStore.shared.removeVisibleScrollingRoot()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
             if let ax = elements[key] { RestoreService.restore(key, element: ax) }
@@ -41,7 +41,7 @@ struct UnscrollHandler {
     static func unscrollAllSpaces() {
         guard AXIsProcessTrusted() else { return }
         let elements = ResizeObserver.shared.elements
-        let removed = ScrollingTileService.shared.removeAllScrollingRoots()
+        let removed = ScrollingRootStore.shared.removeAllScrollingRoots()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
             if let ax = elements[key] { RestoreService.restore(key, element: ax) }

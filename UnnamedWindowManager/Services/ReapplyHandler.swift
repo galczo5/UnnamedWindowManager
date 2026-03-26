@@ -7,7 +7,7 @@ struct ReapplyHandler {
     /// Reapplies the layout for a single already-tracked window.
     /// No-op if the window is no longer in the slot tree.
     static func reapply(window: AXUIElement, key: WindowSlot) {
-        guard TilingRootStore.shared.isTracked(key) || ScrollingTileService.shared.isTracked(key)
+        guard TilingRootStore.shared.isTracked(key) || ScrollingRootStore.shared.isTracked(key)
         else { return }
         guard let screen = NSScreen.main else { return }
         LayoutService.shared.clearCache(for: key)
@@ -25,7 +25,7 @@ struct ReapplyHandler {
             ScrollingLayoutService.shared.clearCache()
             pruneOffScreenWindows(screen: screen)
             let tilingLeaves = TilingRootStore.shared.leavesInVisibleRoot()
-            let scrollingLeaves = ScrollingTileService.shared.leavesInVisibleScrollingRoot()
+            let scrollingLeaves = ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
             let allWindows = Set((tilingLeaves + scrollingLeaves).compactMap { leaf -> WindowSlot? in
                 if case .window(let w) = leaf { return w }
                 return nil
@@ -128,13 +128,13 @@ struct ReapplyHandler {
             ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
             TilingSnapService.shared.removeAndReflow(w, screen: screen)
         }
-        let scrollingLeaves = ScrollingTileService.shared.leavesInVisibleScrollingRoot()
+        let scrollingLeaves = ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
         for leaf in scrollingLeaves {
             guard case .window(let w) = leaf else { continue }
             guard !onScreen.contains(w.windowHash) else { continue }
             Logger.shared.log("pruning off-screen scrolling window: pid=\(w.pid) hash=\(w.windowHash)")
             ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
-            ScrollingTileService.shared.removeWindow(w, screen: screen)
+            ScrollingRootStore.shared.removeWindow(w, screen: screen)
         }
     }
 

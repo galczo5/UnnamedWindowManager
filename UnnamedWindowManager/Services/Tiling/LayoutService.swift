@@ -23,7 +23,7 @@ final class LayoutService {
         if let root = TilingRootStore.shared.snapshotVisibleRoot() {
             applyLayout(root, origin: origin, elements: elements)
         }
-        if let root = ScrollingTileService.shared.snapshotVisibleScrollingRoot() {
+        if let root = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() {
             ScrollingLayoutService.shared.applyLayout(root: root, origin: origin, elements: elements,
                                                       zonesChanged: zonesChanged,
                                                       sidesPositionOnly: scrollingSidesPositionOnly)

@@ -13,7 +13,7 @@ struct ScrollingRootHandler {
         var focusedWindow: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success else { return }
         let key = windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
-        if ScrollingTileService.shared.isTracked(key) {
+        if ScrollingRootStore.shared.isTracked(key) {
             UnscrollHandler.unscroll()
         } else {
             scroll()
@@ -39,10 +39,10 @@ struct ScrollingRootHandler {
         key.preTileOrigin = readOrigin(of: axWindow)
         key.preTileSize   = readSize(of: axWindow)
 
-        if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
-            ScrollingTileService.shared.addWindow(key, screen: screen)
+        if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
+            ScrollingRootStore.shared.addWindow(key, screen: screen)
         } else {
-            ScrollingTileService.shared.createScrollingRoot(key: key, screen: screen)
+            ScrollingRootStore.shared.createScrollingRoot(key: key, screen: screen)
         }
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
         ReapplyHandler.reapplyAll()

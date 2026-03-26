@@ -6,10 +6,10 @@ struct ScrollingFocusService {
 
     static func scrollLeft() {
         guard let screen = NSScreen.main else { return }
-        let before = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
-        let newCenter = ScrollingTileService.shared.scrollLeft(screen: screen)
+        let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
+        let newCenter = ScrollingRootStore.shared.scrollLeft(screen: screen)
         guard let newCenter else { return }
-        let after = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
+        let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
         guard let after else { return }
         let zonesChanged = zoneSignature(before) != zoneSignature(after)
         let origin = layoutOrigin(screen: screen)
@@ -26,10 +26,10 @@ struct ScrollingFocusService {
 
     static func scrollRight() {
         guard let screen = NSScreen.main else { return }
-        let before = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
-        let newCenter = ScrollingTileService.shared.scrollRight(screen: screen)
+        let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
+        let newCenter = ScrollingRootStore.shared.scrollRight(screen: screen)
         guard let newCenter else { return }
-        let after = ScrollingTileService.shared.snapshotVisibleScrollingRoot()
+        let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
         guard let after else { return }
         let zonesChanged = zoneSignature(before) != zoneSignature(after)
         let origin = layoutOrigin(screen: screen)
@@ -39,6 +39,22 @@ struct ScrollingFocusService {
         ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
                                                    zonesChanged: zonesChanged, applyCenter: false)
         // Move 2: new center to center position
+        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                   applySides: false)
+        activateAfterLayout(newCenter)
+    }
+
+    static func scrollToCenter(key: WindowSlot) {
+        guard let screen = NSScreen.main else { return }
+        let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
+        guard let newCenter = ScrollingRootStore.shared.scrollToWindow(key, screen: screen) else { return }
+        guard let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
+        let zonesChanged = zoneSignature(before) != zoneSignature(after)
+        let origin = layoutOrigin(screen: screen)
+        let elements = ResizeObserver.shared.elements
+
+        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                   zonesChanged: zonesChanged, applyCenter: false)
         ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
                                                    applySides: false)
         activateAfterLayout(newCenter)

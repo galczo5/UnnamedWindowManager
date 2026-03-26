@@ -41,14 +41,14 @@ struct UntileHandler {
     }
 
     static func untileByKey(_ key: WindowSlot, screen: NSScreen) {
-        let isScrolling = ScrollingTileService.shared.isTracked(key)
+        let isScrolling = ScrollingRootStore.shared.isTracked(key)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         WindowVisibilityManager.shared.restoreAndForget(key)
         if let ax = ResizeObserver.shared.elements[key] {
             RestoreService.restore(key, element: ax)
         }
         if isScrolling {
-            ScrollingTileService.shared.removeWindow(key, screen: screen)
+            ScrollingRootStore.shared.removeWindow(key, screen: screen)
         } else {
             TilingSnapService.shared.removeAndReflow(key, screen: screen)
         }

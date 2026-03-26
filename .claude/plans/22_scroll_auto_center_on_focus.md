@@ -2,10 +2,10 @@
 
 ## Checklist
 
-- [ ] Add `ScrollingSlotLocation` enum and `location(of:)` helper to ScrollingTileService
-- [ ] Add `scrollToWindow(_:screen:)` batch method to ScrollingTileService
-- [ ] Add `scrollToCenter(key:)` to ScrollingFocusService
-- [ ] Hook auto-center into FocusObserver.applyDim
+- [x] Add `ScrollingSlotLocation` enum and `location(of:)` helper to ScrollingTileService
+- [x] Add `scrollToWindow(_:screen:)` batch method to ScrollingTileService
+- [x] Add `scrollToCenter(key:)` to ScrollingFocusService
+- [x] Hook auto-center into FocusObserver.applyDim
 
 ---
 

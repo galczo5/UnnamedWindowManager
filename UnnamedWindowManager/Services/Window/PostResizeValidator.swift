@@ -14,7 +14,7 @@ enum PostResizeValidator {
         let observer = ResizeObserver.shared
         var refusals: [Refusal] = []
         let leaves = TilingRootStore.shared.leavesInVisibleRoot()
-                    + ScrollingTileService.shared.leavesInVisibleScrollingRoot()
+                    + ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
 
         for leaf in leaves {
             guard case .window(let w) = leaf, windows.contains(w) else { continue }

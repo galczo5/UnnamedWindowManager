@@ -18,7 +18,7 @@ final class MenuState {
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
         isTiled = TilingRootStore.shared.snapshotVisibleRoot() != nil
-        isScrolled = ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil
+        isScrolled = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil
         let frontmostKey: WindowSlot? = {
             guard let frontApp = NSWorkspace.shared.frontmostApplication else { return nil }
             let pid = frontApp.processIdentifier
@@ -28,7 +28,7 @@ final class MenuState {
             return windowSlot(for: focusedWindow as! AXUIElement, pid: pid)
         }()
         isFrontmostTiled    = frontmostKey.map { TilingRootStore.shared.isTracked($0) } ?? false
-        isFrontmostScrolled = frontmostKey.map { ScrollingTileService.shared.isTracked($0) } ?? false
+        isFrontmostScrolled = frontmostKey.map { ScrollingRootStore.shared.isTracked($0) } ?? false
     }
 }
 

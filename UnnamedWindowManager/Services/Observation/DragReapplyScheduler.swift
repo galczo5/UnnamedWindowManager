@@ -60,7 +60,7 @@ final class DragReapplyScheduler {
         guard let observer else { return }
         observer.reapplying.insert(key)
         if let screen = NSScreen.main {
-            let isCenterResize = isResize && ScrollingTileService.shared.isCenterWindow(key)
+            let isCenterResize = isResize && ScrollingRootStore.shared.isCenterWindow(key)
             if isCenterResize,
                let axElement = observer.elements[key],
                let actualSize = readSize(of: axElement) {
@@ -70,7 +70,7 @@ final class DragReapplyScheduler {
             ScrollingLayoutService.shared.clearCache(for: key)
             LayoutService.shared.applyLayout(screen: screen, scrollingSidesPositionOnly: isCenterResize)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                let windows = Set(ScrollingTileService.shared.leavesInVisibleScrollingRoot()
+                let windows = Set(ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
                     .compactMap { (slot: Slot) -> WindowSlot? in
                         guard case .window(let w) = slot else { return nil }
                         return w

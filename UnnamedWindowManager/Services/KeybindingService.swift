@@ -37,14 +37,14 @@ final class KeybindingService {
             (Config.tileAllShortcut, "tileAll", {
                 if TilingRootStore.shared.snapshotVisibleRoot() != nil {
                     UntileHandler.untileAll()
-                } else if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
+                } else if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
                     NotificationService.shared.post(title: "Cannot tile", body: "Unscroll all windows first.")
                 } else {
                     TileAllHandler.tileAll()
                 }
             }),
             (Config.tileShortcut, "tile", {
-                if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
+                if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
                     NotificationService.shared.post(title: "Cannot tile", body: "Unscroll all windows first.")
                     return
                 }
@@ -67,7 +67,7 @@ final class KeybindingService {
                 ScrollingRootHandler.scrollToggle()
             }),
             (Config.scrollAllShortcut, "scrollAll", {
-                if ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil {
+                if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
                     UnscrollHandler.unscrollAll()
                 } else if TilingRootStore.shared.snapshotVisibleRoot() != nil {
                     NotificationService.shared.post(title: "Cannot scroll", body: "Untile all windows first.")

@@ -47,7 +47,7 @@ struct ScrollOrganizeHandler {
         }
 
         let sorted = candidates.sorted(by: { $0.originX < $1.originX })
-        var rootExists = ScrollingTileService.shared.snapshotVisibleScrollingRoot() != nil
+        var rootExists = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil
         for (i, item) in sorted.enumerated() {
             let delay = Double(i) * 0.1
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
@@ -56,9 +56,9 @@ struct ScrollOrganizeHandler {
                 key.preTileOrigin = readOrigin(of: item.window)
                 key.preTileSize   = readSize(of: item.window)
                 if rootExists {
-                    ScrollingTileService.shared.addWindow(key, screen: screen)
+                    ScrollingRootStore.shared.addWindow(key, screen: screen)
                 } else {
-                    ScrollingTileService.shared.createScrollingRoot(key: key, screen: screen)
+                    ScrollingRootStore.shared.createScrollingRoot(key: key, screen: screen)
                     rootExists = true
                 }
                 ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)

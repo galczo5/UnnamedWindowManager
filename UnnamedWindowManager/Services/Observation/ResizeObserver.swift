@@ -59,7 +59,7 @@ final class ResizeObserver {
             return keysByPid[pid]?.first { elements[$0].map { CFEqual($0, element) } == true }
         }() else { return }
 
-        let isScrolling = ScrollingTileService.shared.isTracked(key)
+        let isScrolling = ScrollingRootStore.shared.isTracked(key)
 
         let eventLabel = notification == (kAXWindowResizedNotification as String) ? "resize" : "move"
         Logger.shared.log("[\(eventLabel)] key=\(key.windowHash) pid=\(pid) scrolling=\(isScrolling)")
@@ -114,7 +114,7 @@ final class ResizeObserver {
         WindowOpacityService.shared.restore(hash: key.windowHash)
         if let screen = NSScreen.main {
             if isScrolling {
-                ScrollingTileService.shared.removeWindow(key, screen: screen)
+                ScrollingRootStore.shared.removeWindow(key, screen: screen)
             } else {
                 TilingSnapService.shared.removeAndReflow(key, screen: screen)
             }
