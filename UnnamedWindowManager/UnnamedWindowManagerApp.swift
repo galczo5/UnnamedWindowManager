@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ApplicationServices
+import CoreServices
 
 extension Notification.Name {
     static let tileStateChanged = Notification.Name("tileStateChanged")
@@ -46,6 +47,7 @@ struct UnnamedWindowManagerApp: App {
     init() {
         Logger.shared.configure(path: Config.logPath)
         Logger.shared.log("=== UnnamedWindowManager started ===")
+        LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
         NotificationService.shared.requestAuthorization()
         if Config.autoSnap || Config.autoOrganize {
             AutoTileObserver.shared.start()

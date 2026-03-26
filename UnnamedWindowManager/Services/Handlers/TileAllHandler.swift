@@ -61,5 +61,14 @@ struct TileAllHandler {
             snappedKeys.insert(key)
         }
         ReapplyHandler.reapplyAll()
+        let count = snappedKeys.count
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if count == 0 {
+                NotificationService.shared.post(title: "Tile All", body: "No windows to tile")
+            } else {
+                let noun = count == 1 ? "window" : "windows"
+                NotificationService.shared.post(title: "Tile All", body: "\(count) \(noun) tiled")
+            }
+        }
     }
 }

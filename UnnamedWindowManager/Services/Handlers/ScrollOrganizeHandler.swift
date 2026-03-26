@@ -65,5 +65,15 @@ struct ScrollOrganizeHandler {
                 ReapplyHandler.reapplyAll()
             }
         }
+        let count = sorted.count
+        let notifyDelay = count > 0 ? Double(count - 1) * 0.1 + 0.5 : 0.5
+        DispatchQueue.main.asyncAfter(deadline: .now() + notifyDelay) {
+            if count == 0 {
+                NotificationService.shared.post(title: "Scroll All", body: "No windows to organize")
+            } else {
+                let noun = count == 1 ? "window" : "windows"
+                NotificationService.shared.post(title: "Scroll All", body: "\(count) \(noun) organized")
+            }
+        }
     }
 }
