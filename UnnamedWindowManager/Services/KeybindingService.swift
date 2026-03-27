@@ -118,7 +118,7 @@ final class KeybindingService {
         let userInfo = Unmanaged.passUnretained(self).toOpaque()
 
         guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
+            tap: .cghidEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
             eventsOfInterest: eventMask,
@@ -274,6 +274,8 @@ final class KeybindingService {
         case "down":           return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 125)
         case "up":             return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 126)
         case "enter", "return": return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 36)
+        case "space":          return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 49)
+        case "tab":            return ParsedBinding(modifiers: modifiers, key: nil, keyCode: 48)
         default:               return ParsedBinding(modifiers: modifiers, key: rawKey, keyCode: nil)
         }
     }
