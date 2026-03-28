@@ -41,7 +41,13 @@ enum PostResizeValidator {
         observer.reapplying.formUnion(allTracked)
 
         for r in refusals {
-            TilingEditService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
+            if ScrollingRootStore.shared.isTracked(r.key) {
+                // For scrolling windows, TilingEditService is a no-op.
+                // Clear the cache so applyLayout retries the AX call.
+                ScrollingLayoutService.shared.clearCache(for: r.key)
+            } else {
+                TilingEditService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
+            }
         }
         LayoutService.shared.applyLayout(screen: screen)
 
