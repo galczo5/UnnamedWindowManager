@@ -119,6 +119,7 @@ Window utilities, AX helpers, and validation.
 
 | File | Description |
 |------|-------------|
+| `AnimationService.swift` | Animates window frames via interpolated AX calls over a configurable duration |
 | `AXHelpers.swift` | Low-level AX API helpers (read size/origin, window ID) |
 | `OnScreenWindowCache.swift` | Time-cached CGWindowList result (50ms) |
 | `RestoreService.swift` | Restores a window to its pre-tile frame via AX |

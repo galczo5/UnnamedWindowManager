@@ -111,6 +111,8 @@ struct ConfigLoader {
             dimInactiveOpacity: \(num(bh.dimInactiveOpacity))
             # Duration in seconds of the dim overlay fade-in and fade-out animation (0 to disable).
             dimAnimationDuration: \(num(bh.dimAnimationDuration))
+            # Duration in seconds for window move/resize animation (0 to disable).
+            animationDuration: \(num(bh.animationDuration))
             # Color of the dim overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
             dimColor: \(bh.dimColor ?? "black")
             # Path to log file. Leave empty or omit to disable logging.

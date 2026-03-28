@@ -108,20 +108,15 @@ final class LayoutService {
         case .window(let w):
             guard let ax = elements[w] else { return }
             let g = w.gaps ? Config.innerGap : 0
-            var pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
-            var size = CGSize(width: (w.size.width - g * 2).rounded(), height: (w.size.height - g * 2).rounded())
+            let pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
+            let size = CGSize(width: (w.size.width - g * 2).rounded(), height: (w.size.height - g * 2).rounded())
             if let last = lastApplied[w.windowHash],
                abs(last.pos.x - pos.x) < 1, abs(last.pos.y - pos.y) < 1,
                abs(last.size.width - size.width) < 1, abs(last.size.height - size.height) < 1 {
                 return
             }
             lastApplied[w.windowHash] = (pos, size)
-            if let posVal = AXValueCreate(.cgPoint, &pos) {
-                AXUIElementSetAttributeValue(ax, kAXPositionAttribute as CFString, posVal)
-            }
-            if let sizeVal = AXValueCreate(.cgSize, &size) {
-                AXUIElementSetAttributeValue(ax, kAXSizeAttribute as CFString, sizeVal)
-            }
+            AnimationService.shared.animate(key: w, ax: ax, to: pos, size: size)
         case .split(let s):
             var cursor = origin
             for child in s.children {

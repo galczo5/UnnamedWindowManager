@@ -33,10 +33,11 @@ struct ReapplyHandler {
             ResizeObserver.shared.reapplying.formUnion(allWindows)
             LayoutService.shared.applyLayout(screen: screen)
             WindowVisibilityManager.shared.applyVisibility()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            let animDur = Config.animationDuration
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) {
                 ResizeObserver.shared.reapplying.subtract(allWindows)
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1)) {
                 guard let screen = NSScreen.main else { return }
                 let pass2Refusals = PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
 

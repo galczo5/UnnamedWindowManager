@@ -42,6 +42,7 @@ final class Config {
     static var dimInactiveWindows: Bool        { shared.s.behavior!.dimInactiveWindows! }
     static var dimInactiveOpacity: CGFloat     { shared.s.behavior!.dimInactiveOpacity! }
     static var dimAnimationDuration: CGFloat   { shared.s.behavior!.dimAnimationDuration! }
+    static var animationDuration: CGFloat     { shared.s.behavior!.animationDuration! }
     static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
     static var logPath: String?                { let p = shared.s.behavior!.logPath!; return p.isEmpty ? nil : p }
     static var tileAllShortcut: String          { shared.s.shortcuts!.tileAll! }

@@ -4,12 +4,7 @@ import ApplicationServices
 struct RestoreService {
 
     static func restore(_ slot: WindowSlot, element: AXUIElement) {
-        guard var pos = slot.preTileOrigin, var size = slot.preTileSize else { return }
-        if let posVal = AXValueCreate(.cgPoint, &pos) {
-            AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, posVal)
-        }
-        if let sizeVal = AXValueCreate(.cgSize, &size) {
-            AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, sizeVal)
-        }
+        guard let pos = slot.preTileOrigin, let size = slot.preTileSize else { return }
+        AnimationService.shared.animate(key: slot, ax: element, to: pos, size: size)
     }
 }

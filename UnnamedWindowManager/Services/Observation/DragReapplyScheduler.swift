@@ -59,6 +59,7 @@ final class DragReapplyScheduler {
     private func reapplyScrolling(key: WindowSlot, isResize: Bool) {
         guard let observer else { return }
         observer.reapplying.insert(key)
+        let animDur = Config.animationDuration
         if let screen = NSScreen.main {
             let isCenterResize = isResize && ScrollingRootStore.shared.isCenterWindow(key)
             if isCenterResize,
@@ -69,7 +70,7 @@ final class DragReapplyScheduler {
             }
             ScrollingLayoutService.shared.clearCache(for: key)
             LayoutService.shared.applyLayout(screen: screen, scrollingSidesPositionOnly: isCenterResize)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1)) {
                 let windows = Set(ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
                     .compactMap { (slot: Slot) -> WindowSlot? in
                         guard case .window(let w) = slot else { return nil }
@@ -78,7 +79,7 @@ final class DragReapplyScheduler {
                 PostResizeValidator.checkAndFixRefusals(windows: windows, screen: screen)
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak observer] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) { [weak observer] in
             observer?.reapplying.remove(key)
         }
     }
@@ -113,7 +114,7 @@ final class DragReapplyScheduler {
             guard let storedElement = observer.elements[key] else { return }
             observer.reapplying.insert(key)
             ReapplyHandler.reapply(window: storedElement, key: key)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak observer] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, Config.animationDuration + 0.05)) { [weak observer] in
                 observer?.reapplying.remove(key)
             }
         }
