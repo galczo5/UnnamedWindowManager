@@ -55,6 +55,7 @@ struct ConfigLoader {
         let dz = s?.dropZones ?? d.dropZones!
         let ov = s?.overlay   ?? d.overlay!
         let bh = s?.behavior  ?? d.behavior!
+        let wp = s?.wallpaper ?? d.wallpaper!
         let sh = s?.shortcuts ?? d.shortcuts!
         let cm = s?.commands ?? d.commands ?? []
 
@@ -117,6 +118,13 @@ struct ConfigLoader {
             dimColor: \(bh.dimColor ?? "black")
             # Path to log file. Leave empty or omit to disable logging.
             logPath: "\(bh.logPath ?? "")"
+          wallpaper:
+            # Enable custom wallpaper overlay.
+            enabled: \(wp.enabled ?? false)
+            # Path to image file (PNG, JPG, or GIF). Supports ~ for home directory.
+            path: "\(wp.path ?? "")"
+            # Image scaling mode: fill, fit, stretch, or center.
+            scaling: \(wp.scaling ?? "fill")
           shortcuts:
             # Global keyboard shortcut for Tile All / Untile All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             tileAll: "\(sh.tileAll ?? "cmd+'")"
@@ -142,6 +150,8 @@ struct ConfigLoader {
             scroll: "\(sh.scroll ?? "cmd+[")"
             # Global keyboard shortcut for Scroll All / Unscroll All toggle.
             scrollAll: "\(sh.scrollAll ?? "cmd+]")"
+            # Global keyboard shortcut for toggling wallpaper on/off. Empty string disables.
+            toggleWallpaper: "\(sh.toggleWallpaper ?? "")"
           # Custom keyboard shortcuts that run shell commands.
           # Format: shortcut uses modifier+key (e.g. cmd+enter, cmd+shift+t). run is a shell command.
           commands:

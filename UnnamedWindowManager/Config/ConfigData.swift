@@ -9,6 +9,7 @@ struct ConfigData: Codable {
         var dropZones: DropZoneConfig?
         var overlay: OverlayConfig?
         var behavior: BehaviorConfig?
+        var wallpaper: WallpaperConfig?
         var shortcuts: ShortcutsConfig?
         var commands: [CommandConfig]?
     }
@@ -52,6 +53,12 @@ struct ConfigData: Codable {
         var logPath: String?
     }
 
+    struct WallpaperConfig: Codable {
+        var enabled: Bool?
+        var path: String?
+        var scaling: String?
+    }
+
     struct CommandConfig: Codable {
         var shortcut: String?
         var run: String?
@@ -73,6 +80,7 @@ struct ConfigData: Codable {
         var swapRight: String?
         var swapUp: String?
         var swapDown: String?
+        var toggleWallpaper: String?
     }
 
     static let defaults = ConfigData(config: ConfigSection(
@@ -80,7 +88,8 @@ struct ConfigData: Codable {
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
         behavior: BehaviorConfig(dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, animationDuration: 0.15, dimColor: "black", logPath: ""),
-        shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down"),
+        wallpaper: WallpaperConfig(enabled: false, path: "", scaling: "fill"),
+        shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down", toggleWallpaper: ""),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
 
@@ -112,6 +121,9 @@ struct ConfigData: Codable {
         check(s?.behavior?.animationDuration,          "config.behavior.animationDuration")
         check(s?.behavior?.dimColor,                   "config.behavior.dimColor")
         check(s?.behavior?.logPath,                    "config.behavior.logPath")
+        check(s?.wallpaper?.enabled,                   "config.wallpaper.enabled")
+        check(s?.wallpaper?.path,                      "config.wallpaper.path")
+        check(s?.wallpaper?.scaling,                   "config.wallpaper.scaling")
         check(s?.shortcuts?.tileAll,             "config.shortcuts.tileAll")
         check(s?.shortcuts?.tile,               "config.shortcuts.tile")
         check(s?.shortcuts?.resetLayout,        "config.shortcuts.resetLayout")
@@ -127,6 +139,7 @@ struct ConfigData: Codable {
         check(s?.shortcuts?.swapRight,          "config.shortcuts.swapRight")
         check(s?.shortcuts?.swapUp,             "config.shortcuts.swapUp")
         check(s?.shortcuts?.swapDown,           "config.shortcuts.swapDown")
+        check(s?.shortcuts?.toggleWallpaper,    "config.shortcuts.toggleWallpaper")
         return missing
     }
 
@@ -168,6 +181,11 @@ struct ConfigData: Codable {
                 dimColor:                 s?.behavior?.dimColor                 ?? d.behavior!.dimColor,
                 logPath:                  s?.behavior?.logPath                  ?? d.behavior!.logPath
             ),
+            wallpaper: WallpaperConfig(
+                enabled: s?.wallpaper?.enabled ?? d.wallpaper!.enabled,
+                path:    s?.wallpaper?.path    ?? d.wallpaper!.path,
+                scaling: s?.wallpaper?.scaling ?? d.wallpaper!.scaling
+            ),
             shortcuts: ShortcutsConfig(
                 tileAll:         s?.shortcuts?.tileAll         ?? d.shortcuts!.tileAll,
                 tile:            s?.shortcuts?.tile            ?? d.shortcuts!.tile,
@@ -183,7 +201,8 @@ struct ConfigData: Codable {
                 swapLeft:        s?.shortcuts?.swapLeft        ?? d.shortcuts!.swapLeft,
                 swapRight:       s?.shortcuts?.swapRight       ?? d.shortcuts!.swapRight,
                 swapUp:          s?.shortcuts?.swapUp          ?? d.shortcuts!.swapUp,
-                swapDown:        s?.shortcuts?.swapDown        ?? d.shortcuts!.swapDown
+                swapDown:        s?.shortcuts?.swapDown        ?? d.shortcuts!.swapDown,
+                toggleWallpaper: s?.shortcuts?.toggleWallpaper ?? d.shortcuts!.toggleWallpaper
             ),
             commands: s?.commands ?? d.commands
         ))

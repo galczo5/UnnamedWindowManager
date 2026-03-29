@@ -4,12 +4,12 @@ import ApplicationServices
 final class AppObserverManager {
     private var appObservers: [pid_t: AXObserver] = [:]
     private let callback: AXObserverCallback
-    private let notification: CFString
+    private let notifications: [CFString]
     private let refcon: UnsafeMutableRawPointer
 
-    init(callback: @escaping AXObserverCallback, notification: CFString, refcon: UnsafeMutableRawPointer) {
+    init(callback: @escaping AXObserverCallback, notifications: [CFString], refcon: UnsafeMutableRawPointer) {
         self.callback = callback
-        self.notification = notification
+        self.notifications = notifications
         self.refcon = refcon
     }
 
@@ -18,7 +18,9 @@ final class AppObserverManager {
         var axObs: AXObserver?
         guard AXObserverCreate(pid, callback, &axObs) == .success, let axObs else { return }
         let appEl = AXUIElementCreateApplication(pid)
-        AXObserverAddNotification(axObs, appEl, notification, refcon)
+        for n in notifications {
+            AXObserverAddNotification(axObs, appEl, n, refcon)
+        }
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(axObs), .commonModes)
         appObservers[pid] = axObs
     }

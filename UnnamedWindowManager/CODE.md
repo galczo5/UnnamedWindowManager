@@ -113,6 +113,16 @@ Event-driven observers that react to AX notifications, app lifecycle, and screen
 | `FocusObserver.swift` | Watches app/window focus changes to drive dimming |
 | `ScreenChangeObserver.swift` | Reflows layout on screen resolution/display changes |
 
+### Services/Wallpaper/
+
+Desktop wallpaper overlay (PNG, JPG, animated GIF) rendered behind all windows.
+
+| File | Description |
+|------|-------------|
+| `WallpaperWindow.swift` | Borderless NSWindow pinned to desktop level, click-through, all spaces |
+| `GifImageView.swift` | NSView that decodes and animates image frames via CGImageSource |
+| `WallpaperService.swift` | Singleton managing one wallpaper window per connected screen |
+
 ### Services/Window/
 
 Window utilities, AX helpers, and validation.
@@ -126,6 +136,7 @@ Window utilities, AX helpers, and validation.
 | `WindowLister.swift` | Debug logging of on-screen windows and slot tree |
 | `WindowOpacityService.swift` | Dims non-focused windows via per-root overlays |
 | `PostResizeValidator.swift` | Detects and corrects windows that refused a resize |
+| `TabDetector.swift` | Detects native macOS tab groups by matching same-PID windows with identical CGWindow bounds |
 | `WindowVisibilityManager.swift` | Manages auto-minimization state for tiled windows |
 
 ### Services/ (root)

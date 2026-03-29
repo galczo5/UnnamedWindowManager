@@ -45,6 +45,9 @@ final class Config {
     static var animationDuration: CGFloat     { shared.s.behavior!.animationDuration! }
     static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
     static var logPath: String?                { let p = shared.s.behavior!.logPath!; return p.isEmpty ? nil : p }
+    static var wallpaperEnabled: Bool          { shared.s.wallpaper!.enabled! }
+    static var wallpaperPath: String           { shared.s.wallpaper!.path! }
+    static var wallpaperScaling: String        { shared.s.wallpaper!.scaling! }
     static var tileAllShortcut: String          { shared.s.shortcuts!.tileAll! }
     static var tileShortcut: String            { shared.s.shortcuts!.tile! }
     static var resetLayoutShortcut: String     { shared.s.shortcuts!.resetLayout! }
@@ -60,6 +63,7 @@ final class Config {
     static var swapRightShortcut: String       { shared.s.shortcuts!.swapRight! }
     static var swapUpShortcut: String          { shared.s.shortcuts!.swapUp! }
     static var swapDownShortcut: String        { shared.s.shortcuts!.swapDown! }
+    static var toggleWallpaperShortcut: String { shared.s.shortcuts!.toggleWallpaper! }
     static var commands: [ConfigData.CommandConfig] { shared.s.commands ?? [] }
 
 }

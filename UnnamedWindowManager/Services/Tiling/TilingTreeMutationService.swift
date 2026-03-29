@@ -45,6 +45,23 @@ struct TilingTreeMutationService {
         return false
     }
 
+    /// Replaces the identity (pid + windowHash) of a leaf without changing its layout.
+    @discardableResult
+    func replaceLeafIdentity(
+        oldKey: WindowSlot, newPid: pid_t, newHash: UInt,
+        in root: inout TilingRootSlot
+    ) -> Bool {
+        updateLeaf(oldKey, in: &root) { w in
+            w = WindowSlot(pid: newPid, windowHash: newHash,
+                           id: w.id, parentId: w.parentId,
+                           order: w.order, size: w.size,
+                           gaps: w.gaps, fraction: w.fraction,
+                           preTileOrigin: w.preTileOrigin,
+                           preTileSize: w.preTileSize,
+                           isTabbed: true)
+        }
+    }
+
     /// Toggles the split orientation of the container that directly holds `key` (horizontal ↔ vertical).
     func flipParentOrientation(of key: WindowSlot, in root: inout TilingRootSlot) {
         if root.children.contains(where: {

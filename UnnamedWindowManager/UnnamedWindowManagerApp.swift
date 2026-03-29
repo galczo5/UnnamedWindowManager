@@ -51,6 +51,7 @@ struct UnnamedWindowManagerApp: App {
         NotificationService.shared.requestAuthorization()
         FocusObserver.shared.start()
         ScreenChangeObserver.shared.start()
+        WallpaperService.shared.apply()
     }
 
     var body: some Scene {
@@ -93,6 +94,16 @@ struct UnnamedWindowManagerApp: App {
                     .disabled(menuState.isTiled)
             }
             Divider()
+            if WallpaperService.shared.isActive {
+                Button(menuLabel("Disable wallpaper", Config.toggleWallpaperShortcut)) {
+                    WallpaperService.shared.toggle()
+                }
+            } else {
+                Button(menuLabel("Enable wallpaper", Config.toggleWallpaperShortcut)) {
+                    WallpaperService.shared.toggle()
+                }
+            }
+            Divider()
             Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); TileAllHandler.tileAll() }
             Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
             Divider()
@@ -103,6 +114,7 @@ struct UnnamedWindowManagerApp: App {
                 Config.shared.reload()
                 KeybindingService.shared.restart()
                 if !Config.dimInactiveWindows { WindowOpacityService.shared.restoreAll() }
+                WallpaperService.shared.apply()
                 ReapplyHandler.reapplyAll()
             }
             Button("Reset config file") {

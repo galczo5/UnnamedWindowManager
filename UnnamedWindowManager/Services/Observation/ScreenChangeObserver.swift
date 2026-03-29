@@ -20,6 +20,7 @@ final class ScreenChangeObserver {
         LayoutService.shared.clearCache()
         ScrollingLayoutService.shared.clearCache()
         TilingEditService.shared.recomputeVisibleRootSizes(screen: screen)
+        WallpaperService.shared.screenChanged()
         ReapplyHandler.reapplyAll()
     }
 }

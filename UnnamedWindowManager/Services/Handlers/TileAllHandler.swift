@@ -33,6 +33,14 @@ struct TileAllHandler {
             pidToWindowIDs[pid_t(pid), default: []].insert(wid)
         }
 
+        // Filter out tab duplicates: keep one CGWindowID per native macOS tab group.
+        var anyTabs = false
+        for (pid, wids) in pidToWindowIDs {
+            let (kept, hadTabs) = TabDetector.filterTabDuplicates(wids: wids, pid: pid)
+            pidToWindowIDs[pid] = kept
+            if hadTabs { anyTabs = true }
+        }
+
         // Collect AX window handles alongside their screen x-origin for sorting.
         var candidates: [(window: AXUIElement, pid: pid_t, originX: CGFloat)] = []
         for (pid, wids) in pidToWindowIDs {
@@ -56,6 +64,7 @@ struct TileAllHandler {
             var key = windowSlot(for: item.window, pid: item.pid)
             key.preTileOrigin = readOrigin(of: item.window)
             key.preTileSize = readSize(of: item.window)
+            if anyTabs { key.isTabbed = true }
             TilingSnapService.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
             snappedKeys.insert(key)

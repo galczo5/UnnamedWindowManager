@@ -34,6 +34,15 @@ func readOrigin(of window: AXUIElement) -> CGPoint? {
     return point
 }
 
+/// Returns the AXUIElement for the window with the given CGWindowID hash, or nil.
+func axWindow(forHash hash: UInt, pid: pid_t) -> AXUIElement? {
+    let axApp = AXUIElementCreateApplication(pid)
+    var windowsRef: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+          let axWindows = windowsRef as? [AXUIElement] else { return nil }
+    return axWindows.first { windowID(of: $0).map(UInt.init) == hash }
+}
+
 /// Builds a `WindowSlot` identity key from an AX window element and its owning pid.
 /// Uses the CGWindowID when available; falls back to the AXUIElement pointer address.
 func windowSlot(for window: AXUIElement, pid: pid_t) -> WindowSlot {

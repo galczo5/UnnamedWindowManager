@@ -2,7 +2,8 @@ import AppKit
 import ApplicationServices
 
 // `kAXUIElementDestroyedNotification` may not be bridged in all SDK versions.
-private let kElementDestroyed = "AXUIElementDestroyed" as CFString
+private let kElementDestroyed  = "AXUIElementDestroyed" as CFString
+private let kTitleChanged      = "AXTitleChanged"       as CFString
 
 // Tracks AX move/resize/destroy notifications for all tiled windows and drives layout reapplication.
 final class ResizeObserver {
@@ -35,6 +36,56 @@ final class ResizeObserver {
         AXObserverAddNotification(axObs, window, kAXWindowResizedNotification    as CFString, refcon)
         AXObserverAddNotification(axObs, window, kAXWindowMiniaturizedNotification as CFString, refcon)
         AXObserverAddNotification(axObs, window, kElementDestroyed,                             refcon)
+        AXObserverAddNotification(axObs, window, kTitleChanged,                                 refcon)
+    }
+
+    /// Swaps the identity of a tiled tab: unregisters the old AX element, updates the slot tree,
+    /// and registers the new element — without changing the layout position or size.
+    func swapTab(oldKey: WindowSlot, newWindow: AXUIElement, newHash: UInt) {
+        let pid = oldKey.pid
+
+        // Remove old AX notifications.
+        if let axObs = observers[pid], let oldElement = elements[oldKey] {
+            AXObserverRemoveNotification(axObs, oldElement, kAXWindowMovedNotification        as CFString)
+            AXObserverRemoveNotification(axObs, oldElement, kAXWindowResizedNotification    as CFString)
+            AXObserverRemoveNotification(axObs, oldElement, kAXWindowMiniaturizedNotification as CFString)
+            AXObserverRemoveNotification(axObs, oldElement, kElementDestroyed)
+            AXObserverRemoveNotification(axObs, oldElement, kTitleChanged)
+        }
+
+        // Clean up old tracking (but don't touch the slot tree or layout).
+        reapplyScheduler.cancel(key: oldKey)
+        reapplying.remove(oldKey)
+        elements.removeValue(forKey: oldKey)
+        keysByHash.removeValue(forKey: oldKey.windowHash)
+        keysByPid[pid]?.remove(oldKey)
+        LayoutService.shared.clearCache(for: oldKey)
+
+        // Update slot tree identity.
+        SharedRootStore.shared.queue.sync(flags: .barrier) {
+            for (id, rootSlot) in SharedRootStore.shared.roots {
+                guard case .tiling(var root) = rootSlot else { continue }
+                if TilingTreeMutationService().replaceLeafIdentity(
+                    oldKey: oldKey, newPid: pid, newHash: newHash, in: &root
+                ) {
+                    SharedRootStore.shared.roots[id] = .tiling(root)
+                    break
+                }
+            }
+        }
+
+        // Invalidate the on-screen cache so pruneOffScreenWindows sees the new tab immediately.
+        OnScreenWindowCache.invalidate()
+
+        // Build new key preserving only identity fields; observe() fills the rest.
+        let newKey = WindowSlot(pid: pid, windowHash: newHash,
+                                id: UUID(), parentId: UUID(), order: 0, size: .zero,
+                                isTabbed: true)
+        observe(window: newWindow, pid: pid, key: newKey)
+        let appName  = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
+        let pos  = readOrigin(of: newWindow).map { "(\(Int($0.x)),\(Int($0.y)))" } ?? "?"
+        let size = readSize(of: newWindow).map   { "\(Int($0.width))x\(Int($0.height))" } ?? "?"
+        Logger.shared.log("[tab-change] \(appName) pid=\(pid) old=\(oldKey.windowHash) new=\(newHash) pos=\(pos) size=\(size)")
     }
 
     func stopObserving(key: WindowSlot, pid: pid_t) {
@@ -43,6 +94,7 @@ final class ResizeObserver {
         AXObserverRemoveNotification(axObs, window, kAXWindowResizedNotification    as CFString)
         AXObserverRemoveNotification(axObs, window, kAXWindowMiniaturizedNotification as CFString)
         AXObserverRemoveNotification(axObs, window, kElementDestroyed)
+        AXObserverRemoveNotification(axObs, window, kTitleChanged)
         cleanup(key: key, pid: pid)
     }
 
@@ -54,15 +106,49 @@ final class ResizeObserver {
 
     func handle(element: AXUIElement, notification: String, pid: pid_t) {
         // windowID(of:) fails for destroyed elements; fall back to CFEqual identity search.
-        guard let key: WindowSlot = {
-            if let wid = windowID(of: element) { return keysByHash[UInt(wid)] }
-            return keysByPid[pid]?.first { elements[$0].map { CFEqual($0, element) } == true }
-        }() else { return }
+        let resolvedKey: WindowSlot?
+        if let wid = windowID(of: element) {
+            resolvedKey = keysByHash[UInt(wid)]
+            // Not tracked — check if it's a tab of a managed window from the same PID.
+            if resolvedKey == nil, notification != (kElementDestroyed as String) {
+                let hash = UInt(wid)
+                let onScreen = OnScreenWindowCache.visibleHashes()
+                for siblingKey in keysByPid[pid] ?? [] {
+                    if !onScreen.contains(siblingKey.windowHash) {
+                        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
+                        let pos  = readOrigin(of: element).map { "(\(Int($0.x)),\(Int($0.y)))" } ?? "?"
+                        let size = readSize(of: element).map   { "\(Int($0.width))x\(Int($0.height))" } ?? "?"
+                        Logger.shared.log("[tab-change] \(appName) pid=\(pid) old=\(siblingKey.windowHash) new=\(hash) pos=\(pos) size=\(size)")
+                        swapTab(oldKey: siblingKey, newWindow: element, newHash: hash)
+                        ReapplyHandler.reapplyAll()
+                        return
+                    }
+                }
+                return
+            }
+        } else {
+            resolvedKey = keysByPid[pid]?.first { elements[$0].map { CFEqual($0, element) } == true }
+        }
+        guard let key = resolvedKey else { return }
 
         let isScrolling = ScrollingRootStore.shared.isTracked(key)
 
+        if notification == (kTitleChanged as String) {
+            var titleRef: CFTypeRef?
+            let title = AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &titleRef) == .success
+                        ? (titleRef as? String ?? "") : ""
+            let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
+            Logger.shared.log("[title-changed] \(appName) hash=\(key.windowHash) title=\"\(title)\"")
+            return
+        }
+
         let eventLabel = notification == (kAXWindowResizedNotification as String) ? "resize" : "move"
-        Logger.shared.log("[\(eventLabel)] key=\(key.windowHash) pid=\(pid) scrolling=\(isScrolling)")
+        let appName   = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
+        let pos       = readOrigin(of: element).map { "(\(Int($0.x)),\(Int($0.y)))" } ?? "?"
+        let size      = readSize(of: element).map   { "\(Int($0.width))x\(Int($0.height))" } ?? "?"
+        let isTiling  = TilingRootStore.shared.isTracked(key)
+        let managed   = isTiling ? "tiling" : isScrolling ? "scrolling" : "unmanaged"
+        Logger.shared.log("[\(eventLabel)] \(appName) hash=\(key.windowHash) pos=\(pos) size=\(size) managed=\(managed)")
 
         if notification == kElementDestroyed as String {
             removeWindow(key: key, pid: pid, isScrolling: isScrolling)

@@ -6,6 +6,8 @@ enum OnScreenWindowCache {
     private static var cachedHashes: Set<UInt> = []
     private static var cacheTime: UInt64 = 0
 
+    static func invalidate() { cacheTime = 0 }
+
     static func visibleHashes() -> Set<UInt> {
         let now = DispatchTime.now().uptimeNanoseconds
         if now - cacheTime < 50_000_000, !cachedHashes.isEmpty {

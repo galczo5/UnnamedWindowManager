@@ -75,6 +75,7 @@ final class KeybindingService {
                     ScrollAllHandler.organizeScrolling()
                 }
             }),
+            (Config.toggleWallpaperShortcut, "toggleWallpaper", { WallpaperService.shared.toggle() }),
         ]
     }
 

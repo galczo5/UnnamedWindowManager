@@ -22,11 +22,26 @@ struct TileHandler {
         let axWindow = focusedWindow as! AXUIElement
 
         guard let screen = NSScreen.main else { return }
-        var key = windowSlot(for: axWindow, pid: pid)
-        key.preTileOrigin = readOrigin(of: axWindow)
-        key.preTileSize = readSize(of: axWindow)
-        TilingSnapService.shared.snap(key, screen: screen)
-        ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
+        let key = windowSlot(for: axWindow, pid: pid)
+
+        // If a managed window from the same PID is no longer on screen, it became an
+        // inactive tab. Swap its slot identity to the focused window instead of adding a new slot.
+        let onScreen = OnScreenWindowCache.visibleHashes()
+        let managedSiblings = ResizeObserver.shared.keysByPid[pid] ?? []
+        for siblingKey in managedSiblings {
+            if !onScreen.contains(siblingKey.windowHash) {
+                ResizeObserver.shared.swapTab(oldKey: siblingKey,
+                                              newWindow: axWindow, newHash: key.windowHash)
+                ReapplyHandler.reapplyAll()
+                return
+            }
+        }
+
+        var mutableKey = key
+        mutableKey.preTileOrigin = readOrigin(of: axWindow)
+        mutableKey.preTileSize = readSize(of: axWindow)
+        TilingSnapService.shared.snap(mutableKey, screen: screen)
+        ResizeObserver.shared.observe(window: axWindow, pid: pid, key: mutableKey)
         ReapplyHandler.reapplyAll()
     }
 

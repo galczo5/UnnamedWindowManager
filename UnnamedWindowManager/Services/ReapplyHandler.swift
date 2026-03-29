@@ -125,6 +125,27 @@ struct ReapplyHandler {
         for leaf in leaves {
             guard case .window(let w) = leaf else { continue }
             guard !onScreen.contains(w.windowHash) else { continue }
+
+            // Check for tab switch: enumerate AX windows for the same PID and look for
+            // an unmanaged on-screen sibling that replaced this window (inactive tab).
+            var didSwap = false
+            let axApp = AXUIElementCreateApplication(w.pid)
+            var wRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &wRef) == .success,
+               let axWindows = wRef as? [AXUIElement] {
+                for ax in axWindows {
+                    guard let wid = windowID(of: ax).map(UInt.init),
+                          wid != w.windowHash,
+                          onScreen.contains(wid),
+                          ResizeObserver.shared.keysByHash[wid] == nil else { continue }
+                    Logger.shared.log("tab switch (prune): pid=\(w.pid) old=\(w.windowHash) new=\(wid)")
+                    ResizeObserver.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
+                    didSwap = true
+                    break
+                }
+            }
+            if didSwap { continue }
+
             Logger.shared.log("pruning off-screen window: pid=\(w.pid) hash=\(w.windowHash)")
             ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
             TilingSnapService.shared.removeAndReflow(w, screen: screen)
