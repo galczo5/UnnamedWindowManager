@@ -5,7 +5,6 @@ enum PostResizeValidator {
 
     @discardableResult
     static func checkAndFixRefusals(windows: Set<WindowSlot>, screen: NSScreen) -> Set<WindowSlot> {
-        Logger.shared.log("checkAndFixRefusals: windows=\(windows.count)")
         struct Refusal {
             let key: WindowSlot
             let actual: CGSize
@@ -30,7 +29,6 @@ enum PostResizeValidator {
         }
 
         guard !refusals.isEmpty else {
-            Logger.shared.log("checkAndFixRefusals: no refusals, skipping")
             return []
         }
 

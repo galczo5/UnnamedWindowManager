@@ -72,14 +72,8 @@ final class FocusObserver {
 
         let wid = windowID(of: axWindow)
         let hash = wid.map(UInt.init)
-        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
-        var titleRef: CFTypeRef?
-        let title: String
-        if AXUIElementCopyAttributeValue(axWindow, kAXTitleAttribute as CFString, &titleRef) == .success,
-           let t = titleRef as? String, !t.isEmpty { title = t } else { title = "(no title)" }
         let isManaged = hash.flatMap({ ResizeObserver.shared.keysByHash[$0] }) != nil
         let siblings = hash.map({ TabDetector.tabSiblingHashes(of: $0, pid: pid) }) ?? []
-        Logger.shared.log("[focus] app=\"\(appName)\" title=\"\(title)\" pid=\(pid) hash=\(hash.map(String.init) ?? "nil") managed=\(isManaged) tabSiblings=\(siblings)")
 
         // Tab switch detection: focused window is unmanaged, but a managed window from the same PID
         // is either off-screen or a detected tab sibling (same bounds) of the new window.
@@ -91,9 +85,7 @@ final class FocusObserver {
             for siblingKey in managedSiblings {
                 let isOffScreen = !onScreen.contains(siblingKey.windowHash)
                 let isTabSibling = siblings.contains(siblingKey.windowHash)
-                Logger.shared.log("[focus] tab-check: sibling=\(siblingKey.windowHash) offScreen=\(isOffScreen) tabSibling=\(isTabSibling)")
                 if isOffScreen || isTabSibling {
-                    Logger.shared.log("[focus] tab switch: pid=\(pid) old=\(siblingKey.windowHash) new=\(hash)")
                     ResizeObserver.shared.swapTab(oldKey: siblingKey, newWindow: axWindow, newHash: hash)
                     ReapplyHandler.reapplyAll()
                     break

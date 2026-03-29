@@ -16,7 +16,6 @@ struct ConfigLoader {
 
         if !fm.fileExists(atPath: filePath) {
             write(ConfigData.defaults)
-            Logger.shared.log("Config: created default config at \(filePath)")
             return ConfigData.defaults
         }
 
@@ -28,9 +27,6 @@ struct ConfigLoader {
 
         do {
             let parsed = try YAMLDecoder().decode(ConfigData.self, from: yaml)
-            for key in parsed.missingKeys {
-                Logger.shared.log("Config: missing '\(key)', using default")
-            }
             return parsed.mergedWithDefaults()
         } catch {
             Logger.shared.log("Config: parse error — \(error.localizedDescription), using defaults")

@@ -82,10 +82,6 @@ final class ResizeObserver {
                                 id: UUID(), parentId: UUID(), order: 0, size: .zero,
                                 isTabbed: true)
         observe(window: newWindow, pid: pid, key: newKey)
-        let appName  = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
-        let pos  = readOrigin(of: newWindow).map { "(\(Int($0.x)),\(Int($0.y)))" } ?? "?"
-        let size = readSize(of: newWindow).map   { "\(Int($0.width))x\(Int($0.height))" } ?? "?"
-        Logger.shared.log("[tab-change] \(appName) pid=\(pid) old=\(oldKey.windowHash) new=\(newHash) pos=\(pos) size=\(size)")
     }
 
     func stopObserving(key: WindowSlot, pid: pid_t) {
@@ -115,11 +111,7 @@ final class ResizeObserver {
                 let onScreen = OnScreenWindowCache.visibleHashes()
                 for siblingKey in keysByPid[pid] ?? [] {
                     if !onScreen.contains(siblingKey.windowHash) {
-                        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
-                        let pos  = readOrigin(of: element).map { "(\(Int($0.x)),\(Int($0.y)))" } ?? "?"
-                        let size = readSize(of: element).map   { "\(Int($0.width))x\(Int($0.height))" } ?? "?"
-                        Logger.shared.log("[tab-change] \(appName) pid=\(pid) old=\(siblingKey.windowHash) new=\(hash) pos=\(pos) size=\(size)")
-                        swapTab(oldKey: siblingKey, newWindow: element, newHash: hash)
+                            swapTab(oldKey: siblingKey, newWindow: element, newHash: hash)
                         ReapplyHandler.reapplyAll()
                         return
                     }
@@ -134,21 +126,8 @@ final class ResizeObserver {
         let isScrolling = ScrollingRootStore.shared.isTracked(key)
 
         if notification == (kTitleChanged as String) {
-            var titleRef: CFTypeRef?
-            let title = AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &titleRef) == .success
-                        ? (titleRef as? String ?? "") : ""
-            let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
-            Logger.shared.log("[title-changed] \(appName) hash=\(key.windowHash) title=\"\(title)\"")
             return
         }
-
-        let eventLabel = notification == (kAXWindowResizedNotification as String) ? "resize" : "move"
-        let appName   = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
-        let pos       = readOrigin(of: element).map { "(\(Int($0.x)),\(Int($0.y)))" } ?? "?"
-        let size      = readSize(of: element).map   { "\(Int($0.width))x\(Int($0.height))" } ?? "?"
-        let isTiling  = TilingRootStore.shared.isTracked(key)
-        let managed   = isTiling ? "tiling" : isScrolling ? "scrolling" : "unmanaged"
-        Logger.shared.log("[\(eventLabel)] \(appName) hash=\(key.windowHash) pos=\(pos) size=\(size) managed=\(managed)")
 
         if notification == kElementDestroyed as String {
             removeWindow(key: key, pid: pid, isScrolling: isScrolling)

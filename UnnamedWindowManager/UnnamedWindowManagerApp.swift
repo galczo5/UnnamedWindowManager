@@ -46,7 +46,6 @@ struct UnnamedWindowManagerApp: App {
 
     init() {
         Logger.shared.configure(path: Config.logPath)
-        Logger.shared.log("=== UnnamedWindowManager started ===")
         LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
         NotificationService.shared.requestAuthorization()
         FocusObserver.shared.start()

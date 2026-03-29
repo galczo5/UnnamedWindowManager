@@ -13,7 +13,6 @@ final class Config {
     func reload() {
         data = ConfigLoader.load()
         Logger.shared.configure(path: Config.logPath)
-        Logger.shared.log("Config: reloaded from disk")
         LayoutService.shared.clearCache()
         ScrollingLayoutService.shared.clearCache()
     }

@@ -108,7 +108,6 @@ final class KeybindingService {
         }
 
         guard !bindings.isEmpty else {
-            Logger.shared.log("KeybindingService: no shortcuts configured")
             return false
         }
         return true
@@ -125,7 +124,6 @@ final class KeybindingService {
             eventsOfInterest: eventMask,
             callback: { _, type, event, refcon -> Unmanaged<CGEvent>? in
                 if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-                    Logger.shared.log("KeybindingService: event tap disabled by \(type == .tapDisabledByTimeout ? "timeout" : "user input"), re-enabling")
                     if let refcon, let tap = Unmanaged<KeybindingService>.fromOpaque(refcon).takeUnretainedValue().eventTap {
                         CGEvent.tapEnable(tap: tap, enable: true)
                     }
@@ -146,10 +144,8 @@ final class KeybindingService {
                     } else if let key = binding.key {
                         guard nsEvent.charactersIgnoringModifiers == key else { continue }
                     } else { continue }
-                    let label = binding.label
                     let action = binding.action
                     DispatchQueue.main.async {
-                        Logger.shared.log("shortcut captured: \(label)")
                         action()
                     }
                     return nil
@@ -168,11 +164,9 @@ final class KeybindingService {
 
         eventTap = tap
         runLoopSource = source
-        Logger.shared.log("KeybindingService: registered \(bindings.count) shortcut(s)")
     }
 
     func stop() {
-        Logger.shared.log("stop")
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
             if let source = runLoopSource {
@@ -185,7 +179,6 @@ final class KeybindingService {
     }
 
     func restart() {
-        Logger.shared.log("restart")
         stop()
         start()
     }
