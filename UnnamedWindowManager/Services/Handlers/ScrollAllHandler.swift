@@ -30,6 +30,13 @@ struct ScrollAllHandler {
             pidToWindowIDs[pid_t(pid), default: []].insert(wid)
         }
 
+        var anyTabs = false
+        for (pid, wids) in pidToWindowIDs {
+            let (kept, hadTabs) = TabDetector.filterTabDuplicates(wids: wids, pid: pid)
+            pidToWindowIDs[pid] = kept
+            if hadTabs { anyTabs = true }
+        }
+
         var candidates: [(window: AXUIElement, pid: pid_t, originX: CGFloat)] = []
         for (pid, wids) in pidToWindowIDs {
             let axApp = AXUIElementCreateApplication(pid)
@@ -55,6 +62,7 @@ struct ScrollAllHandler {
                 var key = windowSlot(for: item.window, pid: item.pid)
                 key.preTileOrigin = readOrigin(of: item.window)
                 key.preTileSize   = readSize(of: item.window)
+                if anyTabs { key.isTabbed = true }
                 if rootExists {
                     ScrollingRootStore.shared.addWindow(key, screen: screen)
                 } else {

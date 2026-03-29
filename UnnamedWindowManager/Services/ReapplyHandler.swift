@@ -152,6 +152,24 @@ struct ReapplyHandler {
         for leaf in scrollingLeaves {
             guard case .window(let w) = leaf else { continue }
             guard !onScreen.contains(w.windowHash) else { continue }
+
+            var didSwap = false
+            let axApp = AXUIElementCreateApplication(w.pid)
+            var wRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &wRef) == .success,
+               let axWindows = wRef as? [AXUIElement] {
+                for ax in axWindows {
+                    guard let wid = windowID(of: ax).map(UInt.init),
+                          wid != w.windowHash,
+                          onScreen.contains(wid),
+                          ResizeObserver.shared.keysByHash[wid] == nil else { continue }
+                    ResizeObserver.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
+                    didSwap = true
+                    break
+                }
+            }
+            if didSwap { continue }
+
             ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
             ScrollingRootStore.shared.removeWindow(w, screen: screen)
         }

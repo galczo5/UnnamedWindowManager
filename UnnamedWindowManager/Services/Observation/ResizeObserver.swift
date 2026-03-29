@@ -64,12 +64,20 @@ final class ResizeObserver {
         // Update slot tree identity.
         SharedRootStore.shared.queue.sync(flags: .barrier) {
             for (id, rootSlot) in SharedRootStore.shared.roots {
-                guard case .tiling(var root) = rootSlot else { continue }
-                if TilingTreeMutationService().replaceLeafIdentity(
-                    oldKey: oldKey, newPid: pid, newHash: newHash, in: &root
-                ) {
-                    SharedRootStore.shared.roots[id] = .tiling(root)
-                    break
+                switch rootSlot {
+                case .tiling(var root):
+                    if TilingTreeMutationService().replaceLeafIdentity(
+                        oldKey: oldKey, newPid: pid, newHash: newHash, in: &root
+                    ) {
+                        SharedRootStore.shared.roots[id] = .tiling(root)
+                        return
+                    }
+                case .scrolling(var root):
+                    if replaceScrollingLeafIdentity(oldHash: oldKey.windowHash,
+                                                    newPid: pid, newHash: newHash, in: &root) {
+                        SharedRootStore.shared.roots[id] = .scrolling(root)
+                        return
+                    }
                 }
             }
         }
@@ -163,6 +171,36 @@ final class ResizeObserver {
     }
 
     // MARK: – Private
+
+    private func replaceScrollingLeafIdentity(
+        oldHash: UInt, newPid: pid_t, newHash: UInt,
+        in root: inout ScrollingRootSlot
+    ) -> Bool {
+        func replaced(_ w: WindowSlot) -> WindowSlot {
+            WindowSlot(pid: newPid, windowHash: newHash,
+                       id: w.id, parentId: w.parentId, order: w.order, size: w.size,
+                       gaps: w.gaps, fraction: w.fraction,
+                       preTileOrigin: w.preTileOrigin, preTileSize: w.preTileSize,
+                       isTabbed: true)
+        }
+        if case .window(let w) = root.center, w.windowHash == oldHash {
+            root.center = .window(replaced(w))
+            return true
+        }
+        if case .stacking(var s) = root.left,
+           let idx = s.children.firstIndex(where: { $0.windowHash == oldHash }) {
+            s.children[idx] = replaced(s.children[idx])
+            root.left = .stacking(s)
+            return true
+        }
+        if case .stacking(var s) = root.right,
+           let idx = s.children.firstIndex(where: { $0.windowHash == oldHash }) {
+            s.children[idx] = replaced(s.children[idx])
+            root.right = .stacking(s)
+            return true
+        }
+        return false
+    }
 
     func axObserver(for pid: pid_t) -> AXObserver? {
         if let existing = observers[pid] { return existing }
