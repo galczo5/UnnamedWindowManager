@@ -19,6 +19,20 @@ struct WindowSlot: Hashable, Sendable {
     var preTileSize: CGSize?
     /// True when this window was detected as part of a native macOS tab group.
     var isTabbed: Bool = false
+    /// CGWindowIDs of all windows in the same native tab group, including self.
+    var tabHashes: Set<UInt> = [] {
+        didSet { if !tabHashes.isEmpty { tabHashes.insert(windowHash) } }
+    }
+
+    /// Returns true if `other` is a tab sibling of this slot (same tab group, different window).
+    func isSameTabGroup(as other: WindowSlot) -> Bool {
+        pid == other.pid && tabHashes.contains(other.windowHash)
+    }
+
+    /// Returns true if `hash` is a known tab sibling of this slot.
+    func isSameTabGroup(hash: UInt) -> Bool {
+        tabHashes.contains(hash)
+    }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.pid == rhs.pid && lhs.windowHash == rhs.windowHash

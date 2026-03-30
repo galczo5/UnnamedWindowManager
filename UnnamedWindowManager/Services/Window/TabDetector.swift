@@ -12,16 +12,15 @@ struct TabDetector {
         let bounds: CGRect
     }
 
-    /// Returns tab sibling hashes for a given window, excluding itself.
+    /// Returns the full tab group hashes for a given window, including itself.
+    /// Returns an empty set if the window has no tab siblings.
     /// Queries ALL windows (not just on-screen) so inactive tabs are visible.
     static func tabSiblingHashes(of hash: UInt, pid: pid_t) -> Set<UInt> {
         let infos = allWindowInfos(forPid: pid)
         guard let target = infos.first(where: { UInt($0.wid) == hash })
         else { return [] }
-        return Set(
-            infos.filter { $0.bounds == target.bounds && UInt($0.wid) != hash }
-                 .map { UInt($0.wid) }
-        )
+        let group = Set(infos.filter { $0.bounds == target.bounds }.map { UInt($0.wid) })
+        return group.count > 1 ? group : []
     }
 
     /// Given a set of candidate CGWindowIDs for a single PID, returns the subset to keep

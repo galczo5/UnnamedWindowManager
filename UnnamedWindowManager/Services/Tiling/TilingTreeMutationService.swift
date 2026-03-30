@@ -52,13 +52,15 @@ struct TilingTreeMutationService {
         in root: inout TilingRootSlot
     ) -> Bool {
         updateLeaf(oldKey, in: &root) { w in
-            w = WindowSlot(pid: newPid, windowHash: newHash,
-                           id: w.id, parentId: w.parentId,
-                           order: w.order, size: w.size,
-                           gaps: w.gaps, fraction: w.fraction,
-                           preTileOrigin: w.preTileOrigin,
-                           preTileSize: w.preTileSize,
-                           isTabbed: true)
+            var s = WindowSlot(pid: newPid, windowHash: newHash,
+                               id: w.id, parentId: w.parentId,
+                               order: w.order, size: w.size,
+                               gaps: w.gaps, fraction: w.fraction,
+                               preTileOrigin: w.preTileOrigin,
+                               preTileSize: w.preTileSize,
+                               isTabbed: true)
+            s.tabHashes = TabDetector.tabSiblingHashes(of: newHash, pid: newPid)
+            w = s
         }
     }
 

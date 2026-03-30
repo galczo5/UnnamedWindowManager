@@ -63,6 +63,7 @@ struct ScrollAllHandler {
                 key.preTileOrigin = readOrigin(of: item.window)
                 key.preTileSize   = readSize(of: item.window)
                 if anyTabs { key.isTabbed = true }
+                key.tabHashes = TabDetector.tabSiblingHashes(of: key.windowHash, pid: item.pid)
                 if rootExists {
                     ScrollingRootStore.shared.addWindow(key, screen: screen)
                 } else {

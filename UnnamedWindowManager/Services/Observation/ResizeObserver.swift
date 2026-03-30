@@ -37,6 +37,23 @@ final class ResizeObserver {
         AXObserverAddNotification(axObs, window, kAXWindowMiniaturizedNotification as CFString, refcon)
         AXObserverAddNotification(axObs, window, kElementDestroyed,                             refcon)
         AXObserverAddNotification(axObs, window, kTitleChanged,                                 refcon)
+
+        // For tabbed windows, also watch move notifications on sibling tab elements so that
+        // moving the window while a non-representative tab is active is still detected.
+        if !key.tabHashes.isEmpty {
+            let siblingHashes = key.tabHashes.filter { $0 != key.windowHash }
+            let axApp = AXUIElementCreateApplication(pid)
+            var ref: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &ref) == .success,
+               let wins = ref as? [AXUIElement] {
+                for sibling in wins {
+                    if let sibWid = windowID(of: sibling),
+                       siblingHashes.contains(UInt(sibWid)) {
+                        AXObserverAddNotification(axObs, sibling, kAXWindowMovedNotification as CFString, refcon)
+                    }
+                }
+            }
+        }
     }
 
     /// Swaps the identity of a tiled tab: unregisters the old AX element, updates the slot tree,
@@ -86,9 +103,10 @@ final class ResizeObserver {
         OnScreenWindowCache.invalidate()
 
         // Build new key preserving only identity fields; observe() fills the rest.
-        let newKey = WindowSlot(pid: pid, windowHash: newHash,
+        var newKey = WindowSlot(pid: pid, windowHash: newHash,
                                 id: UUID(), parentId: UUID(), order: 0, size: .zero,
                                 isTabbed: true)
+        newKey.tabHashes = TabDetector.tabSiblingHashes(of: newHash, pid: pid)
         observe(window: newWindow, pid: pid, key: newKey)
     }
 
@@ -116,10 +134,9 @@ final class ResizeObserver {
             // Not tracked — check if it's a tab of a managed window from the same PID.
             if resolvedKey == nil, notification != (kElementDestroyed as String) {
                 let hash = UInt(wid)
-                let onScreen = OnScreenWindowCache.visibleHashes()
                 for siblingKey in keysByPid[pid] ?? [] {
-                    if !onScreen.contains(siblingKey.windowHash) {
-                            swapTab(oldKey: siblingKey, newWindow: element, newHash: hash)
+                    if siblingKey.isSameTabGroup(hash: hash) {
+                        swapTab(oldKey: siblingKey, newWindow: element, newHash: hash)
                         ReapplyHandler.reapplyAll()
                         return
                     }
@@ -177,11 +194,13 @@ final class ResizeObserver {
         in root: inout ScrollingRootSlot
     ) -> Bool {
         func replaced(_ w: WindowSlot) -> WindowSlot {
-            WindowSlot(pid: newPid, windowHash: newHash,
-                       id: w.id, parentId: w.parentId, order: w.order, size: w.size,
-                       gaps: w.gaps, fraction: w.fraction,
-                       preTileOrigin: w.preTileOrigin, preTileSize: w.preTileSize,
-                       isTabbed: true)
+            var s = WindowSlot(pid: newPid, windowHash: newHash,
+                               id: w.id, parentId: w.parentId, order: w.order, size: w.size,
+                               gaps: w.gaps, fraction: w.fraction,
+                               preTileOrigin: w.preTileOrigin, preTileSize: w.preTileSize,
+                               isTabbed: true)
+            s.tabHashes = TabDetector.tabSiblingHashes(of: newHash, pid: newPid)
+            return s
         }
         if case .window(let w) = root.center, w.windowHash == oldHash {
             root.center = .window(replaced(w))

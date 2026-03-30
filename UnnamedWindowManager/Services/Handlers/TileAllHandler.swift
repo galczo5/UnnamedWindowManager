@@ -65,10 +65,14 @@ struct TileAllHandler {
             key.preTileOrigin = readOrigin(of: item.window)
             key.preTileSize = readSize(of: item.window)
             if anyTabs { key.isTabbed = true }
+            key.tabHashes = TabDetector.tabSiblingHashes(of: key.windowHash, pid: item.pid)
+            let tabInfo = key.tabHashes.isEmpty ? "" : " [tab, siblings: \(key.tabHashes)]"
+            Logger.shared.log("tileAll: pid=\(key.pid) hash=\(key.windowHash)\(tabInfo)")
             TilingSnapService.shared.snap(key, screen: screen)
             ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
             snappedKeys.insert(key)
         }
+        Logger.shared.log("tileAll: \(snappedKeys.count) windows tiled")
         ReapplyHandler.reapplyAll()
         let count = snappedKeys.count
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

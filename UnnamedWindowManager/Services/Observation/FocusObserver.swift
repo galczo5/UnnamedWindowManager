@@ -24,6 +24,7 @@ final class FocusObserver {
     private init() {}
 
     private var observerManager: AppObserverManager?
+    private var retryWorkItem: DispatchWorkItem?
 
     func start() {
         observerManager = AppObserverManager(
@@ -73,23 +74,38 @@ final class FocusObserver {
         let wid = windowID(of: axWindow)
         let hash = wid.map(UInt.init)
         let isManaged = hash.flatMap({ ResizeObserver.shared.keysByHash[$0] }) != nil
-        let siblings = hash.map({ TabDetector.tabSiblingHashes(of: $0, pid: pid) }) ?? []
 
         // Tab switch detection: focused window is unmanaged, but a managed window from the same PID
-        // is either off-screen or a detected tab sibling (same bounds) of the new window.
+        // is either off-screen or a known tab sibling of the new window.
         // Invalidate the cache first to avoid stale data from before the tab switch.
+        retryWorkItem?.cancel()
+        retryWorkItem = nil
+
         if !isManaged, let hash {
             OnScreenWindowCache.invalidate()
             let onScreen = OnScreenWindowCache.visibleHashes()
             let managedSiblings = ResizeObserver.shared.keysByPid[pid] ?? []
+            // freshTabGroup uses bounds-matching (the authoritative check) and catches
+            // new tabs whose hash was never in the existing slot's tabHashes.
+            let freshTabGroup = TabDetector.tabSiblingHashes(of: hash, pid: pid)
+            var swapped = false
             for siblingKey in managedSiblings {
-                let isOffScreen = !onScreen.contains(siblingKey.windowHash)
-                let isTabSibling = siblings.contains(siblingKey.windowHash)
-                if isOffScreen || isTabSibling {
+                if siblingKey.isSameTabGroup(hash: hash)
+                    || !onScreen.contains(siblingKey.windowHash)
+                    || freshTabGroup.contains(siblingKey.windowHash) {
                     ResizeObserver.shared.swapTab(oldKey: siblingKey, newWindow: axWindow, newHash: hash)
                     ReapplyHandler.reapplyAll()
+                    swapped = true
                     break
                 }
+            }
+            // If detection failed but managed siblings exist, the new window's bounds may not
+            // have settled in CGWindowList yet. Retry after a short delay.
+            if !swapped, !managedSiblings.isEmpty {
+                let work = DispatchWorkItem { [weak self] in self?.applyDim(pid: pid) }
+                retryWorkItem = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
+                return
             }
         }
 

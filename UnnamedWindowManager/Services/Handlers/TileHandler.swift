@@ -29,7 +29,7 @@ struct TileHandler {
         let onScreen = OnScreenWindowCache.visibleHashes()
         let managedSiblings = ResizeObserver.shared.keysByPid[pid] ?? []
         for siblingKey in managedSiblings {
-            if !onScreen.contains(siblingKey.windowHash) {
+            if siblingKey.isSameTabGroup(hash: key.windowHash) || !onScreen.contains(siblingKey.windowHash) {
                 ResizeObserver.shared.swapTab(oldKey: siblingKey,
                                               newWindow: axWindow, newHash: key.windowHash)
                 ReapplyHandler.reapplyAll()
@@ -40,6 +40,11 @@ struct TileHandler {
         var mutableKey = key
         mutableKey.preTileOrigin = readOrigin(of: axWindow)
         mutableKey.preTileSize = readSize(of: axWindow)
+        let tabSiblings = TabDetector.tabSiblingHashes(of: mutableKey.windowHash, pid: pid)
+        if !tabSiblings.isEmpty {
+            mutableKey.isTabbed = true
+            mutableKey.tabHashes = tabSiblings
+        }
         TilingSnapService.shared.snap(mutableKey, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: mutableKey)
         ReapplyHandler.reapplyAll()
@@ -75,6 +80,11 @@ struct TileHandler {
 
         key.preTileOrigin = readOrigin(of: window)
         key.preTileSize = readSize(of: window)
+        let tabSiblings = TabDetector.tabSiblingHashes(of: key.windowHash, pid: pid)
+        if !tabSiblings.isEmpty {
+            key.isTabbed = true
+            key.tabHashes = tabSiblings
+        }
         TilingSnapService.shared.snap(key, screen: screen)
         ResizeObserver.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
