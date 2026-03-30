@@ -72,6 +72,7 @@ Scrolling layout management (left/center/right zones with stacking sides).
 | `ScrollingPositionService.swift` | Computes pixel dimensions for all scrolling zones |
 | `ScrollingResizeService.swift` | Handles user-initiated resizes of the center slot |
 | `ScrollingLayoutService.swift` | Applies window positions for scrolling roots via AX API |
+| `ScrollingAnimationService.swift` | Direction-aware animator for scroll left/right; uses before-state positions to prevent jump artefacts |
 | `ScrollingFocusService.swift` | Left/right navigation, rotating windows between zones |
 
 ### Services/Handlers/

@@ -55,7 +55,7 @@ final class ScrollingLayoutService {
                    abs(last.size.width - size.width) < 1, abs(last.size.height - size.height) < 1 { return }
                 lastApplied[w.windowHash] = (pos, size)
             }
-            AnimationService.shared.animate(key: w, ax: ax, to: pos, size: size, positionOnly: positionOnly)
+            ScrollingAnimationService.shared.animate(key: w, ax: ax, to: pos, size: size, positionOnly: positionOnly)
         case .stacking(let s):
             for w in s.children {
                 guard let ax = elements[w] else { continue }
@@ -73,7 +73,7 @@ final class ScrollingLayoutService {
                        abs(last.size.width - size.width) < 1, abs(last.size.height - size.height) < 1 { continue }
                     lastApplied[w.windowHash] = (pos, size)
                 }
-                AnimationService.shared.animate(key: w, ax: ax, to: pos, size: size, positionOnly: positionOnly)
+                ScrollingAnimationService.shared.animate(key: w, ax: ax, to: pos, size: size, positionOnly: positionOnly)
             }
         default:
             break

@@ -5,42 +5,34 @@ import ApplicationServices
 struct ScrollingFocusService {
 
     static func scrollLeft() {
+        guard !ScrollingAnimationService.shared.isAnimating else { return }
         guard let screen = NSScreen.main else { return }
-        let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
-        let newCenter = ScrollingRootStore.shared.scrollLeft(screen: screen)
-        guard let newCenter else { return }
-        let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
-        guard let after else { return }
-        let zonesChanged = zoneSignature(before) != zoneSignature(after)
-        let origin = layoutOrigin(screen: screen)
+        guard let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
+        guard let newCenter = ScrollingRootStore.shared.scrollLeft(screen: screen) else { return }
+        guard let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
+        let origin   = layoutOrigin(screen: screen)
         let elements = ResizeObserver.shared.elements
 
-        // Move 1: old center to side
-        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
-                                                   zonesChanged: zonesChanged, applyCenter: false)
-        // Move 2: new center to center position
-        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
-                                                   applySides: false)
+        ScrollingAnimationService.shared.animateScroll(
+            before: before, after: after,
+            origin: origin, elements: elements
+        )
         activateAfterLayout(newCenter)
     }
 
     static func scrollRight() {
+        guard !ScrollingAnimationService.shared.isAnimating else { return }
         guard let screen = NSScreen.main else { return }
-        let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
-        let newCenter = ScrollingRootStore.shared.scrollRight(screen: screen)
-        guard let newCenter else { return }
-        let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
-        guard let after else { return }
-        let zonesChanged = zoneSignature(before) != zoneSignature(after)
-        let origin = layoutOrigin(screen: screen)
+        guard let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
+        guard let newCenter = ScrollingRootStore.shared.scrollRight(screen: screen) else { return }
+        guard let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
+        let origin   = layoutOrigin(screen: screen)
         let elements = ResizeObserver.shared.elements
 
-        // Move 1: old center to side
-        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
-                                                   zonesChanged: zonesChanged, applyCenter: false)
-        // Move 2: new center to center position
-        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
-                                                   applySides: false)
+        ScrollingAnimationService.shared.animateScroll(
+            before: before, after: after,
+            origin: origin, elements: elements
+        )
         activateAfterLayout(newCenter)
     }
 
