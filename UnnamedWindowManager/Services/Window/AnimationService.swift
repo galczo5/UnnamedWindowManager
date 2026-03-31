@@ -1,8 +1,10 @@
 import ApplicationServices
 import CoreVideo
 import Foundation
+import os
 
 /// Animates window frames via interpolated AX position/size calls synced to the display refresh rate.
+/// Ticks run directly on the CVDisplayLink render thread for frame-accurate timing.
 final class AnimationService {
     static let shared = AnimationService()
     private init() {}
@@ -20,15 +22,26 @@ final class AnimationService {
     }
 
     private var animations: [UInt: Animation] = [:]
+    private let lock = OSAllocatedUnfairLock()
     private var displayLink: CVDisplayLink?
+
+    /// Hashes that have already been animated once; subsequent calls skip animation.
+    private var animatedOnce = Set<UInt>()
+    private var clearAnimatedOnceWork: DispatchWorkItem?
 
     /// Animates `ax` from its current frame to `(pos, size)`.
     /// Falls through to an immediate AX call when duration is 0 or the current frame can't be read.
     func animate(key: WindowSlot, ax: AXUIElement, to pos: CGPoint, size: CGSize,
                  positionOnly: Bool = false) {
         let duration = Config.animationDuration
+        let hash = key.windowHash
 
-        cancel(hash: key.windowHash)
+        cancel(hash: hash)
+
+        if animatedOnce.contains(hash) {
+            applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
+            return
+        }
 
         guard duration > 0,
               let curPos = readOrigin(of: ax),
@@ -41,6 +54,7 @@ final class AnimationService {
         let sizeDelta = abs(curSize.width - size.width) + abs(curSize.height - size.height)
         if posDelta < 1 && (positionOnly || sizeDelta < 1) { return }
 
+        markAnimatedOnce(hash)
         ResizeObserver.shared.reapplying.insert(key)
 
         let sizeChanged = !positionOnly && sizeDelta >= 1
@@ -49,22 +63,35 @@ final class AnimationService {
                              endPos: pos, endSize: size,
                              startTime: CFAbsoluteTimeGetCurrent(),
                              duration: duration, sizeChanged: sizeChanged)
-        animations[key.windowHash] = anim
+        lock.withLock { animations[hash] = anim }
         startDisplayLinkIfNeeded()
     }
 
     func cancel(hash: UInt) {
-        guard let anim = animations.removeValue(forKey: hash) else { return }
+        let anim: Animation? = lock.withLock { animations.removeValue(forKey: hash) }
+        guard let anim else { return }
         ResizeObserver.shared.reapplying.remove(anim.key)
         stopDisplayLinkIfIdle()
     }
 
     func cancelAll() {
-        let hashes = Array(animations.keys)
-        for hash in hashes { cancel(hash: hash) }
+        let all: [UInt: Animation] = lock.withLock {
+            let copy = animations
+            animations.removeAll()
+            return copy
+        }
+        for anim in all.values {
+            ResizeObserver.shared.reapplying.remove(anim.key)
+        }
+        animatedOnce.removeAll()
+        clearAnimatedOnceWork?.cancel()
+        clearAnimatedOnceWork = nil
+        stopDisplayLinkIfIdle()
     }
 
-    var isAnimating: Bool { !animations.isEmpty }
+    var isAnimating: Bool {
+        lock.withLock { !animations.isEmpty }
+    }
 
     // MARK: - Display Link
 
@@ -77,7 +104,7 @@ final class AnimationService {
         let selfPtr = Unmanaged.passUnretained(self).toOpaque()
         CVDisplayLinkSetOutputCallback(link, { _, _, _, _, _, userInfo -> CVReturn in
             let service = Unmanaged<AnimationService>.fromOpaque(userInfo!).takeUnretainedValue()
-            DispatchQueue.main.async { service.tickAll() }
+            service.tickAll()
             return kCVReturnSuccess
         }, selfPtr)
         CVDisplayLinkStart(link)
@@ -85,18 +112,20 @@ final class AnimationService {
     }
 
     private func stopDisplayLinkIfIdle() {
-        guard animations.isEmpty, let link = displayLink else { return }
+        let empty = lock.withLock { animations.isEmpty }
+        guard empty, let link = displayLink else { return }
         CVDisplayLinkStop(link)
         displayLink = nil
     }
 
-    // MARK: - Tick
+    // MARK: - Tick (runs on CVDisplayLink render thread)
 
     private func tickAll() {
         let now = CFAbsoluteTimeGetCurrent()
+        let snapshot: [UInt: Animation] = lock.withLock { animations }
         var finished: [UInt] = []
 
-        for (hash, anim) in animations {
+        for (hash, anim) in snapshot {
             let elapsed = now - anim.startTime
             let raw = min(elapsed / anim.duration, 1.0)
             let done = raw >= 1.0
@@ -131,10 +160,35 @@ final class AnimationService {
             if done { finished.append(hash) }
         }
 
-        for hash in finished { cancel(hash: hash) }
+        if !finished.isEmpty {
+            lock.withLock {
+                for hash in finished {
+                    if let current = animations[hash],
+                       current.startTime == snapshot[hash]!.startTime {
+                        animations.removeValue(forKey: hash)
+                    }
+                }
+            }
+            DispatchQueue.main.async { [self] in
+                for hash in finished {
+                    if let anim = snapshot[hash] {
+                        ResizeObserver.shared.reapplying.remove(anim.key)
+                    }
+                }
+                stopDisplayLinkIfIdle()
+            }
+        }
     }
 
     // MARK: - Helpers
+
+    private func markAnimatedOnce(_ hash: UInt) {
+        animatedOnce.insert(hash)
+        clearAnimatedOnceWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.animatedOnce.removeAll() }
+        clearAnimatedOnceWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
+    }
 
     private func applyImmediate(ax: AXUIElement, pos: CGPoint, size: CGSize, positionOnly: Bool) {
         var p = pos
