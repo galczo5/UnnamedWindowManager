@@ -26,6 +26,9 @@ final class ScrollingAnimationService {
     private let lock = OSAllocatedUnfairLock()
     private var displayLink: CVDisplayLink?
 
+    /// Keys whose reapplying removal is deferred until all animations finish.
+    private var pendingReapplyRemoval = Set<WindowSlot>()
+
     /// Hashes that have already been animated once; subsequent calls skip animation.
     private var animatedOnce = Set<UInt>()
     private var clearAnimatedOnceWork: DispatchWorkItem?
@@ -44,19 +47,36 @@ final class ScrollingAnimationService {
         let beforePos = computePositions(root: before, origin: origin)
         let afterPos  = computePositions(root: after,  origin: origin)
 
-        let transitioning = transitioningHashes(before: before, after: after)
+        let centerHashes      = slotHashes(after.center)
+        let beforeLeftHashes  = before.left.map  { slotHashes($0) } ?? []
+        let beforeRightHashes = before.right.map { slotHashes($0) } ?? []
 
         let keysByHash = Dictionary(uniqueKeysWithValues: elements.map { ($0.key.windowHash, $0) })
 
         for (hash, end) in afterPos {
             guard let (key, ax) = keysByHash[hash] else { continue }
-            let start = beforePos[hash] ?? end
+            var start = beforePos[hash] ?? end
+
+            // In symmetric layouts the computed before/after positions can match for the
+            // arriving center window. Manufacture a start offset from the side it came from.
+            if centerHashes.contains(hash) {
+                let delta = abs(start.pos.x - end.pos.x) + abs(start.pos.y - end.pos.y)
+                           + abs(start.size.width - end.size.width) + abs(start.size.height - end.size.height)
+                if delta < 1 {
+                    let offset = before.center.size.width
+                    if beforeRightHashes.contains(hash) {
+                        start = (CGPoint(x: end.pos.x + offset, y: end.pos.y), end.size)
+                    } else if beforeLeftHashes.contains(hash) {
+                        start = (CGPoint(x: end.pos.x - offset, y: end.pos.y), end.size)
+                    }
+                }
+            }
 
             let posDelta  = abs(start.pos.x - end.pos.x)  + abs(start.pos.y - end.pos.y)
             let sizeDelta = abs(start.size.width - end.size.width) + abs(start.size.height - end.size.height)
             guard posDelta >= 1 || sizeDelta >= 1 else { continue }
 
-            if duration > 0 && transitioning.contains(hash) {
+            if duration > 0 && centerHashes.contains(hash) {
                 cancel(hash: hash)
                 ResizeObserver.shared.reapplying.insert(key)
                 lock.withLock {
@@ -71,10 +91,23 @@ final class ScrollingAnimationService {
                 }
             } else {
                 cancel(hash: hash)
+                ResizeObserver.shared.reapplying.insert(key)
                 applyImmediate(ax: ax, pos: end.pos, size: end.size, positionOnly: false)
             }
         }
         startDisplayLinkIfNeeded()
+
+        // Remove side windows from reapplying after a short delay so ResizeObserver
+        // ignores the position changes from applyImmediate above.
+        let sideKeys = keysByHash.values
+            .filter { !centerHashes.contains($0.0.windowHash) }
+            .map { $0.0 }
+        if !sideKeys.isEmpty {
+            let keys = Set(sideKeys)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                ResizeObserver.shared.reapplying.subtract(keys)
+            }
+        }
     }
 
     /// Used by ScrollingLayoutService for non-scroll repositioning (resize, scrollToCenter).
@@ -182,13 +215,6 @@ final class ScrollingAnimationService {
         }
     }
 
-    private func transitioningHashes(before: ScrollingRootSlot,
-                                      after: ScrollingRootSlot) -> Set<UInt> {
-        let beforeCenter = slotHashes(before.center)
-        let afterCenter  = slotHashes(after.center)
-        return beforeCenter.symmetricDifference(afterCenter)
-    }
-
     private func slotHashes(_ slot: Slot) -> Set<UInt> {
         switch slot {
         case .window(let w):   return [w.windowHash]
@@ -265,21 +291,27 @@ final class ScrollingAnimationService {
         }
 
         if !finished.isEmpty {
-            lock.withLock {
+            for hash in finished {
+                if let anim = snapshot[hash] {
+                    pendingReapplyRemoval.insert(anim.key)
+                }
+            }
+            let allDone: Bool = lock.withLock {
                 for hash in finished {
                     if let current = animations[hash],
                        current.startTime == snapshot[hash]!.startTime {
                         animations.removeValue(forKey: hash)
                     }
                 }
+                return animations.isEmpty
             }
-            DispatchQueue.main.async { [self] in
-                for hash in finished {
-                    if let anim = snapshot[hash] {
-                        ResizeObserver.shared.reapplying.remove(anim.key)
-                    }
-                }
+            if allDone {
                 stopDisplayLinkIfIdle()
+                let pending = pendingReapplyRemoval
+                pendingReapplyRemoval.removeAll()
+                DispatchQueue.main.async {
+                    ResizeObserver.shared.reapplying.subtract(pending)
+                }
             }
         }
     }
@@ -291,7 +323,7 @@ final class ScrollingAnimationService {
         clearAnimatedOnceWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.animatedOnce.removeAll() }
         clearAnimatedOnceWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Config.animatedOnceTTL, execute: work)
     }
 
     private func applyImmediate(ax: AXUIElement, pos: CGPoint, size: CGSize, positionOnly: Bool) {

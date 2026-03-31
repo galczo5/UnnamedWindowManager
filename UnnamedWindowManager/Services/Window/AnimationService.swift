@@ -25,6 +25,9 @@ final class AnimationService {
     private let lock = OSAllocatedUnfairLock()
     private var displayLink: CVDisplayLink?
 
+    /// Keys whose reapplying removal is deferred until all animations finish.
+    private var pendingReapplyRemoval = Set<WindowSlot>()
+
     /// Hashes that have already been animated once; subsequent calls skip animation.
     private var animatedOnce = Set<UInt>()
     private var clearAnimatedOnceWork: DispatchWorkItem?
@@ -54,6 +57,7 @@ final class AnimationService {
         let sizeDelta = abs(curSize.width - size.width) + abs(curSize.height - size.height)
         if posDelta < 1 && (positionOnly || sizeDelta < 1) { return }
 
+        Logger.shared.log("[AnimStart] pid=\(key.pid) hash=\(hash) startX=\(curPos.x) endX=\(pos.x)")
         markAnimatedOnce(hash)
         ResizeObserver.shared.reapplying.insert(key)
 
@@ -139,6 +143,7 @@ final class AnimationService {
                 pos.x.round()
                 pos.y.round()
             }
+            Logger.shared.log("[AnimTick] hash=\(hash) t=\(String(format: "%.3f", t)) x=\(String(format: "%.1f", pos.x)) start=\(String(format: "%.1f", anim.startPos.x)) end=\(String(format: "%.1f", anim.endPos.x)) done=\(done)")
             if let posVal = AXValueCreate(.cgPoint, &pos) {
                 AXUIElementSetAttributeValue(anim.ax, kAXPositionAttribute as CFString, posVal)
             }
@@ -157,25 +162,34 @@ final class AnimationService {
                 }
             }
 
-            if done { finished.append(hash) }
+            if done {
+                Logger.shared.log("[AnimEnd] hash=\(hash) endX=\(String(format: "%.1f", anim.endPos.x))")
+                finished.append(hash)
+            }
         }
 
         if !finished.isEmpty {
-            lock.withLock {
+            for hash in finished {
+                if let anim = snapshot[hash] {
+                    pendingReapplyRemoval.insert(anim.key)
+                }
+            }
+            let allDone: Bool = lock.withLock {
                 for hash in finished {
                     if let current = animations[hash],
                        current.startTime == snapshot[hash]!.startTime {
                         animations.removeValue(forKey: hash)
                     }
                 }
+                return animations.isEmpty
             }
-            DispatchQueue.main.async { [self] in
-                for hash in finished {
-                    if let anim = snapshot[hash] {
-                        ResizeObserver.shared.reapplying.remove(anim.key)
-                    }
-                }
+            if allDone {
                 stopDisplayLinkIfIdle()
+                let pending = pendingReapplyRemoval
+                pendingReapplyRemoval.removeAll()
+                DispatchQueue.main.async {
+                    ResizeObserver.shared.reapplying.subtract(pending)
+                }
             }
         }
     }
@@ -187,7 +201,7 @@ final class AnimationService {
         clearAnimatedOnceWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.animatedOnce.removeAll() }
         clearAnimatedOnceWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Config.animatedOnceTTL, execute: work)
     }
 
     private func applyImmediate(ax: AXUIElement, pos: CGPoint, size: CGSize, positionOnly: Bool) {
