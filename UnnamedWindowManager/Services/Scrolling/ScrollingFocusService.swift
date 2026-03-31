@@ -5,7 +5,6 @@ import ApplicationServices
 struct ScrollingFocusService {
 
     static func scrollLeft() {
-        guard !ScrollingAnimationService.shared.isAnimating else { return }
         guard let screen = NSScreen.main else { return }
         guard let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
         guard let newCenter = ScrollingRootStore.shared.scrollLeft(screen: screen) else { return }
@@ -21,7 +20,6 @@ struct ScrollingFocusService {
     }
 
     static func scrollRight() {
-        guard !ScrollingAnimationService.shared.isAnimating else { return }
         guard let screen = NSScreen.main else { return }
         guard let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
         guard let newCenter = ScrollingRootStore.shared.scrollRight(screen: screen) else { return }

@@ -57,7 +57,6 @@ final class AnimationService {
         let sizeDelta = abs(curSize.width - size.width) + abs(curSize.height - size.height)
         if posDelta < 1 && (positionOnly || sizeDelta < 1) { return }
 
-        Logger.shared.log("[AnimStart] pid=\(key.pid) hash=\(hash) startX=\(curPos.x) endX=\(pos.x)")
         markAnimatedOnce(hash)
         ResizeObserver.shared.reapplying.insert(key)
 
@@ -143,7 +142,6 @@ final class AnimationService {
                 pos.x.round()
                 pos.y.round()
             }
-            Logger.shared.log("[AnimTick] hash=\(hash) t=\(String(format: "%.3f", t)) x=\(String(format: "%.1f", pos.x)) start=\(String(format: "%.1f", anim.startPos.x)) end=\(String(format: "%.1f", anim.endPos.x)) done=\(done)")
             if let posVal = AXValueCreate(.cgPoint, &pos) {
                 AXUIElementSetAttributeValue(anim.ax, kAXPositionAttribute as CFString, posVal)
             }
@@ -162,10 +160,7 @@ final class AnimationService {
                 }
             }
 
-            if done {
-                Logger.shared.log("[AnimEnd] hash=\(hash) endX=\(String(format: "%.1f", anim.endPos.x))")
-                finished.append(hash)
-            }
+            if done { finished.append(hash) }
         }
 
         if !finished.isEmpty {
