@@ -76,6 +76,10 @@ final class ScrollingRootStore {
                                   preTileOrigin: key.preTileOrigin, preTileSize: key.preTileSize)
             var root = ScrollingRootSlot(id: id, size: area,
                                          left: nil, center: .window(win), right: nil)
+            if let preTileSize = key.preTileSize, preTileSize.width > 0 {
+                root.centerWidthFraction = ScrollingPositionService.clampedCenterFraction(
+                    proposedWidth: preTileSize.width, screenWidth: area.width)
+            }
             position.recomputeSizes(&root, width: area.width, height: area.height)
             store.roots[id] = .scrolling(root)
             store.windowCounts[id] = 1
@@ -106,7 +110,11 @@ final class ScrollingRootStore {
 
             root.center = .window(newWin)
             let area = screenTilingArea(screen)
-            position.recomputeSizes(&root, width: area.width, height: area.height)
+            if let preTileSize = key.preTileSize, preTileSize.width > 0 {
+                root.centerWidthFraction = ScrollingPositionService.clampedCenterFraction(
+                    proposedWidth: preTileSize.width, screenWidth: area.width)
+            }
+            position.recomputeSizes(&root, width: area.width, height: area.height, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
         }
     }
