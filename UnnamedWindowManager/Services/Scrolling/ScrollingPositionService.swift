@@ -20,10 +20,10 @@ struct ScrollingPositionService {
         if root.right != nil { setSideSizes(&root.right!, slotWidth: sideWidth, windowWidth: updateSideWindowWidths ? centerWidth : nil, height: height) }
     }
 
-    // Clamps a proposed center pixel width to [35%, 90%] of screenWidth and returns the fraction.
+    // Clamps a proposed center pixel width to [scrollCenterMinWidthFraction, scrollCenterMaxWidthFraction] of screenWidth and returns the fraction.
     static func clampedCenterFraction(proposedWidth: CGFloat, screenWidth: CGFloat) -> CGFloat {
-        let minWidth = (screenWidth * 0.35).rounded()
-        let maxWidth = (screenWidth * 0.90).rounded()
+        let minWidth = (screenWidth * Config.scrollCenterMinWidthFraction).rounded()
+        let maxWidth = (screenWidth * Config.scrollCenterMaxWidthFraction).rounded()
         return min(maxWidth, max(minWidth, proposedWidth)) / screenWidth
     }
 

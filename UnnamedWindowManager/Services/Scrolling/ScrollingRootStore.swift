@@ -223,7 +223,7 @@ final class ScrollingRootStore {
                     store.removeRoot(id: id)
                     return center
                 }
-                position.recomputeSizes(&root, width: area.width, height: area.height)
+                position.recomputeSizes(&root, width: area.width, height: area.height, updateSideWindowWidths: false)
                 store.roots[id] = .scrolling(root)
                 return center
             }
@@ -233,7 +233,7 @@ final class ScrollingRootStore {
                let idx = leftStack.children.firstIndex(where: { $0.windowHash == key.windowHash }) {
                 let removed = leftStack.children.remove(at: idx)
                 root.left = leftStack.children.isEmpty ? nil : .stacking(leftStack)
-                position.recomputeSizes(&root, width: area.width, height: area.height)
+                position.recomputeSizes(&root, width: area.width, height: area.height, updateSideWindowWidths: false)
                 store.roots[id] = .scrolling(root)
                 return removed
             }
@@ -243,7 +243,7 @@ final class ScrollingRootStore {
                let idx = rightStack.children.firstIndex(where: { $0.windowHash == key.windowHash }) {
                 let removed = rightStack.children.remove(at: idx)
                 root.right = rightStack.children.isEmpty ? nil : .stacking(rightStack)
-                position.recomputeSizes(&root, width: area.width, height: area.height)
+                position.recomputeSizes(&root, width: area.width, height: area.height, updateSideWindowWidths: false)
                 store.roots[id] = .scrolling(root)
                 return removed
             }

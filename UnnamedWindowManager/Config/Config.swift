@@ -42,6 +42,8 @@ final class Config {
     static var dimInactiveOpacity: CGFloat     { shared.s.behavior!.dimInactiveOpacity! }
     static var dimAnimationDuration: CGFloat   { shared.s.behavior!.dimAnimationDuration! }
     static var animationDuration: CGFloat     { shared.s.behavior!.animationDuration! }
+    static let scrollCenterMinWidthFraction: CGFloat = 0.50
+    static let scrollCenterMaxWidthFraction: CGFloat = 0.95
     static let animatedOnceTTL: TimeInterval  = 0.25
     static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
     static var logPath: String?                { let p = shared.s.behavior!.logPath!; return p.isEmpty ? nil : p }
