@@ -8,7 +8,7 @@ private func windowCreatedCallback(
     _ notification: CFString,
     _ refcon: UnsafeMutableRawPointer?
 ) {
-    DispatchQueue.main.asyncAfter(deadline: .now() + Config.autoModeDelay) {
+    DispatchQueue.main.async {
         AutoModeHandler.handleFocusChange()
     }
 }
@@ -42,9 +42,8 @@ final class WindowCreationObserver {
     }
 
     @objc private func handleWindowFocusChanged() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + Config.autoModeDelay) {
-            AutoModeHandler.handleFocusChange()
-        }
+        Logger.shared.log("autoMode: windowFocusChanged received")
+        AutoModeHandler.handleFocusChange()
     }
 
     @objc private func didActivateApp(_ note: Notification) {
