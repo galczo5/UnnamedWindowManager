@@ -15,7 +15,6 @@ final class MenuState {
     var isFrontmostTiled: Bool = false
     var isScrolled: Bool = false
     var isFrontmostScrolled: Bool = false
-
     func refresh() {
         parentOrientation = OrientFlipHandler.parentOrientation()
         isTiled = TilingRootStore.shared.snapshotVisibleRoot() != nil
@@ -50,6 +49,7 @@ struct UnnamedWindowManagerApp: App {
         NotificationService.shared.requestAuthorization()
         FocusObserver.shared.start()
         ScreenChangeObserver.shared.start()
+        WindowCreationObserver.shared.start()
         WallpaperService.shared.apply()
     }
 
@@ -102,6 +102,11 @@ struct UnnamedWindowManagerApp: App {
                     WallpaperService.shared.toggle()
                 }
             }
+            if AutoModeService.shared.isEnabled {
+                Button("Disable auto mode") { AutoModeService.shared.toggle() }
+            } else {
+                Button("Enable auto mode") { AutoModeService.shared.toggle() }
+            }
             Divider()
             Button(menuLabel("Reset layout",  Config.resetLayoutShortcut))   { UntileHandler.untileAll(); TileAllHandler.tileAll() }
             Button(menuLabel("Refresh",       Config.refreshShortcut))        { ReapplyHandler.reapplyAll() }
@@ -128,6 +133,7 @@ struct UnnamedWindowManagerApp: App {
         } label: {
             HStack(spacing: 4) {
                 if menuState.isTiled || menuState.isScrolled {
+                    if AutoModeService.shared.isEnabled { Text("[auto]") }
                     if menuState.isTiled    { Text("[tiled]") }
                     if menuState.isScrolled { Text("[scrolled]") }
                 } else {
