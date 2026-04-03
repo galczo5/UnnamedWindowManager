@@ -9,40 +9,57 @@ final class FocusedWindowBorderService {
     private var overlay: NSWindow?
     private var drawingView: BorderDrawingView?
     private(set) var activeWindowID: CGWindowID?
+    private var configuredForID: CGWindowID?
 
     func show(windowID: CGWindowID, axElement: AXUIElement) {
         activeWindowID = windowID
-        updateOverlay(axElement: axElement, windowID: windowID)
+        applyFull(axElement: axElement, windowID: windowID)
     }
 
     func hide() {
         activeWindowID = nil
+        configuredForID = nil
         overlay?.orderOut(nil)
     }
 
     func updateIfActive(key: WindowSlot, axElement: AXUIElement) {
         guard let activeID = activeWindowID,
               key.windowHash == UInt(activeID) else { return }
-        updateOverlay(axElement: axElement, windowID: activeID)
+        moveOverlay(axElement: axElement, windowID: activeID)
     }
 
     // MARK: - Private
 
-    private func updateOverlay(axElement: AXUIElement, windowID: CGWindowID) {
+    // Full setup: drawing properties, corner radius, z-order. Called on focus change.
+    private func applyFull(axElement: AXUIElement, windowID: CGWindowID) {
         guard let frame = windowAppKitFrame(of: axElement) else { return }
         let borderWidth = Config.focusedBorderWidth
         let overlayFrame = frame.insetBy(dx: -borderWidth, dy: -borderWidth)
-        let radius = windowCornerRadius(for: windowID)
 
         let win = overlay ?? makeOverlay()
         overlay = win
+        configuredForID = windowID
 
         let view = drawingView!
         view.borderColor = Config.focusedBorderColor
         view.borderWidth = borderWidth
-        view.cornerRadius = radius
+        view.cornerRadius = windowCornerRadius(for: windowID)
         win.setFrame(overlayFrame, display: true)
         win.order(.above, relativeTo: Int(windowID))
+    }
+
+    // Lightweight reposition: only moves the overlay origin. Called on move/resize notifications.
+    private func moveOverlay(axElement: AXUIElement, windowID: CGWindowID) {
+        guard let win = overlay,
+              let frame = windowAppKitFrame(of: axElement) else { return }
+        let borderWidth = Config.focusedBorderWidth
+        let overlayFrame = frame.insetBy(dx: -borderWidth, dy: -borderWidth)
+
+        if overlayFrame.size != win.frame.size {
+            win.setFrame(overlayFrame, display: true)
+        } else {
+            win.setFrameOrigin(overlayFrame.origin)
+        }
     }
 
     private func makeOverlay() -> NSWindow {

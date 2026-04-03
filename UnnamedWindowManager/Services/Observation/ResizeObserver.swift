@@ -174,6 +174,11 @@ final class ResizeObserver {
             }
         }
 
+        // Update the border on every move/resize, including during animations.
+        if let axElement = elements[key] {
+            FocusedWindowBorderService.shared.updateIfActive(key: key, axElement: axElement)
+        }
+
         guard TilingRootStore.shared.isTracked(key) || isScrolling else { return }
         guard !reapplying.contains(key) else { return }
 
@@ -185,10 +190,6 @@ final class ResizeObserver {
         }
 
         reapplyScheduler.schedule(key: key, isResize: isResize, isScrolling: isScrolling)
-
-        if let axElement = elements[key] {
-            FocusedWindowBorderService.shared.updateIfActive(key: key, axElement: axElement)
-        }
     }
 
     // MARK: – Private
