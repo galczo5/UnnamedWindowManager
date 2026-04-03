@@ -10,6 +10,10 @@ final class ScrollingLayoutService {
 
     func clearCache() { lastApplied.removeAll() }
     func clearCache(for key: WindowSlot) { lastApplied.removeValue(forKey: key.windowHash) }
+    func expectedAXFrame(for windowHash: UInt) -> (pos: CGPoint, size: CGSize)? { lastApplied[windowHash] }
+    func updateExpectedFrames(_ frames: [UInt: (pos: CGPoint, size: CGSize)]) {
+        for (hash, frame) in frames { lastApplied[hash] = frame }
+    }
 
     func applyLayout(root: ScrollingRootSlot, origin: CGPoint,
                      elements: [WindowSlot: AXUIElement],

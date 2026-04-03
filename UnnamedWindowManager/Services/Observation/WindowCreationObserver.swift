@@ -42,7 +42,6 @@ final class WindowCreationObserver {
     }
 
     @objc private func handleWindowFocusChanged() {
-        Logger.shared.log("autoMode: windowFocusChanged received")
         AutoModeHandler.handleFocusChange()
     }
 

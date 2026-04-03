@@ -93,7 +93,7 @@ struct ConfigData: Codable {
         layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0, scrollCenterDefaultWidthFraction: 0.9),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
-        focusedBorder: FocusedBorderConfig(color: "white", width: 10),
+        focusedBorder: FocusedBorderConfig(color: "gray", width: 6),
         behavior: BehaviorConfig(dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, animationDuration: 0.15, dimColor: "black", logPath: ""),
         wallpaper: WallpaperConfig(enabled: false, path: "", scaling: "fill"),
         shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down", toggleWallpaper: ""),

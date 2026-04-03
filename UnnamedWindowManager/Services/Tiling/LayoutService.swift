@@ -10,6 +10,7 @@ final class LayoutService {
 
     func clearCache() { lastApplied.removeAll() }
     func clearCache(for key: WindowSlot) { lastApplied.removeValue(forKey: key.windowHash) }
+    func expectedAXFrame(for windowHash: UInt) -> (pos: CGPoint, size: CGSize)? { lastApplied[windowHash] }
 
     /// Positions all tiled windows on `screen` by walking the current slot tree.
     /// The root origin is shifted inward by outer gaps; leaf windows are inset by inner gap.

@@ -13,7 +13,13 @@ final class FocusedWindowBorderService {
 
     func show(windowID: CGWindowID, axElement: AXUIElement) {
         activeWindowID = windowID
-        applyFull(axElement: axElement, windowID: windowID)
+        let key = ResizeObserver.shared.keysByHash[UInt(windowID)]
+        let animating = key.map { ResizeObserver.shared.reapplying.contains($0) } ?? false
+        if animating || isAtExpectedPosition(axElement: axElement, windowID: windowID) {
+            applyFull(axElement: axElement, windowID: windowID)
+        } else {
+            overlay?.orderOut(nil)
+        }
     }
 
     func hide() {
@@ -22,13 +28,54 @@ final class FocusedWindowBorderService {
         overlay?.orderOut(nil)
     }
 
+    func recheckActive() {
+        guard let activeID = activeWindowID,
+              let key = ResizeObserver.shared.keysByHash[UInt(activeID)],
+              let axElement = ResizeObserver.shared.elements[key] else { return }
+        updateIfActive(key: key, axElement: axElement)
+    }
+
     func updateIfActive(key: WindowSlot, axElement: AXUIElement) {
         guard let activeID = activeWindowID,
               key.windowHash == UInt(activeID) else { return }
-        moveOverlay(axElement: axElement, windowID: activeID)
+        if ResizeObserver.shared.reapplying.contains(key) {
+            // Window is being animated by layout — follow it without a position check.
+            moveOverlay(axElement: axElement, windowID: activeID)
+            return
+        }
+        if isAtExpectedPosition(axElement: axElement, windowID: activeID) {
+            if overlay?.isVisible == true {
+                moveOverlay(axElement: axElement, windowID: activeID)
+            } else {
+                applyFull(axElement: axElement, windowID: activeID)
+            }
+        } else {
+            overlay?.orderOut(nil)
+        }
     }
 
     // MARK: - Private
+
+    private func isAtExpectedPosition(axElement: AXUIElement, windowID: CGWindowID) -> Bool {
+        let hash = UInt(windowID)
+        // Use only the service that currently owns this window to avoid stale cache cross-contamination.
+        let expected: (pos: CGPoint, size: CGSize)?
+        if let key = ResizeObserver.shared.keysByHash[hash], ScrollingRootStore.shared.isTracked(key) {
+            expected = ScrollingLayoutService.shared.expectedAXFrame(for: hash)
+        } else {
+            expected = LayoutService.shared.expectedAXFrame(for: hash)
+        }
+        guard let expected,
+              let actualPos = readOrigin(of: axElement),
+              let actualSize = readSize(of: axElement) else {
+            return true
+        }
+        let tolerance: CGFloat = 2
+        return abs(actualPos.x - expected.pos.x) <= tolerance
+            && abs(actualPos.y - expected.pos.y) <= tolerance
+            && abs(actualSize.width - expected.size.width) <= tolerance
+            && abs(actualSize.height - expected.size.height) <= tolerance
+    }
 
     // Full setup: drawing properties, corner radius, z-order. Called on focus change.
     private func applyFull(axElement: AXUIElement, windowID: CGWindowID) {

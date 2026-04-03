@@ -184,6 +184,7 @@ final class AnimationService {
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {
                     ResizeObserver.shared.reapplying.subtract(pending)
+                    FocusedWindowBorderService.shared.recheckActive()
                 }
             }
         }
