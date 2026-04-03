@@ -8,6 +8,7 @@ struct ConfigData: Codable {
         var layout: LayoutConfig?
         var dropZones: DropZoneConfig?
         var overlay: OverlayConfig?
+        var focusedBorder: FocusedBorderConfig?
         var behavior: BehaviorConfig?
         var wallpaper: WallpaperConfig?
         var shortcuts: ShortcutsConfig?
@@ -41,6 +42,11 @@ struct ConfigData: Codable {
         var cornerRadius: CGFloat?
         var borderWidth: CGFloat?
         var overlayColor: String?
+    }
+
+    struct FocusedBorderConfig: Codable {
+        var color: String?
+        var width: CGFloat?
     }
 
     struct BehaviorConfig: Codable {
@@ -87,6 +93,7 @@ struct ConfigData: Codable {
         layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0, scrollCenterDefaultWidthFraction: 0.9),
         dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
         overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
+        focusedBorder: FocusedBorderConfig(color: "white", width: 10),
         behavior: BehaviorConfig(dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, animationDuration: 0.15, dimColor: "black", logPath: ""),
         wallpaper: WallpaperConfig(enabled: false, path: "", scaling: "fill"),
         shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down", toggleWallpaper: ""),
@@ -114,6 +121,8 @@ struct ConfigData: Codable {
         check(s?.overlay?.cornerRadius,          "config.overlay.cornerRadius")
         check(s?.overlay?.borderWidth,           "config.overlay.borderWidth")
         check(s?.overlay?.overlayColor,          "config.overlay.overlayColor")
+        check(s?.focusedBorder?.color,           "config.focusedBorder.color")
+        check(s?.focusedBorder?.width,           "config.focusedBorder.width")
         check(s?.behavior?.dropZoneHoverDelay,   "config.behavior.dropZoneHoverDelay")
         check(s?.behavior?.dimInactiveWindows,   "config.behavior.dimInactiveWindows")
         check(s?.behavior?.dimInactiveOpacity,      "config.behavior.dimInactiveOpacity")
@@ -171,6 +180,10 @@ struct ConfigData: Codable {
                 cornerRadius: s?.overlay?.cornerRadius ?? d.overlay!.cornerRadius,
                 borderWidth:  s?.overlay?.borderWidth  ?? d.overlay!.borderWidth,
                 overlayColor: s?.overlay?.overlayColor ?? d.overlay!.overlayColor
+            ),
+            focusedBorder: FocusedBorderConfig(
+                color: s?.focusedBorder?.color ?? d.focusedBorder!.color,
+                width: s?.focusedBorder?.width ?? d.focusedBorder!.width
             ),
             behavior: BehaviorConfig(
                 dropZoneHoverDelay:  s?.behavior?.dropZoneHoverDelay  ?? d.behavior!.dropZoneHoverDelay,

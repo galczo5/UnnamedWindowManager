@@ -43,6 +43,14 @@ func axWindow(forHash hash: UInt, pid: pid_t) -> AXUIElement? {
     return axWindows.first { windowID(of: $0).map(UInt.init) == hash }
 }
 
+/// Converts an AX element's position+size to an AppKit-coordinate frame (origin at bottom-left).
+func windowAppKitFrame(of window: AXUIElement) -> CGRect? {
+    guard let origin = readOrigin(of: window), let size = readSize(of: window) else { return nil }
+    let screenHeight = NSScreen.screens[0].frame.height
+    let appKitY = screenHeight - origin.y - size.height
+    return CGRect(x: origin.x, y: appKitY, width: size.width, height: size.height)
+}
+
 /// Builds a `WindowSlot` identity key from an AX window element and its owning pid.
 /// Uses the CGWindowID when available; falls back to the AXUIElement pointer address.
 func windowSlot(for window: AXUIElement, pid: pid_t) -> WindowSlot {

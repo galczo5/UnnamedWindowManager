@@ -185,6 +185,10 @@ final class ResizeObserver {
         }
 
         reapplyScheduler.schedule(key: key, isResize: isResize, isScrolling: isScrolling)
+
+        if let axElement = elements[key] {
+            FocusedWindowBorderService.shared.updateIfActive(key: key, axElement: axElement)
+        }
     }
 
     // MARK: – Private

@@ -50,6 +50,7 @@ struct ConfigLoader {
         let og = l.outerGaps  ?? d.layout!.outerGaps!
         let dz = s?.dropZones ?? d.dropZones!
         let ov = s?.overlay   ?? d.overlay!
+        let fb = s?.focusedBorder ?? d.focusedBorder!
         let bh = s?.behavior  ?? d.behavior!
         let wp = s?.wallpaper ?? d.wallpaper!
         let sh = s?.shortcuts ?? d.shortcuts!
@@ -99,6 +100,11 @@ struct ConfigLoader {
             borderWidth: \(num(ov.borderWidth))
             # Accent color of the drop-zone overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
             overlayColor: \(ov.overlayColor ?? "blue")
+          focusedBorder:
+            # Color of the focused-window border ring (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
+            color: \(fb.color ?? "white")
+            # Width of the focused-window border ring in points.
+            width: \(num(fb.width))
           behavior:
             # Time in seconds a window must hover over a drop zone before the operation is allowed (0 to disable).
             dropZoneHoverDelay: \(num(bh.dropZoneHoverDelay))

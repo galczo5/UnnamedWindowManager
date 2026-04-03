@@ -67,6 +67,7 @@ final class FocusObserver {
               let ref
         else {
             WindowOpacityService.shared.restoreAll()
+            FocusedWindowBorderService.shared.hide()
             return
         }
         let axWindow = ref as! AXUIElement
@@ -120,6 +121,7 @@ final class FocusObserver {
 
         guard let wid, let key = ResizeObserver.shared.keysByHash[UInt(wid)] else {
             WindowOpacityService.shared.restoreAll()
+            FocusedWindowBorderService.shared.hide()
             return
         }
 
@@ -132,10 +134,13 @@ final class FocusObserver {
             } else {
                 WindowOpacityService.shared.dim(rootID: info.rootID, focusedHash: info.centerHash)
             }
+            FocusedWindowBorderService.shared.show(windowID: wid, axElement: axWindow)
         } else if let rootID = TilingRootStore.shared.rootID(containing: key) {
             WindowOpacityService.shared.dim(rootID: rootID, focusedHash: key.windowHash)
+            FocusedWindowBorderService.shared.show(windowID: wid, axElement: axWindow)
         } else {
             WindowOpacityService.shared.restoreAll()
+            FocusedWindowBorderService.shared.hide()
         }
     }
 
