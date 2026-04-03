@@ -104,7 +104,16 @@ struct AutoModeHandler {
 
         guard let screen = NSScreen.main else { return }
         let allKeys = Set(ResizeObserver.shared.keysByHash.values)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        let observer = ResizeObserver.shared
+        SettlePoller.poll(condition: {
+            allKeys.allSatisfy { key in
+                guard let axEl = observer.elements[key],
+                      let actual = readSize(of: axEl) else { return false }
+                let gap = key.gaps ? Config.innerGap * 2 : 0
+                return abs(actual.width  - (key.size.width  - gap)) <= 2
+                    && abs(actual.height - (key.size.height - gap)) <= 2
+            }
+        }) { _ in
             PostResizeValidator.checkAndFixRefusals(windows: allKeys, screen: screen)
         }
     }

@@ -137,6 +137,7 @@ Window utilities, AX helpers, and validation.
 | `WindowLister.swift` | Debug logging of on-screen windows and slot tree |
 | `WindowOpacityService.swift` | Dims non-focused windows via per-root overlays |
 | `PostResizeValidator.swift` | Detects and corrects windows that refused a resize |
+| `SettlePoller.swift` | Polls a condition every 20ms until satisfied or timeout (`animationDuration + 0.1`) elapses |
 | `TabDetector.swift` | Detects native macOS tab groups by matching same-PID windows with identical CGWindow bounds |
 | `WindowVisibilityManager.swift` | Manages auto-minimization state for tiled windows |
 

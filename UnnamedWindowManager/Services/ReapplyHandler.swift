@@ -51,7 +51,16 @@ struct ReapplyHandler {
 
                 guard !pass2Refusals.isEmpty else { return }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                let observer = ResizeObserver.shared
+                SettlePoller.poll(condition: {
+                    pass2Refusals.allSatisfy { key in
+                        guard let axEl = observer.elements[key],
+                              let actual = readSize(of: axEl) else { return false }
+                        let gap = key.gaps ? Config.innerGap * 2 : 0
+                        return abs(actual.width  - (key.size.width  - gap)) <= 2
+                            && abs(actual.height - (key.size.height - gap)) <= 2
+                    }
+                }) { _ in
                     guard let screen = NSScreen.main else { return }
                     let pass3Refusals = PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
                     let persistent = pass2Refusals.intersection(pass3Refusals)

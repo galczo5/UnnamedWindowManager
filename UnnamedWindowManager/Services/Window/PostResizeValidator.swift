@@ -49,7 +49,17 @@ enum PostResizeValidator {
         }
         LayoutService.shared.applyLayout(screen: screen)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        var lastSizes: [WindowSlot: CGSize] = [:]
+        SettlePoller.poll(condition: {
+            var stable = true
+            for key in allTracked {
+                guard let axEl = observer.elements[key],
+                      let size = readSize(of: axEl) else { continue }
+                if lastSizes[key] != size { stable = false }
+                lastSizes[key] = size
+            }
+            return stable && !lastSizes.isEmpty
+        }) { _ in
             observer.reapplying.subtract(allTracked)
         }
 

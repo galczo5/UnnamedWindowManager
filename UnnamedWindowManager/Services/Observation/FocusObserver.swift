@@ -100,11 +100,20 @@ final class FocusObserver {
                 }
             }
             // If detection failed but managed siblings exist, the new window's bounds may not
-            // have settled in CGWindowList yet. Retry after a short delay.
+            // have settled in CGWindowList yet. Poll until the hash appears.
             if !swapped, !managedSiblings.isEmpty {
-                let work = DispatchWorkItem { [weak self] in self?.applyDim(pid: pid) }
+                retryWorkItem?.cancel()
+                let work = DispatchWorkItem { [weak self] in
+                    SettlePoller.poll(condition: {
+                        OnScreenWindowCache.invalidate()
+                        return OnScreenWindowCache.visibleHashes().contains(hash)
+                    }) { settled in
+                        guard settled else { return }
+                        self?.applyDim(pid: pid)
+                    }
+                }
                 retryWorkItem = work
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
+                DispatchQueue.main.async(execute: work)
                 return
             }
         }
