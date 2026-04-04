@@ -7,6 +7,7 @@ final class DragReapplyScheduler {
     let overlay = SwapOverlay()
     private var lastDropTarget: DropTarget?
     private var dropTargetEnteredAt: Date?
+    private var postMoveCheck: DispatchWorkItem?
 
     init(observer: ResizeObserver) {
         self.observer = observer
@@ -118,6 +119,17 @@ final class DragReapplyScheduler {
                 observer?.reapplying.remove(key)
             }
         }
+
+        // Mission Control commits a window move after its animation completes (~0.5–1s),
+        // after which no AX notification fires. Schedule a delayed reapply so
+        // pruneOffScreenWindows can detect the window on its new space and untile it.
+        postMoveCheck?.cancel()
+        let check = DispatchWorkItem {
+            guard NSEvent.pressedMouseButtons == 0 else { return }
+            ReapplyHandler.reapplyAll()
+        }
+        postMoveCheck = check
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: check)
     }
 
     private func updateTrackedDropTarget(_ newTarget: DropTarget?) {

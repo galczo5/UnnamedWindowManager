@@ -156,8 +156,7 @@ struct ReapplyHandler {
             }
             if didSwap { continue }
 
-            ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
-            TilingSnapService.shared.removeAndReflow(w, screen: screen)
+            UntileHandler.untileByKey(w, screen: screen)
         }
         let scrollingLeaves = ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
         for leaf in scrollingLeaves {
@@ -181,8 +180,7 @@ struct ReapplyHandler {
             }
             if didSwap { continue }
 
-            ResizeObserver.shared.stopObserving(key: w, pid: w.pid)
-            ScrollingRootStore.shared.removeWindow(w, screen: screen)
+            UntileHandler.untileByKey(w, screen: screen)
         }
     }
 
