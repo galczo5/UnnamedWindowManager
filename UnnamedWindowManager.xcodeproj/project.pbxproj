@@ -25,6 +25,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		8E97E1862F81C3DC00D62180 /* docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = docs;
+			sourceTree = "<group>";
+		};
 		8EE853592F55F29400645F80 /* UnnamedWindowManager */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -58,6 +63,7 @@
 				8EE853592F55F29400645F80 /* UnnamedWindowManager */,
 				8EE853582F55F29400645F80 /* Products */,
 				8EE853D42F58B37000645F80 /* .claude */,
+				8E97E1862F81C3DC00D62180 /* docs */,
 			);
 			sourceTree = "<group>";
 		};
@@ -85,6 +91,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				8E97E1862F81C3DC00D62180 /* docs */,
 				8EE853592F55F29400645F80 /* UnnamedWindowManager */,
 			);
 			name = UnnamedWindowManager;
