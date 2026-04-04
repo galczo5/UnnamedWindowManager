@@ -4,6 +4,107 @@ import ApplicationServices
 // Debugging utilities that log all on-screen windows and the current slot tree.
 struct WindowLister {
 
+    /// Logs a tile/scroll event: which window moved to which root, and all currently visible
+    /// on-screen windows annotated with the root they belong to (or "untiled").
+    static func logWindowEvent(action: String, windowHash: UInt, rootID: UUID) {
+        let (visibleWindows, hashToRootID, roots) = snapshotVisibleWindows()
+        let treeQuery = TilingTreeQueryService()
+        let windowCount: Int
+        switch roots[rootID] {
+        case .tiling(let r):    windowCount = treeQuery.allLeaves(in: r).count
+        case .scrolling(let r): windowCount = countScrollingWindows(in: r)
+        case nil:               windowCount = 0
+        }
+        Logger.shared.log("\(action) wid=\(windowHash) root=\(rootID.uuidString.prefix(8)) windows=\(windowCount)")
+        logVisibleWindows(visibleWindows, hashToRootID: hashToRootID)
+    }
+
+    /// Logs that the active visible root has changed (e.g. after a Space switch),
+    /// followed by all on-screen windows annotated with their root.
+    /// Warns if windows from multiple roots are visible simultaneously.
+    static func logRootChanged(type: String, rootID: UUID, windowCount: Int) {
+        Logger.shared.log("root changed [\(type)] root=\(rootID.uuidString.prefix(8)) windows=\(windowCount)")
+        let (visibleWindows, hashToRootID, _) = snapshotVisibleWindows()
+        let visibleRootIDs = Set(visibleWindows.compactMap { hashToRootID[$0.hash] })
+        if visibleRootIDs.count > 1 {
+            let ids = visibleRootIDs.map { String($0.uuidString.prefix(8)) }.sorted().joined(separator: ", ")
+            Logger.shared.log("  WARNING: windows from \(visibleRootIDs.count) roots visible on same desktop [\(ids)]")
+        }
+        logVisibleWindows(visibleWindows, hashToRootID: hashToRootID)
+    }
+
+    // Queries CGWindowList and the root store, returning visible windows and a hash→rootID map.
+    private static func snapshotVisibleWindows()
+        -> (windows: [(hash: UInt, app: String, title: String)], hashToRootID: [UInt: UUID], roots: [UUID: RootSlot])
+    {
+        let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
+        let cgList = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
+        ) as? [[String: Any]] ?? []
+
+        var visibleWindows: [(hash: UInt, app: String, title: String)] = []
+        for info in cgList {
+            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
+                  let pid   = info[kCGWindowOwnerPID as String] as? Int,
+                  let wid   = info[kCGWindowNumber as String] as? CGWindowID,
+                  pid_t(pid) != ownPID
+            else { continue }
+            let app   = info[kCGWindowOwnerName as String] as? String ?? "unknown"
+            let title = info[kCGWindowName as String] as? String ?? ""
+            visibleWindows.append((hash: UInt(wid), app: app, title: title))
+        }
+
+        let roots = SharedRootStore.shared.snapshotAllRoots()
+        let treeQuery = TilingTreeQueryService()
+        var hashToRootID: [UInt: UUID] = [:]
+        for (id, rootSlot) in roots {
+            switch rootSlot {
+            case .tiling(let root):
+                for leaf in treeQuery.allLeaves(in: root) {
+                    if case .window(let w) = leaf { hashToRootID[w.windowHash] = id }
+                }
+            case .scrolling(let root):
+                func collect(_ slot: Slot) {
+                    switch slot {
+                    case .window(let w):   hashToRootID[w.windowHash] = id
+                    case .stacking(let s): s.children.forEach { hashToRootID[$0.windowHash] = id }
+                    default: break
+                    }
+                }
+                if let left = root.left { collect(left) }
+                collect(root.center)
+                if let right = root.right { collect(right) }
+            }
+        }
+        return (visibleWindows, hashToRootID, roots)
+    }
+
+    private static func logVisibleWindows(
+        _ windows: [(hash: UInt, app: String, title: String)],
+        hashToRootID: [UInt: UUID]
+    ) {
+        for win in windows {
+            let winRoot = hashToRootID[win.hash].map { String($0.uuidString.prefix(8)) } ?? "untiled"
+            let label   = win.title.isEmpty ? win.app : "\(win.app) – \(win.title)"
+            Logger.shared.log("  visible wid=\(win.hash) root=\(winRoot) \"\(label)\"")
+        }
+    }
+
+    static func countScrollingWindows(in root: ScrollingRootSlot) -> Int {
+        var count = 0
+        func countSlot(_ slot: Slot) {
+            switch slot {
+            case .window:          count += 1
+            case .stacking(let s): count += s.children.count
+            default: break
+            }
+        }
+        if let left = root.left { countSlot(left) }
+        countSlot(root.center)
+        if let right = root.right { countSlot(right) }
+        return count
+    }
+
     static func logAllWindows() {
         guard AXIsProcessTrusted() else {
             Logger.shared.log("AX not trusted")

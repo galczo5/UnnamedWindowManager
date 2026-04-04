@@ -91,6 +91,16 @@ final class FocusObserver {
             let freshTabGroup = TabDetector.tabSiblingHashes(of: hash, pid: pid)
             var swapped = false
             for siblingKey in managedSiblings {
+                // Skip tab swap if sibling is in a root whose type doesn't match
+                // the active root — avoids pulling windows across spaces.
+                if let activeType = SharedRootStore.shared.activeRootType {
+                    let inTiling = TilingRootStore.shared.rootID(containing: siblingKey) != nil
+                    let inScrolling = ScrollingRootStore.shared.scrollingRootInfo(containing: siblingKey) != nil
+                    if (inTiling && activeType != .tiling)
+                        || (inScrolling && activeType != .scrolling) {
+                        continue
+                    }
+                }
                 if siblingKey.isSameTabGroup(hash: hash)
                     || !onScreen.contains(siblingKey.windowHash)
                     || freshTabGroup.contains(siblingKey.windowHash) {

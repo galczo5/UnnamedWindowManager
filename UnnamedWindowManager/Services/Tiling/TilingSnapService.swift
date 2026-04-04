@@ -15,6 +15,7 @@ final class TilingSnapService {
     /// Idempotent: no-op if the window is already in the correct root.
     /// Performs a cross-root migration if the window belongs to a different root.
     func snap(_ key: WindowSlot, screen: NSScreen) {
+        var snapRootID: UUID? = nil
         store.queue.sync(flags: .barrier) {
             let targetRootID: UUID
             if let visibleID = rootStore.visibleRootID() {
@@ -69,6 +70,10 @@ final class TilingSnapService {
             let area = screenTilingArea(screen)
             position.recomputeSizes(&targetRoot, width: area.width, height: area.height)
             store.roots[targetRootID] = .tiling(targetRoot)
+            snapRootID = targetRootID
+        }
+        if let rootID = snapRootID {
+            WindowLister.logWindowEvent(action: "tiled", windowHash: key.windowHash, rootID: rootID)
         }
     }
 
@@ -123,6 +128,69 @@ final class TilingSnapService {
                 position.recomputeSizes(&root, width: area.width, height: area.height)
                 store.roots[id] = .tiling(root)
             }
+        }
+    }
+
+    /// Merges all tiling roots that have windows visible on screen into a single root.
+    /// This handles windows being manually moved between desktops (via Mission Control),
+    /// which can leave multiple roots with windows on the same desktop simultaneously.
+    /// No-op when zero or one tiling root is visible.
+    func consolidateVisibleRoots(screen: NSScreen) {
+        var mergedRootID: UUID? = nil
+        var mergedCount = 0
+        store.queue.sync(flags: .barrier) {
+            let visibleHashes = OnScreenWindowCache.visibleHashes()
+
+            // Collect all tiling roots that have at least one window currently on screen.
+            let visiblePairs: [(id: UUID, root: TilingRootSlot)] = store.roots.compactMap { id, slot in
+                guard case .tiling(let root) = slot else { return nil }
+                let hasVisible = treeQuery.allLeaves(in: root).contains {
+                    guard case .window(let w) = $0 else { return false }
+                    return visibleHashes.contains(w.windowHash)
+                }
+                return hasVisible ? (id, root) : nil
+            }
+
+            guard visiblePairs.count > 1 else { return }
+
+            // Use the root with the most leaves as the merge target.
+            let (targetID, _) = visiblePairs.max { treeQuery.allLeaves(in: $0.root).count < treeQuery.allLeaves(in: $1.root).count }!
+            guard case .tiling(var targetRoot) = store.roots[targetID] else { return }
+
+            for (srcID, srcRoot) in visiblePairs where srcID != targetID {
+                let leaves = treeQuery.allLeaves(in: srcRoot).compactMap { leaf -> WindowSlot? in
+                    guard case .window(let w) = leaf else { return nil }
+                    return w
+                }
+                for w in leaves {
+                    store.windowCounts[targetID, default: 0] += 1
+                    let order = store.windowCounts[targetID]!
+                    let newLeaf = Slot.window(WindowSlot(
+                        pid: w.pid, windowHash: w.windowHash,
+                        id: UUID(), parentId: targetRoot.id,
+                        order: order, size: .zero, gaps: true,
+                        preTileOrigin: w.preTileOrigin, preTileSize: w.preTileSize
+                    ))
+                    if targetRoot.children.isEmpty {
+                        targetRoot.children = [newLeaf]
+                    } else {
+                        let lastOrder = treeQuery.maxLeafOrder(in: targetRoot)
+                        let orientation: Orientation = order % 2 == 0 ? .horizontal : .vertical
+                        treeMutation.extractAndWrap(in: &targetRoot, targetOrder: lastOrder,
+                                                    newLeaf: newLeaf, orientation: orientation)
+                    }
+                }
+                store.removeRoot(id: srcID)
+            }
+
+            let area = screenTilingArea(screen)
+            position.recomputeSizes(&targetRoot, width: area.width, height: area.height)
+            store.roots[targetID] = .tiling(targetRoot)
+            mergedRootID = targetID
+            mergedCount = treeQuery.allLeaves(in: targetRoot).count
+        }
+        if let rootID = mergedRootID {
+            WindowLister.logWindowEvent(action: "consolidated roots", windowHash: 0, rootID: rootID)
         }
     }
 }

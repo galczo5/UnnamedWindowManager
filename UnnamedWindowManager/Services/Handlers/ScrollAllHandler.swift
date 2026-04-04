@@ -54,6 +54,7 @@ struct ScrollAllHandler {
         }
 
         let sorted = candidates.sorted(by: { $0.originX < $1.originX })
+        SharedRootStore.shared.setActiveRootType(.scrolling)
         var rootExists = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil
         for (i, item) in sorted.enumerated() {
             let delay = Double(i) * 0.1

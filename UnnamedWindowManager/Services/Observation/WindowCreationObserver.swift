@@ -9,6 +9,27 @@ private func windowCreatedCallback(
     _ refcon: UnsafeMutableRawPointer?
 ) {
     DispatchQueue.main.async {
+        var pid: pid_t = 0
+        AXUIElementGetPid(element, &pid)
+        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "unknown"
+        var titleRef: CFTypeRef?
+        let title = AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &titleRef) == .success
+            ? (titleRef as? String ?? "") : ""
+        let label = title.isEmpty ? appName : "\(appName) – \(title)"
+
+        let key = windowSlot(for: element, pid: pid)
+        let wid = key.windowHash
+
+        let rootDesc: String
+        if let rootID = TilingRootStore.shared.rootID(containing: key) {
+            rootDesc = "tiling:\(rootID.uuidString.prefix(8))"
+        } else if let info = ScrollingRootStore.shared.scrollingRootInfo(containing: key) {
+            rootDesc = "scrolling:\(info.rootID.uuidString.prefix(8))"
+        } else {
+            rootDesc = "untiled"
+        }
+
+        Logger.shared.log("window appeared \"\(label)\" pid=\(pid) wid=\(wid) root=\(rootDesc)")
         AutoModeHandler.handleFocusChange()
     }
 }

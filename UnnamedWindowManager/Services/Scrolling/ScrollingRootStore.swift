@@ -67,6 +67,7 @@ final class ScrollingRootStore {
     }
 
     func createScrollingRoot(key: WindowSlot, screen: NSScreen) {
+        var logID: UUID? = nil
         store.queue.sync(flags: .barrier) {
             let id   = UUID()
             let area = screenTilingArea(screen)
@@ -83,10 +84,15 @@ final class ScrollingRootStore {
             position.recomputeSizes(&root, width: area.width, height: area.height)
             store.roots[id] = .scrolling(root)
             store.windowCounts[id] = 1
+            logID = id
+        }
+        if let rootID = logID {
+            WindowLister.logWindowEvent(action: "scrolled (new root)", windowHash: key.windowHash, rootID: rootID)
         }
     }
 
     func addWindow(_ key: WindowSlot, screen: NSScreen) {
+        var logID: UUID? = nil
         store.queue.sync(flags: .barrier) {
             guard let id = visibleScrollingRootID(),
                   case .scrolling(var root) = store.roots[id] else {
@@ -116,13 +122,18 @@ final class ScrollingRootStore {
             }
             position.recomputeSizes(&root, width: area.width, height: area.height, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
+            logID = id
+        }
+        if let rootID = logID {
+            WindowLister.logWindowEvent(action: "scrolled (added)", windowHash: key.windowHash, rootID: rootID)
         }
     }
 
     /// Scrolls right: last child of right slot becomes center, old center appended to left slot.
     /// Returns the new center WindowSlot, or nil if right slot is empty.
     func scrollRight(screen: NSScreen) -> WindowSlot? {
-        store.queue.sync(flags: .barrier) {
+        var logInfo: (hash: UInt, rootID: UUID)? = nil
+        let result: WindowSlot? = store.queue.sync(flags: .barrier) {
             guard let id = visibleScrollingRootID(),
                   case .scrolling(var root) = store.roots[id] else { return nil }
             guard case .stacking(var rightStack) = root.right else { return nil }
@@ -142,14 +153,20 @@ final class ScrollingRootStore {
             }
             position.recomputeSizes(&root, width: area.width, height: area.height, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
+            logInfo = (hash: newCenterWin.windowHash, rootID: id)
             return newCenterWin
         }
+        if let info = logInfo {
+            WindowLister.logWindowEvent(action: "scrolled right", windowHash: info.hash, rootID: info.rootID)
+        }
+        return result
     }
 
     /// Scrolls left: last child of left slot becomes center, old center appended to right slot.
     /// Returns the new center WindowSlot, or nil if left slot is empty.
     func scrollLeft(screen: NSScreen) -> WindowSlot? {
-        store.queue.sync(flags: .barrier) {
+        var logInfo: (hash: UInt, rootID: UUID)? = nil
+        let result: WindowSlot? = store.queue.sync(flags: .barrier) {
             guard let id = visibleScrollingRootID(),
                   case .scrolling(var root) = store.roots[id] else { return nil }
             guard case .stacking(var leftStack) = root.left else { return nil }
@@ -169,8 +186,13 @@ final class ScrollingRootStore {
             }
             position.recomputeSizes(&root, width: area.width, height: area.height, updateSideWindowWidths: false)
             store.roots[id] = .scrolling(root)
+            logInfo = (hash: newCenterWin.windowHash, rootID: id)
             return newCenterWin
         }
+        if let info = logInfo {
+            WindowLister.logWindowEvent(action: "scrolled left", windowHash: info.hash, rootID: info.rootID)
+        }
+        return result
     }
 
     func removeVisibleScrollingRoot() -> [WindowSlot] {

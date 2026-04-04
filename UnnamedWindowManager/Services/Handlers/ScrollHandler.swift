@@ -21,10 +21,12 @@ struct ScrollHandler {
     }
 
     /// Adds `window` to the scrolling root, or creates a new one.
-    /// Skips if a tiling root is active, already tracked, minimised, or < 100×100 pts.
+    /// Skips if a tiling root is active (unless activeRootType is scrolling),
+    /// already tracked, minimised, or < 100×100 pts.
     static func scrollWindow(_ window: AXUIElement, pid: pid_t) {
         guard AXIsProcessTrusted() else { return }
-        guard TilingRootStore.shared.snapshotVisibleRoot() == nil else { return }
+        if TilingRootStore.shared.snapshotVisibleRoot() != nil
+            && SharedRootStore.shared.activeRootType != .scrolling { return }
         guard let screen = NSScreen.main else { return }
 
         var minRef: CFTypeRef?
@@ -65,6 +67,7 @@ struct ScrollHandler {
         key.preTileOrigin = readOrigin(of: axWindow)
         key.preTileSize   = readSize(of: axWindow)
 
+        SharedRootStore.shared.setActiveRootType(.scrolling)
         if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
             ScrollingRootStore.shared.addWindow(key, screen: screen)
         } else {

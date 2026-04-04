@@ -62,9 +62,19 @@ struct AutoModeHandler {
         }
         if let size = readSize(of: window), size.width < 100 || size.height < 100 { return }
 
-        if TilingRootStore.shared.snapshotVisibleRoot() != nil {
+        let tilingRoot = TilingRootStore.shared.snapshotVisibleRoot()
+        let scrollingRoot = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
+
+        if tilingRoot != nil && scrollingRoot != nil {
+            switch SharedRootStore.shared.activeRootType {
+            case .scrolling:
+                ScrollHandler.scrollWindow(window, pid: pid)
+            default:
+                TileHandler.tileLeft(window: window, pid: pid)
+            }
+        } else if tilingRoot != nil {
             TileHandler.tileLeft(window: window, pid: pid)
-        } else if ScrollingRootStore.shared.snapshotVisibleScrollingRoot() != nil {
+        } else if scrollingRoot != nil {
             ScrollHandler.scrollWindow(window, pid: pid)
         } else {
             return

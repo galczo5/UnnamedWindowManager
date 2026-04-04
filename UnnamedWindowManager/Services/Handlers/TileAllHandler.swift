@@ -59,6 +59,7 @@ struct TileAllHandler {
         }
 
         // Snap candidates in left-to-right order, then reapply layout once.
+        SharedRootStore.shared.setActiveRootType(.tiling)
         var snappedKeys: Set<WindowSlot> = []
         for item in candidates.sorted(by: { $0.originX < $1.originX }) {
             var key = windowSlot(for: item.window, pid: item.pid)

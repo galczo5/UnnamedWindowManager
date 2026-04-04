@@ -45,6 +45,7 @@ struct TileHandler {
             mutableKey.isTabbed = true
             mutableKey.tabHashes = tabSiblings
         }
+        SharedRootStore.shared.setActiveRootType(.tiling)
         TilingSnapService.shared.snap(mutableKey, screen: screen)
         ResizeObserver.shared.observe(window: axWindow, pid: pid, key: mutableKey)
         ReapplyHandler.reapplyAll()

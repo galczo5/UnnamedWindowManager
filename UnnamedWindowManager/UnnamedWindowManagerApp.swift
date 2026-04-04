@@ -49,6 +49,7 @@ struct UnnamedWindowManagerApp: App {
         NotificationService.shared.requestAuthorization()
         FocusObserver.shared.start()
         ScreenChangeObserver.shared.start()
+        SpaceChangeObserver.shared.start()
         WindowCreationObserver.shared.start()
         WallpaperService.shared.apply()
     }
