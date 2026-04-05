@@ -23,6 +23,10 @@ Marker protocol and event data structs shared across all observer classes.
 | File | Description |
 |------|-------------|
 | `EventProtocol.swift` | Marker protocol `AppEvent` that all event data structs conform to |
+| `ScreenParametersChangedEvent.swift` | Event fired when screen parameters change (resolution, display connect/disconnect) |
+| `SpaceChangedEvent.swift` | Event fired when the active macOS space changes |
+| `TileStateChangedEvent.swift` | Event fired when the tiling/scrolling layout state changes |
+| `WindowFocusChangedEvent.swift` | Event fired when the focused window changes |
 
 ## Observers
 
@@ -31,6 +35,10 @@ Pub/sub base class for all observer types in the app.
 | File | Description |
 |------|-------------|
 | `EventObserver.swift` | Generic base class with `subscribe`/`unsubscribe`/`notify` pub/sub mechanics |
+| `ScreenParametersChangedObserver.swift` | Wraps `NSApplication.didChangeScreenParametersNotification` as a pub/sub event |
+| `SpaceChangedObserver.swift` | Wraps `NSWorkspace.activeSpaceDidChangeNotification`; handles displaced-window untiling and root-type tracking |
+| `TileStateChangedObserver.swift` | Pure relay hub; `ReapplyHandler` and untile handlers call `notify()` directly |
+| `WindowFocusChangedObserver.swift` | Pure relay hub; `FocusObserver` calls `notify()` directly |
 
 ## Config
 
@@ -139,8 +147,6 @@ Event-driven observers that react to AX notifications, app lifecycle, and screen
 | `DragReapplyScheduler.swift` | Polls for mouse-up during drag and triggers reapply |
 | `FocusObserver.swift` | Watches app/window focus changes to drive dimming |
 | `ResizeObserver.swift` | Tracks AX move/resize/destroy for all managed windows |
-| `ScreenChangeObserver.swift` | Reflows layout on screen resolution/display changes |
-| `SpaceChangeObserver.swift` | Observes space switches, reflows layout, and untiles windows displaced by Mission Control |
 | `SwapOverlay.swift` | Translucent overlay shown over drop targets during drag |
 | `WindowCreationObserver.swift` | Observes kAXWindowCreatedNotification per app and routes new windows via AutoModeHandler |
 

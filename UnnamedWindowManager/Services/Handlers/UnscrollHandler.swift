@@ -22,7 +22,7 @@ struct UnscrollHandler {
         ResizeObserver.shared.stopObserving(key: key, pid: pid)
         if let stored { RestoreService.restore(stored, element: axWindow) }
         ReapplyHandler.reapplyAll()
-        NotificationCenter.default.post(name: .tileStateChanged, object: nil)
+        TileStateChangedObserver.shared.notify(TileStateChangedEvent())
     }
 
     static func unscrollAll() {
@@ -35,7 +35,7 @@ struct UnscrollHandler {
             WindowVisibilityManager.shared.restoreAndForget(key)
             ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
         }
-        NotificationCenter.default.post(name: .tileStateChanged, object: nil)
+        TileStateChangedObserver.shared.notify(TileStateChangedEvent())
     }
 
     static func unscrollAllSpaces() {

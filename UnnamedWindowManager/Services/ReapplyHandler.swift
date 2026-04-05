@@ -78,7 +78,7 @@ struct ReapplyHandler {
                 }
             }
             DispatchQueue.main.async {
-                NotificationCenter.default.post(name: .tileStateChanged, object: nil)
+                TileStateChangedObserver.shared.notify(TileStateChangedEvent())
             }
         }
         pendingLayout = work

@@ -3,11 +3,6 @@ import AppKit
 import ApplicationServices
 import CoreServices
 
-extension Notification.Name {
-    static let tileStateChanged = Notification.Name("tileStateChanged")
-    static let windowFocusChanged = Notification.Name("windowFocusChanged")
-}
-
 @Observable
 final class MenuState {
     var parentOrientation: Orientation? = nil
@@ -48,10 +43,30 @@ struct UnnamedWindowManagerApp: App {
         LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
         NotificationService.shared.requestAuthorization()
         FocusObserver.shared.start()
-        ScreenChangeObserver.shared.start()
-        SpaceChangeObserver.shared.start()
+        ScreenParametersChangedObserver.shared.start()
+        SpaceChangedObserver.shared.start()
         WindowCreationObserver.shared.start()
         WallpaperService.shared.apply()
+
+        ScreenParametersChangedObserver.shared.subscribe { _ in
+            guard let screen = NSScreen.main else { return }
+            LayoutService.shared.clearCache()
+            ScrollingLayoutService.shared.clearCache()
+            TilingEditService.shared.recomputeVisibleRootSizes(screen: screen)
+            WallpaperService.shared.screenChanged()
+            ReapplyHandler.reapplyAll()
+        }
+
+        let state = menuState
+        TileStateChangedObserver.shared.subscribe { _ in
+            state.refresh()
+        }
+        WindowFocusChangedObserver.shared.subscribe { _ in
+            state.refresh()
+        }
+        SpaceChangedObserver.shared.subscribe { _ in
+            state.refresh()
+        }
     }
 
     var body: some Scene {
@@ -144,15 +159,6 @@ struct UnnamedWindowManagerApp: App {
             .onAppear {
                 menuState.refresh()
                 KeybindingService.shared.start()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .tileStateChanged)) { _ in
-                menuState.refresh()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .windowFocusChanged)) { _ in
-                menuState.refresh()
-            }
-            .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.activeSpaceDidChangeNotification)) { _ in
-                menuState.refresh()
             }
         }
         .menuBarExtraStyle(.menu)

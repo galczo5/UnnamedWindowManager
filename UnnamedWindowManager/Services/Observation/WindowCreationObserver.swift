@@ -54,15 +54,16 @@ final class WindowCreationObserver {
         wsNc.addObserver(self, selector: #selector(didTerminateApp(_:)),
                          name: NSWorkspace.didTerminateApplicationNotification, object: nil)
 
-        NotificationCenter.default.addObserver(self, selector: #selector(handleWindowFocusChanged),
-                                               name: .windowFocusChanged, object: nil)
+        WindowFocusChangedObserver.shared.subscribe { [weak self] _ in
+            self?.handleWindowFocusChanged()
+        }
 
         for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
             observerManager?.observeApp(pid: app.processIdentifier)
         }
     }
 
-    @objc private func handleWindowFocusChanged() {
+    private func handleWindowFocusChanged() {
         AutoModeHandler.handleFocusChange()
     }
 

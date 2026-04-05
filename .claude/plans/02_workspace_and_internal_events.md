@@ -2,23 +2,23 @@
 
 ## Checklist
 
-- [ ] Create `ScreenParametersChangedEvent` in `Events/`
-- [ ] Create `ScreenParametersChangedObserver` in `Observers/`
-- [ ] Migrate `ScreenChangeObserver` consumers to subscribe to `ScreenParametersChangedObserver`
-- [ ] Delete `Services/Observation/ScreenChangeObserver.swift`
-- [ ] Create `SpaceChangedEvent` in `Events/`
-- [ ] Create `SpaceChangedObserver` in `Observers/`
-- [ ] Migrate `SpaceChangeObserver` consumers to subscribe to `SpaceChangedObserver`
-- [ ] Delete `Services/Observation/SpaceChangeObserver.swift`
-- [ ] Create `TileStateChangedEvent` in `Events/`
-- [ ] Create `TileStateChangedObserver` in `Observers/`
-- [ ] Migrate `ReapplyHandler` and `UnnamedWindowManagerApp` to use `TileStateChangedObserver`
-- [ ] Create `WindowFocusChangedEvent` in `Events/`
-- [ ] Create `WindowFocusChangedObserver` in `Observers/`
-- [ ] Migrate `FocusObserver`, `WindowCreationObserver`, and `UnnamedWindowManagerApp` to use `WindowFocusChangedObserver`
-- [ ] Remove `Notification.Name` extensions for `tileStateChanged` and `windowFocusChanged`
-- [ ] Update `UnnamedWindowManagerApp.init()` to start new observers
-- [ ] Verify build and all functionality
+- [x] Create `ScreenParametersChangedEvent` in `Events/`
+- [x] Create `ScreenParametersChangedObserver` in `Observers/`
+- [x] Migrate `ScreenChangeObserver` consumers to subscribe to `ScreenParametersChangedObserver`
+- [x] Delete `Services/Observation/ScreenChangeObserver.swift`
+- [x] Create `SpaceChangedEvent` in `Events/`
+- [x] Create `SpaceChangedObserver` in `Observers/`
+- [x] Migrate `SpaceChangeObserver` consumers to subscribe to `SpaceChangedObserver`
+- [x] Delete `Services/Observation/SpaceChangeObserver.swift`
+- [x] Create `TileStateChangedEvent` in `Events/`
+- [x] Create `TileStateChangedObserver` in `Observers/`
+- [x] Migrate `ReapplyHandler` and `UnnamedWindowManagerApp` to use `TileStateChangedObserver`
+- [x] Create `WindowFocusChangedEvent` in `Events/`
+- [x] Create `WindowFocusChangedObserver` in `Observers/`
+- [x] Migrate `FocusObserver`, `WindowCreationObserver`, and `UnnamedWindowManagerApp` to use `WindowFocusChangedObserver`
+- [x] Remove `Notification.Name` extensions for `tileStateChanged` and `windowFocusChanged`
+- [x] Update `UnnamedWindowManagerApp.init()` to start new observers
+- [x] Verify build and all functionality
 
 ---
 

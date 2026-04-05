@@ -37,7 +37,7 @@ struct UntileHandler {
             WindowVisibilityManager.shared.restoreAndForget(key)
             ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
         }
-        NotificationCenter.default.post(name: .tileStateChanged, object: nil)
+        TileStateChangedObserver.shared.notify(TileStateChangedEvent())
     }
 
     static func untileByKey(_ key: WindowSlot, screen: NSScreen) {
