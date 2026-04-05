@@ -22,10 +22,14 @@ Marker protocol and event data structs shared across all observer classes.
 
 | File | Description |
 |------|-------------|
+| `AppActivatedEvent.swift` | Event carrying the app that just became frontmost |
+| `AppTerminatedEvent.swift` | Event carrying the app that just terminated |
 | `EventProtocol.swift` | Marker protocol `AppEvent` that all event data structs conform to |
+| `FocusedWindowChangedEvent.swift` | Event carrying the pid of the app whose focused window changed |
 | `ScreenParametersChangedEvent.swift` | Event fired when screen parameters change (resolution, display connect/disconnect) |
 | `SpaceChangedEvent.swift` | Event fired when the active macOS space changes |
 | `TileStateChangedEvent.swift` | Event fired when the tiling/scrolling layout state changes |
+| `WindowCreatedEvent.swift` | Event carrying the new window element, pid, app name, title, and window hash |
 | `WindowFocusChangedEvent.swift` | Event fired when the focused window changes |
 
 ## Observers
@@ -34,11 +38,15 @@ Pub/sub base class for all observer types in the app.
 
 | File | Description |
 |------|-------------|
+| `AppActivatedObserver.swift` | Wraps `NSWorkspace.didActivateApplicationNotification` as a pub/sub event |
+| `AppTerminatedObserver.swift` | Wraps `NSWorkspace.didTerminateApplicationNotification` as a pub/sub event |
 | `EventObserver.swift` | Generic base class with `subscribe`/`unsubscribe`/`notify` pub/sub mechanics |
+| `FocusedWindowChangedObserver.swift` | Manages per-app AXObservers for focused-window changes; fires on app activation too |
 | `ScreenParametersChangedObserver.swift` | Wraps `NSApplication.didChangeScreenParametersNotification` as a pub/sub event |
 | `SpaceChangedObserver.swift` | Wraps `NSWorkspace.activeSpaceDidChangeNotification`; handles displaced-window untiling and root-type tracking |
 | `TileStateChangedObserver.swift` | Pure relay hub; `ReapplyHandler` and untile handlers call `notify()` directly |
-| `WindowFocusChangedObserver.swift` | Pure relay hub; `FocusObserver` calls `notify()` directly |
+| `WindowCreatedObserver.swift` | Manages per-app AXObservers for `kAXWindowCreatedNotification` and fires `WindowCreatedEvent` |
+| `WindowFocusChangedObserver.swift` | Pure relay hub; fired by `FocusedWindowChangedObserver` subscriber |
 
 ## Config
 
@@ -145,10 +153,8 @@ Event-driven observers that react to AX notifications, app lifecycle, and screen
 | `AppObserverManager.swift` | Per-app AXObserver lifecycle (create, run-loop, cleanup) |
 | `AXCallback.swift` | C-compatible callback that dispatches to ResizeObserver |
 | `DragReapplyScheduler.swift` | Polls for mouse-up during drag and triggers reapply |
-| `FocusObserver.swift` | Watches app/window focus changes to drive dimming |
 | `ResizeObserver.swift` | Tracks AX move/resize/destroy for all managed windows |
 | `SwapOverlay.swift` | Translucent overlay shown over drop targets during drag |
-| `WindowCreationObserver.swift` | Observes kAXWindowCreatedNotification per app and routes new windows via AutoModeHandler |
 
 ### Services/Wallpaper/
 
@@ -169,6 +175,7 @@ Window utilities, AX helpers, and validation.
 | `AnimationService.swift` | Animates window frames via interpolated AX calls over a configurable duration |
 | `AXHelpers.swift` | Low-level AX API helpers (read size/origin, window ID) |
 | `BorderDrawingView.swift` | NSView that draws a border ring using Core Graphics even-odd clipping |
+| `FocusChangeHandler.swift` | Handles focus change effects: tab detection, dimming, border, scroll-to-center |
 | `FocusedWindowBorderService.swift` | Manages a border overlay window drawn above the focused managed window |
 | `KeybindingService.swift` | Registers global keyboard shortcuts via CGEventTap |
 | `OnScreenWindowCache.swift` | Time-cached CGWindowList result (50ms) |

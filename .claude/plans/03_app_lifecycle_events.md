@@ -2,14 +2,14 @@
 
 ## Checklist
 
-- [ ] Create `AppActivatedEvent` in `Events/`
-- [ ] Create `AppActivatedObserver` in `Observers/`
-- [ ] Create `AppTerminatedEvent` in `Events/`
-- [ ] Create `AppTerminatedObserver` in `Observers/`
-- [ ] Refactor `WindowCreationObserver` to subscribe to `AppActivatedObserver` and `AppTerminatedObserver`
-- [ ] Refactor `FocusObserver` to subscribe to `AppActivatedObserver` and `AppTerminatedObserver`
-- [ ] Start `AppActivatedObserver` and `AppTerminatedObserver` in `UnnamedWindowManagerApp.init()`
-- [ ] Verify build and all functionality
+- [x] Create `AppActivatedEvent` in `Events/`
+- [x] Create `AppActivatedObserver` in `Observers/`
+- [x] Create `AppTerminatedEvent` in `Events/`
+- [x] Create `AppTerminatedObserver` in `Observers/`
+- [x] Refactor `WindowCreationObserver` to subscribe to `AppActivatedObserver` and `AppTerminatedObserver`
+- [x] Refactor `FocusObserver` to subscribe to `AppActivatedObserver` and `AppTerminatedObserver`
+- [x] Start `AppActivatedObserver` and `AppTerminatedObserver` in `UnnamedWindowManagerApp.init()`
+- [x] Verify build and all functionality
 
 ---
 

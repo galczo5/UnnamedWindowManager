@@ -1,66 +1,14 @@
 import AppKit
 import ApplicationServices
 
-// C-compatible callback for kAXFocusedWindowChangedNotification — must not capture Swift context.
-private func focusChangedCallback(
-    _ observer: AXObserver,
-    _ element: AXUIElement,
-    _ notification: CFString,
-    _ refcon: UnsafeMutableRawPointer?
-) {
-    guard let refcon else { return }
-    var pid: pid_t = 0
-    AXUIElementGetPid(element, &pid)
-    let obs = Unmanaged<FocusObserver>.fromOpaque(refcon).takeUnretainedValue()
-    DispatchQueue.main.async {
-        WindowFocusChangedObserver.shared.notify(WindowFocusChangedEvent())
-        obs.applyDim(pid: pid)
-    }
-}
-
-// Watches app activation and per-app focused-window changes to drive window dimming.
-final class FocusObserver {
-    static let shared = FocusObserver()
+// Handles focus change effects: window dimming, tab detection, border updates, scroll-to-center.
+final class FocusChangeHandler {
+    static let shared = FocusChangeHandler()
     private init() {}
 
-    private var observerManager: AppObserverManager?
     private var retryWorkItem: DispatchWorkItem?
 
-    func start() {
-        observerManager = AppObserverManager(
-            callback: focusChangedCallback,
-            notifications: [
-                kAXFocusedWindowChangedNotification as CFString,
-                kAXMainWindowChangedNotification    as CFString,
-            ],
-            refcon: Unmanaged.passUnretained(self).toOpaque())
-        let nc = NSWorkspace.shared.notificationCenter
-        nc.addObserver(self, selector: #selector(didActivateApp(_:)),
-                       name: NSWorkspace.didActivateApplicationNotification, object: nil)
-        nc.addObserver(self, selector: #selector(didTerminateApp(_:)),
-                       name: NSWorkspace.didTerminateApplicationNotification, object: nil)
-        if let app = NSWorkspace.shared.frontmostApplication {
-            observerManager?.observeApp(pid: app.processIdentifier)
-            applyDim(pid: app.processIdentifier)
-        }
-    }
-
-    @objc private func didActivateApp(_ note: Notification) {
-        guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-        else { return }
-        let pid = app.processIdentifier
-        observerManager?.observeApp(pid: pid)
-        WindowFocusChangedObserver.shared.notify(WindowFocusChangedEvent())
-        applyDim(pid: pid)
-    }
-
-    @objc private func didTerminateApp(_ note: Notification) {
-        guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-        else { return }
-        observerManager?.removeAppObserver(pid: app.processIdentifier)
-    }
-
-    func applyDim(pid: pid_t) {
+    func handleFocusChange(pid: pid_t) {
         let axApp = AXUIElementCreateApplication(pid)
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &ref) == .success,
@@ -113,14 +61,13 @@ final class FocusObserver {
             // If detection failed but managed siblings exist, the new window's bounds may not
             // have settled in CGWindowList yet. Poll until the hash appears.
             if !swapped, !managedSiblings.isEmpty {
-                retryWorkItem?.cancel()
                 let work = DispatchWorkItem { [weak self] in
                     SettlePoller.poll(condition: {
                         OnScreenWindowCache.invalidate()
                         return OnScreenWindowCache.visibleHashes().contains(hash)
                     }) { settled in
                         guard settled else { return }
-                        self?.applyDim(pid: pid)
+                        self?.handleFocusChange(pid: pid)
                     }
                 }
                 retryWorkItem = work
@@ -153,5 +100,4 @@ final class FocusObserver {
             FocusedWindowBorderService.shared.hide()
         }
     }
-
 }

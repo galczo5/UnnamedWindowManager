@@ -42,11 +42,33 @@ struct UnnamedWindowManagerApp: App {
         Logger.shared.configure(path: Config.logPath)
         LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
         NotificationService.shared.requestAuthorization()
-        FocusObserver.shared.start()
+        AppActivatedObserver.shared.start()
+        AppTerminatedObserver.shared.start()
+        FocusedWindowChangedObserver.shared.start()
         ScreenParametersChangedObserver.shared.start()
         SpaceChangedObserver.shared.start()
-        WindowCreationObserver.shared.start()
+        WindowCreatedObserver.shared.start()
         WallpaperService.shared.apply()
+
+        FocusedWindowChangedObserver.shared.subscribe { event in
+            WindowFocusChangedObserver.shared.notify(WindowFocusChangedEvent())
+            FocusChangeHandler.shared.handleFocusChange(pid: event.pid)
+        }
+
+        WindowCreatedObserver.shared.subscribe { event in
+            let label = event.title.isEmpty ? event.appName : "\(event.appName) – \(event.title)"
+            let key = windowSlot(for: event.window, pid: event.pid)
+            let rootDesc: String
+            if let rootID = TilingRootStore.shared.rootID(containing: key) {
+                rootDesc = "tiling:\(rootID.uuidString.prefix(8))"
+            } else if let info = ScrollingRootStore.shared.scrollingRootInfo(containing: key) {
+                rootDesc = "scrolling:\(info.rootID.uuidString.prefix(8))"
+            } else {
+                rootDesc = "untiled"
+            }
+            Logger.shared.log("window appeared \"\(label)\" pid=\(event.pid) wid=\(event.windowHash ?? 0) root=\(rootDesc)")
+            AutoModeHandler.handleFocusChange()
+        }
 
         ScreenParametersChangedObserver.shared.subscribe { _ in
             guard let screen = NSScreen.main else { return }

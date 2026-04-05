@@ -2,17 +2,17 @@
 
 ## Checklist
 
-- [ ] Create `WindowCreatedEvent` in `Events/`
-- [ ] Create `WindowCreatedObserver` in `Observers/`
-- [ ] Create `FocusedWindowChangedEvent` in `Events/`
-- [ ] Create `FocusedWindowChangedObserver` in `Observers/`
-- [ ] Migrate window creation handling to subscribe to `WindowCreatedObserver`
-- [ ] Migrate focus/dim handling to subscribe to `FocusedWindowChangedObserver`
-- [ ] Delete `Services/Observation/WindowCreationObserver.swift`
-- [ ] Delete `Services/Observation/FocusObserver.swift`
-- [ ] Refactor `AppObserverManager` into the new observers or keep as shared utility
-- [ ] Update `UnnamedWindowManagerApp.init()` startup sequence
-- [ ] Verify build and all functionality
+- [x] Create `WindowCreatedEvent` in `Events/`
+- [x] Create `WindowCreatedObserver` in `Observers/`
+- [x] Create `FocusedWindowChangedEvent` in `Events/`
+- [x] Create `FocusedWindowChangedObserver` in `Observers/`
+- [x] Migrate window creation handling to subscribe to `WindowCreatedObserver`
+- [x] Migrate focus/dim handling to subscribe to `FocusedWindowChangedObserver`
+- [x] Delete `Services/Observation/WindowCreationObserver.swift`
+- [x] Delete `Services/Observation/FocusObserver.swift`
+- [x] Refactor `AppObserverManager` into the new observers or keep as shared utility
+- [x] Update `UnnamedWindowManagerApp.init()` startup sequence
+- [x] Verify build and all functionality
 
 ---
 
