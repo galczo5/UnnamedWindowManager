@@ -32,7 +32,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "80"
             endingLineNumber = "80"
-            landmarkName = "createScrollingRoot(key:screen:)"
+            landmarkName = "addWindow(_:screen:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

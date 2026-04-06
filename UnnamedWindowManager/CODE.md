@@ -8,12 +8,21 @@ UnnamedWindowManager/
 ├── AppDelegate.swift               # Lifecycle, observer startup, menu bar
 ├── Logger.swift                    # File-based debug logger
 ├── Config/                         # Configuration loading and accessors
+├── Debug/                          # Debug-only logging utilities
 ├── Events/                         # AppEvent protocol and event data structs
 ├── Model/                          # Data types (slots, orientations, enums)
 ├── Observers/                      # EventObserver base class and observer subclasses
 ├── Services/                       # All business logic (see below)
 └── build.sh                        # CLI build script (xcodebuild wrapper)
 ```
+
+## Debug
+
+Debug-only utilities for logging on-screen windows and slot trees.
+
+| File | Description |
+|------|-------------|
+| `DebugLogger.swift` | Debug logging of on-screen windows and slot tree |
 
 ## Events
 
@@ -147,6 +156,7 @@ Keyboard shortcut entry points. Each handler is invoked by `KeybindingService` a
 | `ScrollAllHandler.swift` | Batch-scroll all visible windows |
 | `UnscrollHandler.swift` | Remove windows from scrolling layout |
 | `OrientFlipHandler.swift` | Read/flip parent container orientation |
+| `ReapplyHandler.swift` | Orchestrates layout reapplication with debouncing and validation |
 
 ### Services/Navigation/
 
@@ -195,9 +205,7 @@ Window utilities, AX helpers, and validation.
 | `SettlePoller.swift` | Polls a condition every 20ms until satisfied or timeout (`animationDuration + 0.1`) elapses |
 | `TabDetector.swift` | Detects native macOS tab groups by matching same-PID windows with identical CGWindow bounds |
 | `WindowCornerRadius.swift` | Detects per-window corner radii via SkyLight API, pixel scan, or OS fallback |
-| `WindowLister.swift` | Debug logging of on-screen windows and slot tree |
 | `WindowOpacityService.swift` | Dims non-focused windows via per-root overlays |
-| `WindowVisibilityManager.swift` | Manages auto-minimization state for tiled windows |
 
 ### Services/ (root)
 
@@ -207,6 +215,5 @@ Cross-cutting services that don't belong to a single domain.
 |------|-------------|
 | `CommandService.swift` | Executes shell commands from user-configured shortcuts |
 | `NotificationService.swift` | Posts user-facing system notifications |
-| `ReapplyHandler.swift` | Orchestrates layout reapplication with debouncing and validation |
-| `ScreenHelper.swift` | Computes usable tiling area after outer gaps |
+| `Screen.swift` | Screen geometry utilities: usable tiling area and AX layout origin |
 | `SharedRootStore.swift` | Thread-safe store for all layout roots (tiling + scrolling) |

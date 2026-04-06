@@ -204,7 +204,7 @@ struct UnnamedWindowManagerApp: App {
                 ReapplyHandler.reapplyAll()
             }
             Divider()
-            Button("Debug")     { WindowLister.logSlotTree() }
+            Button("Debug")     { DebugLogger.logSlotTree() }
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {
             HStack(spacing: 4) {

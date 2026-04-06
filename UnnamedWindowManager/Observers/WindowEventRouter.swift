@@ -136,7 +136,6 @@ final class WindowEventRouter {
         }
         WindowTracker.shared.cleanup(key: key, pid: pid)
         cleanupPidIfEmpty(pid)
-        WindowVisibilityManager.shared.windowRemoved(key)
         ReapplyHandler.reapplyAll()
     }
 

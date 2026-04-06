@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 
 // Debugging utilities that log all on-screen windows and the current slot tree.
-struct WindowLister {
+struct DebugLogger {
 
     /// Logs a tile/scroll event: which window moved to which root, and all currently visible
     /// on-screen windows annotated with the root they belong to (or "untiled").

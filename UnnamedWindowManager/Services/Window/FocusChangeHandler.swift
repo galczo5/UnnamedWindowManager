@@ -84,7 +84,23 @@ final class FocusChangeHandler {
 
         if let info = ScrollingRootStore.shared.scrollingRootInfo(containing: key) {
             if info.centerHash != key.windowHash {
-                ScrollingFocusService.scrollToCenter(key: key)
+                if let screen = NSScreen.main {
+                    let before = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
+                    if let newCenter = ScrollingRootStore.shared.scrollToWindow(key, screen: screen),
+                       let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() {
+                        let zonesChanged = (before?.left != nil, before?.right != nil) != (after.left != nil, after.right != nil)
+                        let origin = screenLayoutOrigin(screen)
+                        let elements = WindowTracker.shared.elements
+                        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                                   zonesChanged: zonesChanged, applyCenter: false)
+                        ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
+                                                                   applySides: false)
+                        if let ax = WindowTracker.shared.elements[newCenter] {
+                            NSRunningApplication(processIdentifier: newCenter.pid)?.activate()
+                            AXUIElementPerformAction(ax, kAXRaiseAction as CFString)
+                        }
+                    }
+                }
                 if let updated = ScrollingRootStore.shared.scrollingRootInfo(containing: key) {
                     WindowOpacityService.shared.dim(rootID: updated.rootID, focusedHash: updated.centerHash)
                 }

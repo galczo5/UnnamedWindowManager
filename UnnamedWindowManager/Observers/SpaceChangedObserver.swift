@@ -27,7 +27,7 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
             if root.id != lastTilingRootID {
                 lastTilingRootID = root.id
                 let count = root.allLeaves().count
-                WindowLister.logRootChanged(type: "tiling", rootID: root.id, windowCount: count)
+                DebugLogger.logRootChanged(type: "tiling", rootID: root.id, windowCount: count)
             }
         } else {
             lastTilingRootID = nil
@@ -36,8 +36,8 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
         if let root = scrollingRoot {
             if root.id != lastScrollingRootID {
                 lastScrollingRootID = root.id
-                WindowLister.logRootChanged(type: "scrolling", rootID: root.id,
-                                            windowCount: WindowLister.countScrollingWindows(in: root))
+                DebugLogger.logRootChanged(type: "scrolling", rootID: root.id,
+                                            windowCount: DebugLogger.countScrollingWindows(in: root))
             }
         } else {
             lastScrollingRootID = nil

@@ -69,7 +69,7 @@ final class ScrollingRootStore {
             logID = id
         }
         if let rootID = logID {
-            WindowLister.logWindowEvent(action: "scrolled (new root)", windowHash: key.windowHash, rootID: rootID)
+            DebugLogger.logWindowEvent(action: "scrolled (new root)", windowHash: key.windowHash, rootID: rootID)
         }
     }
 
@@ -93,7 +93,7 @@ final class ScrollingRootStore {
             logID = id
         }
         if let rootID = logID {
-            WindowLister.logWindowEvent(action: "scrolled (added)", windowHash: key.windowHash, rootID: rootID)
+            DebugLogger.logWindowEvent(action: "scrolled (added)", windowHash: key.windowHash, rootID: rootID)
         }
     }
 
@@ -111,7 +111,7 @@ final class ScrollingRootStore {
             return newCenter
         }
         if let info = logInfo {
-            WindowLister.logWindowEvent(action: "scrolled right", windowHash: info.hash, rootID: info.rootID)
+            DebugLogger.logWindowEvent(action: "scrolled right", windowHash: info.hash, rootID: info.rootID)
         }
         return result
     }
@@ -130,7 +130,7 @@ final class ScrollingRootStore {
             return newCenter
         }
         if let info = logInfo {
-            WindowLister.logWindowEvent(action: "scrolled left", windowHash: info.hash, rootID: info.rootID)
+            DebugLogger.logWindowEvent(action: "scrolled left", windowHash: info.hash, rootID: info.rootID)
         }
         return result
     }

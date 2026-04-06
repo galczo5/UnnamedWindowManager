@@ -32,7 +32,6 @@ struct ReapplyHandler {
             })
             WindowTracker.shared.reapplying.formUnion(allWindows)
             LayoutService.shared.applyLayout(screen: screen)
-            WindowVisibilityManager.shared.applyVisibility()
             let animDur = Config.animationDuration
             DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) {
                 WindowTracker.shared.reapplying.subtract(allWindows)

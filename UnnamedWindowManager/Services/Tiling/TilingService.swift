@@ -69,7 +69,7 @@ final class TilingService {
             snapRootID = targetRootID
         }
         if let rootID = snapRootID {
-            WindowLister.logWindowEvent(action: "tiled", windowHash: key.windowHash, rootID: rootID)
+            DebugLogger.logWindowEvent(action: "tiled", windowHash: key.windowHash, rootID: rootID)
         }
     }
 
@@ -179,7 +179,7 @@ final class TilingService {
             mergedRootID = targetID
         }
         if let rootID = mergedRootID {
-            WindowLister.logWindowEvent(action: "consolidated roots", windowHash: 0, rootID: rootID)
+            DebugLogger.logWindowEvent(action: "consolidated roots", windowHash: 0, rootID: rootID)
         }
     }
 
