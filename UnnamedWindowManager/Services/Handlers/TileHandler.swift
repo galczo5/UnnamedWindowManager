@@ -40,7 +40,7 @@ struct TileHandler {
         var mutableKey = key
         mutableKey.preTileOrigin = readOrigin(of: axWindow)
         mutableKey.preTileSize = readSize(of: axWindow)
-        let tabSiblings = TabDetector.tabSiblingHashes(of: mutableKey.windowHash, pid: pid)
+        let tabSiblings = WindowTabDetector.tabSiblingHashes(of: mutableKey.windowHash, pid: pid)
         if !tabSiblings.isEmpty {
             mutableKey.isTabbed = true
             mutableKey.tabHashes = tabSiblings
@@ -81,7 +81,7 @@ struct TileHandler {
 
         key.preTileOrigin = readOrigin(of: window)
         key.preTileSize = readSize(of: window)
-        let tabSiblings = TabDetector.tabSiblingHashes(of: key.windowHash, pid: pid)
+        let tabSiblings = WindowTabDetector.tabSiblingHashes(of: key.windowHash, pid: pid)
         if !tabSiblings.isEmpty {
             key.isTabbed = true
             key.tabHashes = tabSiblings

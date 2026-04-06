@@ -10,8 +10,7 @@ struct ReapplyHandler {
         guard TilingRootStore.shared.isTracked(key) || ScrollingRootStore.shared.isTracked(key)
         else { return }
         guard let screen = NSScreen.main else { return }
-        LayoutService.shared.clearCache(for: key)
-        LayoutService.shared.applyLayout(screen: screen)
+        TilingLayoutService.shared.applyLayout(screen: screen)
     }
 
     /// Reapplies the layout for all tiled windows, debounced to 10 ms.
@@ -21,8 +20,6 @@ struct ReapplyHandler {
         pendingLayout?.cancel()
         let work = DispatchWorkItem {
             guard let screen = NSScreen.main else { return }
-            LayoutService.shared.clearCache()
-            ScrollingLayoutService.shared.clearCache()
             pruneOffScreenWindows(screen: screen)
             let tilingLeaves = TilingRootStore.shared.leavesInVisibleRoot()
             let scrollingLeaves = ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
@@ -31,7 +28,7 @@ struct ReapplyHandler {
                 return nil
             })
             WindowTracker.shared.reapplying.formUnion(allWindows)
-            LayoutService.shared.applyLayout(screen: screen)
+            TilingLayoutService.shared.applyLayout(screen: screen)
             let animDur = Config.animationDuration
             DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) {
                 WindowTracker.shared.reapplying.subtract(allWindows)
@@ -94,7 +91,7 @@ struct ReapplyHandler {
         let cursor = NSEvent.mouseLocation           // AppKit coords (bottom-left origin)
         let screenHeight = NSScreen.screens[0].frame.height
         // Use precomputed slot-tree frames instead of live AX reads.
-        let frames = LayoutService.shared.computeFrames(screen: screen)
+        let frames = TilingLayoutService.shared.computeFrames(screen: screen)
 
         for (w, axFrame) in frames {
             guard w != draggedKey else { continue }

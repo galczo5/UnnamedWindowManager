@@ -1,10 +1,10 @@
 import AppKit
 
 // Polls for mouse-up then reapplies tile position, handling resize, move, and scrolling reapply.
-final class DragReapplyScheduler {
+final class TilingDragHandler {
     private weak var tracker: WindowTracker?
     private var pending: [WindowSlot: DispatchWorkItem] = [:]
-    let overlay = SwapOverlay()
+    let overlay = TilingDropOverlay()
     private var lastDropTarget: DropTarget?
     private var dropTargetEnteredAt: Date?
     private var postMoveCheck: DispatchWorkItem?
@@ -70,8 +70,7 @@ final class DragReapplyScheduler {
                 ScrollingRootStore.shared.updateCenterFraction(
                     for: key, proposedWidth: actualSize.width, screenWidth: screenWidth, screen: screen)
             }
-            ScrollingLayoutService.shared.clearCache(for: key)
-            LayoutService.shared.applyLayout(screen: screen, scrollingSidesPositionOnly: isCenterResize)
+            TilingLayoutService.shared.applyLayout(screen: screen, scrollingSidesPositionOnly: isCenterResize)
             DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1)) {
                 let windows = Set(ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
                     .compactMap { (slot: Slot) -> WindowSlot? in

@@ -5,6 +5,13 @@ struct RestoreService {
 
     static func restore(_ slot: WindowSlot, element: AXUIElement) {
         guard let pos = slot.preTileOrigin, let size = slot.preTileSize else { return }
-        AnimationService.shared.animate(key: slot, ax: element, to: pos, size: size)
+        var p = pos
+        if let posVal = AXValueCreate(.cgPoint, &p) {
+            AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, posVal)
+        }
+        var s = size
+        if let sizeVal = AXValueCreate(.cgSize, &s) {
+            AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, sizeVal)
+        }
     }
 }

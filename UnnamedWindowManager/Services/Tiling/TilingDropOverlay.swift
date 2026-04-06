@@ -1,7 +1,7 @@
 import AppKit
 
-// Manages the translucent overlay window shown over the drop target during a window drag.
-final class SwapOverlay {
+// Manages the translucent overlay window shown over the drop target during a tiling drag.
+final class TilingDropOverlay {
     private var window: NSWindow?
     private var currentTarget: DropTarget?
 

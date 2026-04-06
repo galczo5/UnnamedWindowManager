@@ -110,8 +110,6 @@ struct UnnamedWindowManagerApp: App {
 
         ScreenParametersChangedObserver.shared.subscribe { _ in
             guard let screen = NSScreen.main else { return }
-            LayoutService.shared.clearCache()
-            ScrollingLayoutService.shared.clearCache()
             TilingService.shared.recomputeVisibleRootSizes(screen: screen)
             WallpaperService.shared.screenChanged()
             ReapplyHandler.reapplyAll()

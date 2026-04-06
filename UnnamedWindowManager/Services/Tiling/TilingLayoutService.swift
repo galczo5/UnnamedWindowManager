@@ -2,15 +2,9 @@ import AppKit
 import ApplicationServices
 
 // Walks the slot tree and applies window positions and sizes via the Accessibility API.
-final class LayoutService {
-    static let shared = LayoutService()
+final class TilingLayoutService {
+    static let shared = TilingLayoutService()
     private init() {}
-
-    private var lastApplied: [UInt: (pos: CGPoint, size: CGSize)] = [:]
-
-    func clearCache() { lastApplied.removeAll() }
-    func clearCache(for key: WindowSlot) { lastApplied.removeValue(forKey: key.windowHash) }
-    func expectedAXFrame(for windowHash: UInt) -> (pos: CGPoint, size: CGSize)? { lastApplied[windowHash] }
 
     /// Positions all tiled windows on `screen` by walking the current slot tree.
     /// The root origin is shifted inward by outer gaps; leaf windows are inset by inner gap.
@@ -111,13 +105,7 @@ final class LayoutService {
             let g = w.gaps ? Config.innerGap : 0
             let pos  = CGPoint(x: (origin.x + g).rounded(), y: (origin.y + g).rounded())
             let size = CGSize(width: (w.size.width - g * 2).rounded(), height: (w.size.height - g * 2).rounded())
-            if let last = lastApplied[w.windowHash],
-               abs(last.pos.x - pos.x) < 1, abs(last.pos.y - pos.y) < 1,
-               abs(last.size.width - size.width) < 1, abs(last.size.height - size.height) < 1 {
-                return
-            }
-            lastApplied[w.windowHash] = (pos, size)
-            AnimationService.shared.animate(key: w, ax: ax, to: pos, size: size)
+            TilingAnimationService.shared.animate(key: w, ax: ax, to: pos, size: size)
         case .split(let s):
             var cursor = origin
             for child in s.children {

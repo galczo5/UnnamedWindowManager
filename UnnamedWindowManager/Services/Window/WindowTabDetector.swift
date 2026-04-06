@@ -4,7 +4,7 @@ import ApplicationServices
 /// Detects native macOS tab groups by identifying same-PID windows with identical CGWindow bounds.
 /// Queries CGWindowListCopyWindowInfo without .optionOnScreenOnly so that inactive tabs
 /// (which share the same window frame but aren't rendered) are included in the results.
-struct TabDetector {
+struct WindowTabDetector {
 
     struct WindowInfo {
         let wid: CGWindowID

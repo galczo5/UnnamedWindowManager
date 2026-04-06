@@ -51,8 +51,6 @@ final class ScrollingAnimationService {
         let beforePos = computePositions(root: before, origin: origin)
         let afterPos  = computePositions(root: after,  origin: origin)
 
-        ScrollingLayoutService.shared.updateExpectedFrames(afterPos)
-
         let centerHashes      = slotHashes(after.center)
         let beforeLeftHashes  = before.left.map  { slotHashes($0) } ?? []
         let beforeRightHashes = before.right.map { slotHashes($0) } ?? []

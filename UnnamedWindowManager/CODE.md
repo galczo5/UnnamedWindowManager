@@ -125,10 +125,13 @@ Tiling slot tree management and layout application.
 
 | File | Description |
 |------|-------------|
+| `TilingAnimationService.swift` | Animates tiling window frames via interpolated AX calls synced to the display refresh rate |
+| `TilingDragHandler.swift` | Polls for mouse-up then reapplies tile position, handling resize, move, and drag-swap |
+| `TilingDropOverlay.swift` | Translucent overlay shown over the drop target during a tiling drag |
+| `TilingLayoutService.swift` | Walks the tiling tree and applies window positions via AX API |
+| `TilingNeighborService.swift` | Spatial neighbor-finding for directional operations |
 | `TilingRootStore.swift` | Read-only queries and lookup helpers for tiling roots |
 | `TilingService.swift` | All tiling store operations: snap/remove windows and structural edits (resize, swap, flip, insert) |
-| `TilingNeighborService.swift` | Spatial neighbor-finding for directional operations |
-| `LayoutService.swift` | Walks the tiling tree and applies window positions via AX API |
 
 ### Services/Scrolling/
 
@@ -136,10 +139,9 @@ Scrolling layout management (left/center/right zones with stacking sides).
 
 | File | Description |
 |------|-------------|
-| `ScrollingRootStore.swift` | Thread-safe store wrapper; delegates all tree logic to ScrollingRootSlot methods |
-| `ScrollingLayoutService.swift` | Applies window positions for scrolling roots via AX API |
 | `ScrollingAnimationService.swift` | Direction-aware animator for scroll left/right; uses before-state positions to prevent jump artefacts |
-| `ScrollingFocusService.swift` | Left/right navigation, rotating windows between zones |
+| `ScrollingLayoutService.swift` | Applies window positions for scrolling roots via AX API |
+| `ScrollingRootStore.swift` | Thread-safe store wrapper; delegates all tree logic to ScrollingRootSlot methods |
 
 ### Services/Handlers/
 
@@ -157,6 +159,7 @@ Keyboard shortcut entry points. Each handler is invoked by `KeybindingService` a
 | `UnscrollHandler.swift` | Remove windows from scrolling layout |
 | `OrientFlipHandler.swift` | Read/flip parent container orientation |
 | `ReapplyHandler.swift` | Orchestrates layout reapplication with debouncing and validation |
+| `FocusChangeHandler.swift` | Handles focus change effects: tab detection, dimming, border, scroll-to-center |
 
 ### Services/Navigation/
 
@@ -166,16 +169,6 @@ Cross-layout directional services used by focus and swap handlers.
 |------|-------------|
 | `FocusDirectionService.swift` | Activates the nearest window in a direction |
 | `SwapDirectionService.swift` | Swaps focused window with its directional neighbor |
-
-### Services/Observation/
-
-Event-driven observers that react to AX notifications, app lifecycle, and screen changes.
-
-| File | Description |
-|------|-------------|
-| `DragReapplyScheduler.swift` | Polls for mouse-up during drag and triggers reapply |
-| `SwapOverlay.swift` | Translucent overlay shown over drop targets during drag |
-| `WindowTracker.swift` | Central registry mapping WindowSlots to AXUIElements, PIDs, and reapply state |
 
 ### Services/Wallpaper/
 
@@ -187,18 +180,30 @@ Desktop wallpaper overlay (PNG, JPG, animated GIF) rendered behind all windows.
 | `GifImageView.swift` | NSView that decodes and animates image frames via CGImageSource |
 | `WallpaperService.swift` | Singleton managing one wallpaper window per connected screen |
 
+### Services/Border/
+
+Border overlay drawn above the focused managed window.
+
+| File | Description |
+|------|-------------|
+| `BorderDrawingView.swift` | NSView that draws a border ring using Core Graphics even-odd clipping |
+| `FocusedWindowBorderService.swift` | Manages a border overlay window drawn above the focused managed window |
+
+### Services/Keybinding/
+
+Global keyboard shortcut registration and parsing.
+
+| File | Description |
+|------|-------------|
+| `KeybindingService.swift` | Registers global keyboard shortcuts via CGEventTap |
+
 ### Services/Window/
 
 Window utilities, AX helpers, and validation.
 
 | File | Description |
 |------|-------------|
-| `AnimationService.swift` | Animates window frames via interpolated AX calls over a configurable duration |
 | `AXHelpers.swift` | Low-level AX API helpers (read size/origin, window ID) |
-| `BorderDrawingView.swift` | NSView that draws a border ring using Core Graphics even-odd clipping |
-| `FocusChangeHandler.swift` | Handles focus change effects: tab detection, dimming, border, scroll-to-center |
-| `FocusedWindowBorderService.swift` | Manages a border overlay window drawn above the focused managed window |
-| `KeybindingService.swift` | Registers global keyboard shortcuts via CGEventTap |
 | `OnScreenWindowCache.swift` | Time-cached CGWindowList result (50ms) |
 | `PostResizeValidator.swift` | Detects and corrects windows that refused a resize |
 | `RestoreService.swift` | Restores a window to its pre-tile frame via AX |
@@ -206,6 +211,7 @@ Window utilities, AX helpers, and validation.
 | `TabDetector.swift` | Detects native macOS tab groups by matching same-PID windows with identical CGWindow bounds |
 | `WindowCornerRadius.swift` | Detects per-window corner radii via SkyLight API, pixel scan, or OS fallback |
 | `WindowOpacityService.swift` | Dims non-focused windows via per-root overlays |
+| `WindowTracker.swift` | Central registry mapping WindowSlots to AXUIElements, PIDs, and reapply state |
 
 ### Services/ (root)
 

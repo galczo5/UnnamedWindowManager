@@ -13,7 +13,7 @@ final class WindowTracker {
     /// Keys whose reapply is in-flight; prevents re-entrancy from the resulting AX notification.
     var reapplying: Set<WindowSlot>            = []
 
-    private(set) lazy var reapplyScheduler = DragReapplyScheduler(tracker: self)
+    private(set) lazy var reapplyScheduler = TilingDragHandler(tracker: self)
 
     func register(key: WindowSlot, element: AXUIElement, pid: pid_t) {
         elements[key] = element
@@ -32,7 +32,6 @@ final class WindowTracker {
         elements.removeValue(forKey: key)
         keysByHash.removeValue(forKey: key.windowHash)
         keysByPid[pid]?.remove(key)
-        LayoutService.shared.clearCache(for: key)
-        ScrollingLayoutService.shared.clearCache(for: key)
+
     }
 }

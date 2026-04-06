@@ -5,8 +5,8 @@ import os
 
 /// Animates window frames via interpolated AX position/size calls synced to the display refresh rate.
 /// Ticks run directly on the CVDisplayLink render thread for frame-accurate timing.
-final class AnimationService {
-    static let shared = AnimationService()
+final class TilingAnimationService {
+    static let shared = TilingAnimationService()
 
     private struct Animation {
         let ax: AXUIElement

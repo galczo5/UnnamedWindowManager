@@ -36,7 +36,7 @@ struct TileAllHandler {
         // Filter out tab duplicates: keep one CGWindowID per native macOS tab group.
         var anyTabs = false
         for (pid, wids) in pidToWindowIDs {
-            let (kept, hadTabs) = TabDetector.filterTabDuplicates(wids: wids, pid: pid)
+            let (kept, hadTabs) = WindowTabDetector.filterTabDuplicates(wids: wids, pid: pid)
             pidToWindowIDs[pid] = kept
             if hadTabs { anyTabs = true }
         }
@@ -66,7 +66,7 @@ struct TileAllHandler {
             key.preTileOrigin = readOrigin(of: item.window)
             key.preTileSize = readSize(of: item.window)
             if anyTabs { key.isTabbed = true }
-            key.tabHashes = TabDetector.tabSiblingHashes(of: key.windowHash, pid: item.pid)
+            key.tabHashes = WindowTabDetector.tabSiblingHashes(of: key.windowHash, pid: item.pid)
             let tabInfo = key.tabHashes.isEmpty ? "" : " [tab, siblings: \(key.tabHashes)]"
             Logger.shared.log("tileAll: pid=\(key.pid) hash=\(key.windowHash)\(tabInfo)")
             TilingService.shared.snap(key, screen: screen)

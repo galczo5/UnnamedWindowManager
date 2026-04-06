@@ -91,7 +91,6 @@ final class WindowEventRouter {
         tracker.elements.removeValue(forKey: oldKey)
         tracker.keysByHash.removeValue(forKey: oldKey.windowHash)
         tracker.keysByPid[pid]?.remove(oldKey)
-        LayoutService.shared.clearCache(for: oldKey)
 
         // Update slot tree identity.
         SharedRootStore.shared.queue.sync(flags: .barrier) {
@@ -117,7 +116,7 @@ final class WindowEventRouter {
         var newKey = WindowSlot(pid: pid, windowHash: newHash,
                                 id: UUID(), parentId: UUID(), order: 0, size: .zero,
                                 isTabbed: true)
-        newKey.tabHashes = TabDetector.tabSiblingHashes(of: newHash, pid: pid)
+        newKey.tabHashes = WindowTabDetector.tabSiblingHashes(of: newHash, pid: pid)
         observe(window: newWindow, pid: pid, key: newKey)
     }
 
@@ -220,7 +219,7 @@ final class WindowEventRouter {
                                gaps: w.gaps, fraction: w.fraction,
                                preTileOrigin: w.preTileOrigin, preTileSize: w.preTileSize,
                                isTabbed: true)
-            s.tabHashes = TabDetector.tabSiblingHashes(of: newHash, pid: newPid)
+            s.tabHashes = WindowTabDetector.tabSiblingHashes(of: newHash, pid: newPid)
             return s
         }
         if case .window(let w) = root.center, w.windowHash == oldHash {

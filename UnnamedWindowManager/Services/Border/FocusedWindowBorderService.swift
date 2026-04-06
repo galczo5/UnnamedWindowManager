@@ -13,13 +13,7 @@ final class FocusedWindowBorderService {
 
     func show(windowID: CGWindowID, axElement: AXUIElement) {
         activeWindowID = windowID
-        let key = WindowTracker.shared.keysByHash[UInt(windowID)]
-        let animating = key.map { WindowTracker.shared.reapplying.contains($0) } ?? false
-        if animating || isAtExpectedPosition(axElement: axElement, windowID: windowID) {
-            applyFull(axElement: axElement, windowID: windowID)
-        } else {
-            overlay?.orderOut(nil)
-        }
+        applyFull(axElement: axElement, windowID: windowID)
     }
 
     func hide() {
@@ -38,43 +32,11 @@ final class FocusedWindowBorderService {
     func updateIfActive(key: WindowSlot, axElement: AXUIElement) {
         guard let activeID = activeWindowID,
               key.windowHash == UInt(activeID) else { return }
-        if WindowTracker.shared.reapplying.contains(key) {
-            // Window is being animated by layout — follow it without a position check.
+        if overlay?.isVisible == true {
             moveOverlay(axElement: axElement, windowID: activeID)
-            return
-        }
-        if isAtExpectedPosition(axElement: axElement, windowID: activeID) {
-            if overlay?.isVisible == true {
-                moveOverlay(axElement: axElement, windowID: activeID)
-            } else {
-                applyFull(axElement: axElement, windowID: activeID)
-            }
         } else {
-            overlay?.orderOut(nil)
+            applyFull(axElement: axElement, windowID: activeID)
         }
-    }
-
-    // MARK: - Private
-
-    private func isAtExpectedPosition(axElement: AXUIElement, windowID: CGWindowID) -> Bool {
-        let hash = UInt(windowID)
-        // Use only the service that currently owns this window to avoid stale cache cross-contamination.
-        let expected: (pos: CGPoint, size: CGSize)?
-        if let key = WindowTracker.shared.keysByHash[hash], ScrollingRootStore.shared.isTracked(key) {
-            expected = ScrollingLayoutService.shared.expectedAXFrame(for: hash)
-        } else {
-            expected = LayoutService.shared.expectedAXFrame(for: hash)
-        }
-        guard let expected,
-              let actualPos = readOrigin(of: axElement),
-              let actualSize = readSize(of: axElement) else {
-            return true
-        }
-        let tolerance: CGFloat = 2
-        return abs(actualPos.x - expected.pos.x) <= tolerance
-            && abs(actualPos.y - expected.pos.y) <= tolerance
-            && abs(actualSize.width - expected.size.width) <= tolerance
-            && abs(actualSize.height - expected.size.height) <= tolerance
     }
 
     // Full setup: drawing properties, corner radius, z-order. Called on focus change.

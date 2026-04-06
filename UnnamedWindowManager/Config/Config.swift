@@ -13,8 +13,7 @@ final class Config {
     func reload() {
         data = ConfigLoader.load()
         Logger.shared.configure(path: Config.logPath)
-        LayoutService.shared.clearCache()
-        ScrollingLayoutService.shared.clearCache()
+
     }
 
     private var s: ConfigData.ConfigSection { data.config! }

@@ -42,12 +42,12 @@ enum PostResizeValidator {
             if ScrollingRootStore.shared.isTracked(r.key) {
                 // For scrolling windows, TilingEditService is a no-op.
                 // Clear the cache so applyLayout retries the AX call.
-                ScrollingLayoutService.shared.clearCache(for: r.key)
+
             } else {
                 TilingService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
             }
         }
-        LayoutService.shared.applyLayout(screen: screen)
+        TilingLayoutService.shared.applyLayout(screen: screen)
 
         var lastSizes: [WindowSlot: CGSize] = [:]
         SettlePoller.poll(condition: {
