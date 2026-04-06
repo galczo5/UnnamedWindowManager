@@ -70,6 +70,43 @@ struct UnnamedWindowManagerApp: App {
             AutoModeHandler.handleFocusChange()
         }
 
+        let tracker = WindowTracker.shared
+        let router = WindowEventRouter.shared
+
+        WindowDestroyedObserver.shared.subscribe { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
+        }
+        WindowMiniaturizedObserver.shared.subscribe { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
+        }
+        WindowResizedObserver.shared.subscribe { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            if event.isFullScreen {
+                router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
+                return
+            }
+            if let axElement = tracker.elements[event.key] {
+                FocusedWindowBorderService.shared.updateIfActive(key: event.key, axElement: axElement)
+            }
+            guard TilingRootStore.shared.isTracked(event.key) || isScrolling else { return }
+            guard !tracker.reapplying.contains(event.key) else { return }
+            tracker.reapplyScheduler.schedule(key: event.key, isResize: true, isScrolling: isScrolling)
+        }
+        WindowMovedObserver.shared.subscribe { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            if let axElement = tracker.elements[event.key] {
+                FocusedWindowBorderService.shared.updateIfActive(key: event.key, axElement: axElement)
+            }
+            guard TilingRootStore.shared.isTracked(event.key) || isScrolling else { return }
+            guard !tracker.reapplying.contains(event.key) else { return }
+            if !isScrolling && NSEvent.pressedMouseButtons != 0 {
+                tracker.reapplyScheduler.updateDragOverlay(forKey: event.key, element: event.element, elements: tracker.elements)
+            }
+            tracker.reapplyScheduler.schedule(key: event.key, isResize: false, isScrolling: isScrolling)
+        }
+
         ScreenParametersChangedObserver.shared.subscribe { _ in
             guard let screen = NSScreen.main else { return }
             LayoutService.shared.clearCache()

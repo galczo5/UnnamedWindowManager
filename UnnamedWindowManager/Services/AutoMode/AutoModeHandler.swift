@@ -81,8 +81,8 @@ struct AutoModeHandler {
         }
 
         guard let screen = NSScreen.main else { return }
-        let allKeys = Set(ResizeObserver.shared.keysByHash.values)
-        let observer = ResizeObserver.shared
+        let allKeys = Set(WindowTracker.shared.keysByHash.values)
+        let observer = WindowTracker.shared
         SettlePoller.poll(condition: {
             allKeys.allSatisfy { key in
                 guard let axEl = observer.elements[key],

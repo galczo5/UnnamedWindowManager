@@ -58,7 +58,7 @@ final class AnimationService {
         if posDelta < 1 && (positionOnly || sizeDelta < 1) { return }
 
         markAnimatedOnce(hash)
-        ResizeObserver.shared.reapplying.insert(key)
+        WindowTracker.shared.reapplying.insert(key)
 
         let sizeChanged = !positionOnly && sizeDelta >= 1
         let anim = Animation(ax: ax, key: key,
@@ -73,7 +73,7 @@ final class AnimationService {
     func cancel(hash: UInt) {
         let anim: Animation? = lock.withLock { animations.removeValue(forKey: hash) }
         guard let anim else { return }
-        ResizeObserver.shared.reapplying.remove(anim.key)
+        WindowTracker.shared.reapplying.remove(anim.key)
         stopDisplayLinkIfIdle()
     }
 
@@ -84,7 +84,7 @@ final class AnimationService {
             return copy
         }
         for anim in all.values {
-            ResizeObserver.shared.reapplying.remove(anim.key)
+            WindowTracker.shared.reapplying.remove(anim.key)
         }
         animatedOnce.removeAll()
         clearAnimatedOnceWork?.cancel()
@@ -183,7 +183,7 @@ final class AnimationService {
                 let pending = pendingReapplyRemoval
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {
-                    ResizeObserver.shared.reapplying.subtract(pending)
+                    WindowTracker.shared.reapplying.subtract(pending)
                     FocusedWindowBorderService.shared.recheckActive()
                 }
             }

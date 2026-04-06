@@ -20,7 +20,7 @@ final class LayoutService {
         // y is flipped: AX uses top-left origin, AppKit uses bottom-left.
         let og = Config.outerGaps
         let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
         if let root = TilingRootStore.shared.snapshotVisibleRoot() {
             applyLayout(root, origin: origin, elements: elements)
         }

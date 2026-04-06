@@ -30,7 +30,12 @@ Marker protocol and event data structs shared across all observer classes.
 | `SpaceChangedEvent.swift` | Event fired when the active macOS space changes |
 | `TileStateChangedEvent.swift` | Event fired when the tiling/scrolling layout state changes |
 | `WindowCreatedEvent.swift` | Event carrying the new window element, pid, app name, title, and window hash |
+| `WindowDestroyedEvent.swift` | Event carrying the key and pid of a destroyed tracked window |
 | `WindowFocusChangedEvent.swift` | Event fired when the focused window changes |
+| `WindowMiniaturizedEvent.swift` | Event carrying the key and pid of a miniaturized tracked window |
+| `WindowMovedEvent.swift` | Event carrying the key, element, and pid of a moved tracked window |
+| `WindowResizedEvent.swift` | Event carrying the key, element, pid, and fullscreen flag of a resized tracked window |
+| `WindowTitleChangedEvent.swift` | Event carrying the key and pid of a tracked window whose title changed |
 
 ## Observers
 
@@ -46,7 +51,13 @@ Pub/sub base class for all observer types in the app.
 | `SpaceChangedObserver.swift` | Wraps `NSWorkspace.activeSpaceDidChangeNotification`; handles displaced-window untiling and root-type tracking |
 | `TileStateChangedObserver.swift` | Pure relay hub; `ReapplyHandler` and untile handlers call `notify()` directly |
 | `WindowCreatedObserver.swift` | Manages per-app AXObservers for `kAXWindowCreatedNotification` and fires `WindowCreatedEvent` |
+| `WindowDestroyedObserver.swift` | Notifies subscribers when a tracked window is destroyed |
+| `WindowEventRouter.swift` | Owns per-PID AXObservers, routes AX callbacks to the appropriate typed observer |
 | `WindowFocusChangedObserver.swift` | Pure relay hub; fired by `FocusedWindowChangedObserver` subscriber |
+| `WindowMiniaturizedObserver.swift` | Notifies subscribers when a tracked window is miniaturized |
+| `WindowMovedObserver.swift` | Notifies subscribers when a tracked window is moved |
+| `WindowResizedObserver.swift` | Notifies subscribers when a tracked window is resized (including fullscreen entry) |
+| `WindowTitleChangedObserver.swift` | Notifies subscribers when a tracked window's title changes |
 
 ## Config
 
@@ -151,10 +162,9 @@ Event-driven observers that react to AX notifications, app lifecycle, and screen
 | File | Description |
 |------|-------------|
 | `AppObserverManager.swift` | Per-app AXObserver lifecycle (create, run-loop, cleanup) |
-| `AXCallback.swift` | C-compatible callback that dispatches to ResizeObserver |
 | `DragReapplyScheduler.swift` | Polls for mouse-up during drag and triggers reapply |
-| `ResizeObserver.swift` | Tracks AX move/resize/destroy for all managed windows |
 | `SwapOverlay.swift` | Translucent overlay shown over drop targets during drag |
+| `WindowTracker.swift` | Central registry mapping WindowSlots to AXUIElements, PIDs, and reapply state |
 
 ### Services/Wallpaper/
 

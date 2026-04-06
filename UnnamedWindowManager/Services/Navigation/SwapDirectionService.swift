@@ -26,7 +26,7 @@ struct SwapDirectionService {
         guard let screen = NSScreen.main else { return }
         guard let moved = ScrollingRootStore.shared.swapWindows(direction, screen: screen) else { return }
         ReapplyHandler.reapplyAll()
-        guard let ax = ResizeObserver.shared.elements[moved] else { return }
+        guard let ax = WindowTracker.shared.elements[moved] else { return }
         AXUIElementPerformAction(ax, kAXRaiseAction as CFString)
     }
 

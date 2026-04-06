@@ -13,8 +13,8 @@ final class FocusedWindowBorderService {
 
     func show(windowID: CGWindowID, axElement: AXUIElement) {
         activeWindowID = windowID
-        let key = ResizeObserver.shared.keysByHash[UInt(windowID)]
-        let animating = key.map { ResizeObserver.shared.reapplying.contains($0) } ?? false
+        let key = WindowTracker.shared.keysByHash[UInt(windowID)]
+        let animating = key.map { WindowTracker.shared.reapplying.contains($0) } ?? false
         if animating || isAtExpectedPosition(axElement: axElement, windowID: windowID) {
             applyFull(axElement: axElement, windowID: windowID)
         } else {
@@ -30,15 +30,15 @@ final class FocusedWindowBorderService {
 
     func recheckActive() {
         guard let activeID = activeWindowID,
-              let key = ResizeObserver.shared.keysByHash[UInt(activeID)],
-              let axElement = ResizeObserver.shared.elements[key] else { return }
+              let key = WindowTracker.shared.keysByHash[UInt(activeID)],
+              let axElement = WindowTracker.shared.elements[key] else { return }
         updateIfActive(key: key, axElement: axElement)
     }
 
     func updateIfActive(key: WindowSlot, axElement: AXUIElement) {
         guard let activeID = activeWindowID,
               key.windowHash == UInt(activeID) else { return }
-        if ResizeObserver.shared.reapplying.contains(key) {
+        if WindowTracker.shared.reapplying.contains(key) {
             // Window is being animated by layout — follow it without a position check.
             moveOverlay(axElement: axElement, windowID: activeID)
             return
@@ -60,7 +60,7 @@ final class FocusedWindowBorderService {
         let hash = UInt(windowID)
         // Use only the service that currently owns this window to avoid stale cache cross-contamination.
         let expected: (pos: CGPoint, size: CGSize)?
-        if let key = ResizeObserver.shared.keysByHash[hash], ScrollingRootStore.shared.isTracked(key) {
+        if let key = WindowTracker.shared.keysByHash[hash], ScrollingRootStore.shared.isTracked(key) {
             expected = ScrollingLayoutService.shared.expectedAXFrame(for: hash)
         } else {
             expected = LayoutService.shared.expectedAXFrame(for: hash)

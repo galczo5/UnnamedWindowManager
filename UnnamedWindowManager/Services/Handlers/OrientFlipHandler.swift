@@ -28,7 +28,7 @@ struct OrientFlipHandler {
     /// Falls back to the "main" window attribute if no element reports focus
     /// (native menus can capture keyboard focus away from the underlying window).
     private static func focusedTrackedKey() -> WindowSlot? {
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
         // Pass 1: look for a window that explicitly has keyboard focus.
         for (key, axWindow) in elements {
             var ref: CFTypeRef?

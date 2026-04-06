@@ -27,10 +27,10 @@ struct TileHandler {
         // If a managed window from the same PID is no longer on screen, it became an
         // inactive tab. Swap its slot identity to the focused window instead of adding a new slot.
         let onScreen = OnScreenWindowCache.visibleHashes()
-        let managedSiblings = ResizeObserver.shared.keysByPid[pid] ?? []
+        let managedSiblings = WindowTracker.shared.keysByPid[pid] ?? []
         for siblingKey in managedSiblings {
             if siblingKey.isSameTabGroup(hash: key.windowHash) || !onScreen.contains(siblingKey.windowHash) {
-                ResizeObserver.shared.swapTab(oldKey: siblingKey,
+                WindowEventRouter.shared.swapTab(oldKey: siblingKey,
                                               newWindow: axWindow, newHash: key.windowHash)
                 ReapplyHandler.reapplyAll()
                 return
@@ -47,7 +47,7 @@ struct TileHandler {
         }
         SharedRootStore.shared.setActiveRootType(.tiling)
         TilingSnapService.shared.snap(mutableKey, screen: screen)
-        ResizeObserver.shared.observe(window: axWindow, pid: pid, key: mutableKey)
+        WindowEventRouter.shared.observe(window: axWindow, pid: pid, key: mutableKey)
         ReapplyHandler.reapplyAll()
     }
 
@@ -87,7 +87,7 @@ struct TileHandler {
             key.tabHashes = tabSiblings
         }
         TilingSnapService.shared.snap(key, screen: screen)
-        ResizeObserver.shared.observe(window: window, pid: pid, key: key)
+        WindowEventRouter.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }
 }

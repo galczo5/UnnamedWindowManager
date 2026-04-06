@@ -71,7 +71,7 @@ struct ScrollAllHandler {
                     ScrollingRootStore.shared.createScrollingRoot(key: key, screen: screen)
                     rootExists = true
                 }
-                ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
+                WindowEventRouter.shared.observe(window: item.window, pid: item.pid, key: key)
                 ReapplyHandler.reapplyAll()
             }
         }

@@ -70,7 +70,7 @@ struct TileAllHandler {
             let tabInfo = key.tabHashes.isEmpty ? "" : " [tab, siblings: \(key.tabHashes)]"
             Logger.shared.log("tileAll: pid=\(key.pid) hash=\(key.windowHash)\(tabInfo)")
             TilingSnapService.shared.snap(key, screen: screen)
-            ResizeObserver.shared.observe(window: item.window, pid: item.pid, key: key)
+            WindowEventRouter.shared.observe(window: item.window, pid: item.pid, key: key)
             snappedKeys.insert(key)
         }
         Logger.shared.log("tileAll: \(snappedKeys.count) windows tiled")

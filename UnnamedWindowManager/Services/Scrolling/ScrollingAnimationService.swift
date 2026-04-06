@@ -80,7 +80,7 @@ final class ScrollingAnimationService {
 
             if duration > 0 && centerHashes.contains(hash) {
                 cancel(hash: hash)
-                ResizeObserver.shared.reapplying.insert(key)
+                WindowTracker.shared.reapplying.insert(key)
                 lock.withLock {
                     animations[hash] = Animation(
                         ax: ax, key: key,
@@ -93,7 +93,7 @@ final class ScrollingAnimationService {
                 }
             } else {
                 cancel(hash: hash)
-                ResizeObserver.shared.reapplying.insert(key)
+                WindowTracker.shared.reapplying.insert(key)
                 applyImmediate(ax: ax, pos: end.pos, size: end.size, positionOnly: false)
             }
         }
@@ -107,7 +107,7 @@ final class ScrollingAnimationService {
         if !sideKeys.isEmpty {
             let keys = Set(sideKeys)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                ResizeObserver.shared.reapplying.subtract(keys)
+                WindowTracker.shared.reapplying.subtract(keys)
             }
         }
     }
@@ -137,7 +137,7 @@ final class ScrollingAnimationService {
         if posDelta < 1 && (positionOnly || sizeDelta < 1) { return }
 
         markAnimatedOnce(hash)
-        ResizeObserver.shared.reapplying.insert(key)
+        WindowTracker.shared.reapplying.insert(key)
         lock.withLock {
             animations[hash] = Animation(
                 ax: ax, key: key,
@@ -154,7 +154,7 @@ final class ScrollingAnimationService {
     func cancel(hash: UInt) {
         let anim: Animation? = lock.withLock { animations.removeValue(forKey: hash) }
         guard let anim else { return }
-        ResizeObserver.shared.reapplying.remove(anim.key)
+        WindowTracker.shared.reapplying.remove(anim.key)
         stopDisplayLinkIfIdle()
     }
 
@@ -165,7 +165,7 @@ final class ScrollingAnimationService {
             return copy
         }
         for anim in all.values {
-            ResizeObserver.shared.reapplying.remove(anim.key)
+            WindowTracker.shared.reapplying.remove(anim.key)
         }
         animatedOnce.removeAll()
         clearAnimatedOnceWork?.cancel()
@@ -312,7 +312,7 @@ final class ScrollingAnimationService {
                 let pending = pendingReapplyRemoval
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {
-                    ResizeObserver.shared.reapplying.subtract(pending)
+                    WindowTracker.shared.reapplying.subtract(pending)
                     FocusedWindowBorderService.shared.recheckActive()
                 }
             }

@@ -19,7 +19,7 @@ struct UnscrollHandler {
         let stored = ScrollingRootStore.shared.removeWindow(key, screen: screen)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         WindowVisibilityManager.shared.restoreAndForget(key)
-        ResizeObserver.shared.stopObserving(key: key, pid: pid)
+        WindowEventRouter.shared.stopObserving(key: key, pid: pid)
         if let stored { RestoreService.restore(stored, element: axWindow) }
         ReapplyHandler.reapplyAll()
         TileStateChangedObserver.shared.notify(TileStateChangedEvent())
@@ -27,26 +27,26 @@ struct UnscrollHandler {
 
     static func unscrollAll() {
         guard AXIsProcessTrusted() else { return }
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
         let removed = ScrollingRootStore.shared.removeVisibleScrollingRoot()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
             if let ax = elements[key] { RestoreService.restore(key, element: ax) }
             WindowVisibilityManager.shared.restoreAndForget(key)
-            ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+            WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
         }
         TileStateChangedObserver.shared.notify(TileStateChangedEvent())
     }
 
     static func unscrollAllSpaces() {
         guard AXIsProcessTrusted() else { return }
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
         let removed = ScrollingRootStore.shared.removeAllScrollingRoots()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
             if let ax = elements[key] { RestoreService.restore(key, element: ax) }
             WindowVisibilityManager.shared.restoreAndForget(key)
-            ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+            WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
         }
     }
 }

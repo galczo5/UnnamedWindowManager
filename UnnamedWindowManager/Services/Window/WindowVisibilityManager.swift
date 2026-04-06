@@ -12,7 +12,7 @@ final class WindowVisibilityManager {
     /// so any previously auto-minimized windows are restored.
     func applyVisibility() {
         for key in autoMinimized {
-            if let axWindow = ResizeObserver.shared.window(for: key) {
+            if let axWindow = WindowTracker.shared.window(for: key) {
                 setMinimized(false, window: axWindow)
             }
         }
@@ -25,7 +25,7 @@ final class WindowVisibilityManager {
         guard autoMinimized.contains(key) else {
             return
         }
-        if let axWindow = ResizeObserver.shared.window(for: key) {
+        if let axWindow = WindowTracker.shared.window(for: key) {
             setMinimized(false, window: axWindow)
         }
         autoMinimized.remove(key)

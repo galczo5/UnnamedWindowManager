@@ -2,23 +2,23 @@
 
 ## Checklist
 
-- [ ] Create `WindowMovedEvent` in `Events/`
-- [ ] Create `WindowMovedObserver` in `Observers/`
-- [ ] Create `WindowResizedEvent` in `Events/`
-- [ ] Create `WindowResizedObserver` in `Observers/`
-- [ ] Create `WindowMiniaturizedEvent` in `Events/`
-- [ ] Create `WindowMiniaturizedObserver` in `Observers/`
-- [ ] Create `WindowDestroyedEvent` in `Events/`
-- [ ] Create `WindowDestroyedObserver` in `Observers/`
-- [ ] Create `WindowTitleChangedEvent` in `Events/`
-- [ ] Create `WindowTitleChangedObserver` in `Observers/`
-- [ ] Create `WindowEventRouter` to demux AX notifications into typed observers
-- [ ] Migrate `ResizeObserver` tracking state into a new `WindowTracker` service
-- [ ] Migrate handler logic into subscribers
-- [ ] Delete `Services/Observation/ResizeObserver.swift`
-- [ ] Delete `Services/Observation/AXCallback.swift`
-- [ ] Update all references to `ResizeObserver.shared` across the codebase
-- [ ] Verify build and all functionality
+- [x] Create `WindowMovedEvent` in `Events/`
+- [x] Create `WindowMovedObserver` in `Observers/`
+- [x] Create `WindowResizedEvent` in `Events/`
+- [x] Create `WindowResizedObserver` in `Observers/`
+- [x] Create `WindowMiniaturizedEvent` in `Events/`
+- [x] Create `WindowMiniaturizedObserver` in `Observers/`
+- [x] Create `WindowDestroyedEvent` in `Events/`
+- [x] Create `WindowDestroyedObserver` in `Observers/`
+- [x] Create `WindowTitleChangedEvent` in `Events/`
+- [x] Create `WindowTitleChangedObserver` in `Observers/`
+- [x] Create `WindowEventRouter` to demux AX notifications into typed observers
+- [x] Migrate `ResizeObserver` tracking state into a new `WindowTracker` service
+- [x] Migrate handler logic into subscribers
+- [x] Delete `Services/Observation/ResizeObserver.swift`
+- [x] Delete `Services/Observation/AXCallback.swift`
+- [x] Update all references to `ResizeObserver.shared` across the codebase
+- [x] Verify build and all functionality
 
 ---
 

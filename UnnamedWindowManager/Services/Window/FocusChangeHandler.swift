@@ -22,7 +22,7 @@ final class FocusChangeHandler {
 
         let wid = windowID(of: axWindow)
         let hash = wid.map(UInt.init)
-        let isManaged = hash.flatMap({ ResizeObserver.shared.keysByHash[$0] }) != nil
+        let isManaged = hash.flatMap({ WindowTracker.shared.keysByHash[$0] }) != nil
 
         // Tab switch detection: focused window is unmanaged, but a managed window from the same PID
         // is either off-screen or a known tab sibling of the new window.
@@ -33,7 +33,7 @@ final class FocusChangeHandler {
         if !isManaged, let hash {
             OnScreenWindowCache.invalidate()
             let onScreen = OnScreenWindowCache.visibleHashes()
-            let managedSiblings = ResizeObserver.shared.keysByPid[pid] ?? []
+            let managedSiblings = WindowTracker.shared.keysByPid[pid] ?? []
             // freshTabGroup uses bounds-matching (the authoritative check) and catches
             // new tabs whose hash was never in the existing slot's tabHashes.
             let freshTabGroup = TabDetector.tabSiblingHashes(of: hash, pid: pid)
@@ -52,7 +52,7 @@ final class FocusChangeHandler {
                 if siblingKey.isSameTabGroup(hash: hash)
                     || !onScreen.contains(siblingKey.windowHash)
                     || freshTabGroup.contains(siblingKey.windowHash) {
-                    ResizeObserver.shared.swapTab(oldKey: siblingKey, newWindow: axWindow, newHash: hash)
+                    WindowEventRouter.shared.swapTab(oldKey: siblingKey, newWindow: axWindow, newHash: hash)
                     ReapplyHandler.reapplyAll()
                     swapped = true
                     break
@@ -76,7 +76,7 @@ final class FocusChangeHandler {
             }
         }
 
-        guard let wid, let key = ResizeObserver.shared.keysByHash[UInt(wid)] else {
+        guard let wid, let key = WindowTracker.shared.keysByHash[UInt(wid)] else {
             WindowOpacityService.shared.restoreAll()
             FocusedWindowBorderService.shared.hide()
             return

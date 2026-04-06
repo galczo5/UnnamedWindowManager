@@ -10,7 +10,7 @@ struct ScrollingFocusService {
         guard let newCenter = ScrollingRootStore.shared.scrollLeft(screen: screen) else { return }
         guard let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
         let origin   = layoutOrigin(screen: screen)
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
 
         ScrollingAnimationService.shared.animateScroll(
             before: before, after: after,
@@ -25,7 +25,7 @@ struct ScrollingFocusService {
         guard let newCenter = ScrollingRootStore.shared.scrollRight(screen: screen) else { return }
         guard let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
         let origin   = layoutOrigin(screen: screen)
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
 
         ScrollingAnimationService.shared.animateScroll(
             before: before, after: after,
@@ -41,7 +41,7 @@ struct ScrollingFocusService {
         guard let after = ScrollingRootStore.shared.snapshotVisibleScrollingRoot() else { return }
         let zonesChanged = zoneSignature(before) != zoneSignature(after)
         let origin = layoutOrigin(screen: screen)
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
 
         ScrollingLayoutService.shared.applyLayout(root: after, origin: origin, elements: elements,
                                                    zonesChanged: zonesChanged, applyCenter: false)
@@ -62,7 +62,7 @@ struct ScrollingFocusService {
     }
 
     private static func activateAfterLayout(_ key: WindowSlot) {
-        guard let ax = ResizeObserver.shared.elements[key] else { return }
+        guard let ax = WindowTracker.shared.elements[key] else { return }
         NSRunningApplication(processIdentifier: key.pid)?.activate()
         AXUIElementPerformAction(ax, kAXRaiseAction as CFString)
     }

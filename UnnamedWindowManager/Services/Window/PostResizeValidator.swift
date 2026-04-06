@@ -10,7 +10,7 @@ enum PostResizeValidator {
             let actual: CGSize
         }
 
-        let observer = ResizeObserver.shared
+        let observer = WindowTracker.shared
         var refusals: [Refusal] = []
         let leaves = TilingRootStore.shared.leavesInVisibleRoot()
                     + ScrollingRootStore.shared.leavesInVisibleScrollingRoot()

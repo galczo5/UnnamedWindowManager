@@ -2,15 +2,15 @@ import AppKit
 
 // Polls for mouse-up then reapplies tile position, handling resize, move, and scrolling reapply.
 final class DragReapplyScheduler {
-    private weak var observer: ResizeObserver?
+    private weak var tracker: WindowTracker?
     private var pending: [WindowSlot: DispatchWorkItem] = [:]
     let overlay = SwapOverlay()
     private var lastDropTarget: DropTarget?
     private var dropTargetEnteredAt: Date?
     private var postMoveCheck: DispatchWorkItem?
 
-    init(observer: ResizeObserver) {
-        self.observer = observer
+    init(tracker: WindowTracker) {
+        self.tracker = tracker
     }
 
     func cancel(key: WindowSlot) {
@@ -29,7 +29,7 @@ final class DragReapplyScheduler {
         pending[key]?.cancel()
 
         let work = DispatchWorkItem { [weak self] in
-            guard let self, let observer = self.observer else { return }
+            guard let self, let tracker = self.tracker else { return }
             self.pending.removeValue(forKey: key)
 
             if NSEvent.pressedMouseButtons != 0 {
@@ -39,8 +39,8 @@ final class DragReapplyScheduler {
 
             self.overlay.hide()
 
-            guard !observer.reapplying.contains(key),
-                  observer.elements[key] != nil else { return }
+            guard !tracker.reapplying.contains(key),
+                  tracker.elements[key] != nil else { return }
 
             if isScrolling {
                 self.reapplyScrolling(key: key, isResize: isResize)
@@ -58,13 +58,13 @@ final class DragReapplyScheduler {
     // MARK: - Private
 
     private func reapplyScrolling(key: WindowSlot, isResize: Bool) {
-        guard let observer else { return }
-        observer.reapplying.insert(key)
+        guard let tracker else { return }
+        tracker.reapplying.insert(key)
         let animDur = Config.animationDuration
         if let screen = NSScreen.main {
             let isCenterResize = isResize && ScrollingRootStore.shared.isCenterWindow(key)
             if isCenterResize,
-               let axElement = observer.elements[key],
+               let axElement = tracker.elements[key],
                let actualSize = readSize(of: axElement) {
                 ScrollingResizeService().applyResize(
                     centerKey: key, actualWidth: actualSize.width, screen: screen)
@@ -80,15 +80,15 @@ final class DragReapplyScheduler {
                 PostResizeValidator.checkAndFixRefusals(windows: windows, screen: screen)
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) { [weak observer] in
-            observer?.reapplying.remove(key)
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) { [weak tracker] in
+            tracker?.reapplying.remove(key)
         }
     }
 
     private func reapplyResize(key: WindowSlot) {
-        guard let observer,
+        guard let tracker,
               let screen = NSScreen.main,
-              let axElement = observer.elements[key],
+              let axElement = tracker.elements[key],
               let actualSize = readSize(of: axElement) else { return }
 
         TilingEditService.shared.resize(key: key, actualSize: actualSize, screen: screen)
@@ -96,7 +96,7 @@ final class DragReapplyScheduler {
     }
 
     private func reapplyMove(key: WindowSlot) {
-        guard let observer else { return }
+        guard let tracker else { return }
         let hoverStart = dropTargetEnteredAt
         lastDropTarget = nil
         dropTargetEnteredAt = nil
@@ -112,11 +112,11 @@ final class DragReapplyScheduler {
             }
             ReapplyHandler.reapplyAll()
         } else {
-            guard let storedElement = observer.elements[key] else { return }
-            observer.reapplying.insert(key)
+            guard let storedElement = tracker.elements[key] else { return }
+            tracker.reapplying.insert(key)
             ReapplyHandler.reapply(window: storedElement, key: key)
-            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, Config.animationDuration + 0.05)) { [weak observer] in
-                observer?.reapplying.remove(key)
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, Config.animationDuration + 0.05)) { [weak tracker] in
+                tracker?.reapplying.remove(key)
             }
         }
 

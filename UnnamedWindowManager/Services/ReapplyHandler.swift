@@ -30,12 +30,12 @@ struct ReapplyHandler {
                 if case .window(let w) = leaf { return w }
                 return nil
             })
-            ResizeObserver.shared.reapplying.formUnion(allWindows)
+            WindowTracker.shared.reapplying.formUnion(allWindows)
             LayoutService.shared.applyLayout(screen: screen)
             WindowVisibilityManager.shared.applyVisibility()
             let animDur = Config.animationDuration
             DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) {
-                ResizeObserver.shared.reapplying.subtract(allWindows)
+                WindowTracker.shared.reapplying.subtract(allWindows)
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1)) {
                 guard let screen = NSScreen.main else { return }
@@ -51,7 +51,7 @@ struct ReapplyHandler {
 
                 guard !pass2Refusals.isEmpty else { return }
 
-                let observer = ResizeObserver.shared
+                let observer = WindowTracker.shared
                 SettlePoller.poll(condition: {
                     pass2Refusals.allSatisfy { key in
                         guard let axEl = observer.elements[key],
@@ -148,8 +148,8 @@ struct ReapplyHandler {
                     guard let wid = windowID(of: ax).map(UInt.init),
                           wid != w.windowHash,
                           onScreen.contains(wid),
-                          ResizeObserver.shared.keysByHash[wid] == nil else { continue }
-                    ResizeObserver.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
+                          WindowTracker.shared.keysByHash[wid] == nil else { continue }
+                    WindowEventRouter.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
                     didSwap = true
                     break
                 }
@@ -172,8 +172,8 @@ struct ReapplyHandler {
                     guard let wid = windowID(of: ax).map(UInt.init),
                           wid != w.windowHash,
                           onScreen.contains(wid),
-                          ResizeObserver.shared.keysByHash[wid] == nil else { continue }
-                    ResizeObserver.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
+                          WindowTracker.shared.keysByHash[wid] == nil else { continue }
+                    WindowEventRouter.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
                     didSwap = true
                     break
                 }
