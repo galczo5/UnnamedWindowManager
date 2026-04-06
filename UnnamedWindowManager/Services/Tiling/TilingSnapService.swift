@@ -5,11 +5,8 @@ final class TilingSnapService {
     static let shared = TilingSnapService()
     private init() {}
 
-    private let store        = SharedRootStore.shared
-    private let rootStore    = TilingRootStore.shared
-    private let treeQuery    = TilingTreeQueryService()
-    private let treeMutation = TilingTreeMutationService()
-    private let position     = TilingPositionService()
+    private let store     = SharedRootStore.shared
+    private let rootStore = TilingRootStore.shared
 
     /// Tiles `key` into the correct root, creating one if no tiled window is visible on screen.
     /// Idempotent: no-op if the window is already in the correct root.
@@ -29,21 +26,17 @@ final class TilingSnapService {
             }
 
             guard case .tiling(var targetRoot) = store.roots[targetRootID] else { return }
-            if treeQuery.isTracked(key, in: targetRoot) {
-                return
-            }
+            if targetRoot.isTracked(key) { return }
 
-            // Preserve original pre-tile values during cross-root migration.
             var preTileOrigin = key.preTileOrigin
             var preTileSize = key.preTileSize
             if let srcID = rootStore.rootIDSync(containing: key),
                case .tiling(var srcRoot) = store.roots[srcID] {
-                if let oldSlot = treeQuery.findLeafSlot(key, in: srcRoot),
-                   case .window(let oldWindow) = oldSlot {
+                if let oldSlot = srcRoot.findLeaf(key), case .window(let oldWindow) = oldSlot {
                     preTileOrigin = oldWindow.preTileOrigin
                     preTileSize = oldWindow.preTileSize
                 }
-                treeMutation.removeLeaf(key, from: &srcRoot)
+                srcRoot.removeLeaf(key)
                 if srcRoot.children.isEmpty {
                     store.removeRoot(id: srcID)
                 } else {
@@ -62,13 +55,13 @@ final class TilingSnapService {
             if targetRoot.children.isEmpty {
                 targetRoot.children = [newLeaf]
             } else {
-                let lastOrder = treeQuery.maxLeafOrder(in: targetRoot)
+                let lastOrder = targetRoot.maxLeafOrder()
                 let orientation: Orientation = order % 2 == 0 ? .horizontal : .vertical
-                treeMutation.extractAndWrap(in: &targetRoot, targetOrder: lastOrder,
-                                            newLeaf: newLeaf, orientation: orientation)
+                targetRoot.extractAndWrap(targetOrder: lastOrder, newLeaf: newLeaf,
+                                          orientation: orientation)
             }
             let area = screenTilingArea(screen)
-            position.recomputeSizes(&targetRoot, width: area.width, height: area.height)
+            targetRoot.recomputeSizes(width: area.width, height: area.height)
             store.roots[targetRootID] = .tiling(targetRoot)
             snapRootID = targetRootID
         }
@@ -81,7 +74,7 @@ final class TilingSnapService {
         return store.queue.sync(flags: .barrier) {
             guard let id = rootStore.visibleRootID(),
                   case .tiling(let root) = store.roots[id] else { return [] }
-            let leaves = treeQuery.allLeaves(in: root)
+            let leaves = root.allLeaves()
             store.removeRoot(id: id)
             return leaves.compactMap { if case .window(let w) = $0 { return w } else { return nil } }
         }
@@ -96,7 +89,7 @@ final class TilingSnapService {
             var all: [WindowSlot] = []
             for id in ids {
                 guard case .tiling(let root) = store.roots[id] else { continue }
-                all += treeQuery.allLeaves(in: root).compactMap { if case .window(let w) = $0 { return w } else { return nil } }
+                all += root.allLeaves().compactMap { if case .window(let w) = $0 { return w } else { return nil } }
                 store.removeRoot(id: id)
             }
             return all
@@ -107,7 +100,7 @@ final class TilingSnapService {
         store.queue.async(flags: .barrier) {
             guard let id = self.rootStore.rootIDSync(containing: key),
                   case .tiling(var root) = self.store.roots[id] else { return }
-            self.treeMutation.removeLeaf(key, from: &root)
+            root.removeLeaf(key)
             if root.children.isEmpty {
                 self.store.removeRoot(id: id)
             } else {
@@ -120,31 +113,26 @@ final class TilingSnapService {
         store.queue.sync(flags: .barrier) {
             guard let id = rootStore.rootIDSync(containing: key),
                   case .tiling(var root) = store.roots[id] else { return }
-            treeMutation.removeLeaf(key, from: &root)
+            root.removeLeaf(key)
             if root.children.isEmpty {
                 store.removeRoot(id: id)
             } else {
                 let area = screenTilingArea(screen)
-                position.recomputeSizes(&root, width: area.width, height: area.height)
+                root.recomputeSizes(width: area.width, height: area.height)
                 store.roots[id] = .tiling(root)
             }
         }
     }
 
     /// Merges all tiling roots that have windows visible on screen into a single root.
-    /// This handles windows being manually moved between desktops (via Mission Control),
-    /// which can leave multiple roots with windows on the same desktop simultaneously.
-    /// No-op when zero or one tiling root is visible.
     func consolidateVisibleRoots(screen: NSScreen) {
         var mergedRootID: UUID? = nil
-        var mergedCount = 0
         store.queue.sync(flags: .barrier) {
             let visibleHashes = OnScreenWindowCache.visibleHashes()
 
-            // Collect all tiling roots that have at least one window currently on screen.
             let visiblePairs: [(id: UUID, root: TilingRootSlot)] = store.roots.compactMap { id, slot in
                 guard case .tiling(let root) = slot else { return nil }
-                let hasVisible = treeQuery.allLeaves(in: root).contains {
+                let hasVisible = root.allLeaves().contains {
                     guard case .window(let w) = $0 else { return false }
                     return visibleHashes.contains(w.windowHash)
                 }
@@ -153,12 +141,11 @@ final class TilingSnapService {
 
             guard visiblePairs.count > 1 else { return }
 
-            // Use the root with the most leaves as the merge target.
-            let (targetID, _) = visiblePairs.max { treeQuery.allLeaves(in: $0.root).count < treeQuery.allLeaves(in: $1.root).count }!
+            let (targetID, _) = visiblePairs.max { $0.root.allLeaves().count < $1.root.allLeaves().count }!
             guard case .tiling(var targetRoot) = store.roots[targetID] else { return }
 
             for (srcID, srcRoot) in visiblePairs where srcID != targetID {
-                let leaves = treeQuery.allLeaves(in: srcRoot).compactMap { leaf -> WindowSlot? in
+                let leaves = srcRoot.allLeaves().compactMap { leaf -> WindowSlot? in
                     guard case .window(let w) = leaf else { return nil }
                     return w
                 }
@@ -174,20 +161,19 @@ final class TilingSnapService {
                     if targetRoot.children.isEmpty {
                         targetRoot.children = [newLeaf]
                     } else {
-                        let lastOrder = treeQuery.maxLeafOrder(in: targetRoot)
+                        let lastOrder = targetRoot.maxLeafOrder()
                         let orientation: Orientation = order % 2 == 0 ? .horizontal : .vertical
-                        treeMutation.extractAndWrap(in: &targetRoot, targetOrder: lastOrder,
-                                                    newLeaf: newLeaf, orientation: orientation)
+                        targetRoot.extractAndWrap(targetOrder: lastOrder, newLeaf: newLeaf,
+                                                  orientation: orientation)
                     }
                 }
                 store.removeRoot(id: srcID)
             }
 
             let area = screenTilingArea(screen)
-            position.recomputeSizes(&targetRoot, width: area.width, height: area.height)
+            targetRoot.recomputeSizes(width: area.width, height: area.height)
             store.roots[targetID] = .tiling(targetRoot)
             mergedRootID = targetID
-            mergedCount = treeQuery.allLeaves(in: targetRoot).count
         }
         if let rootID = mergedRootID {
             WindowLister.logWindowEvent(action: "consolidated roots", windowHash: 0, rootID: rootID)

@@ -2,16 +2,16 @@
 
 ## Checklist
 
-- [ ] Create `Model/ScrollingRoot/` directory
-- [ ] Move `ScrollingRootSlot.swift` into `Model/ScrollingRoot/`
-- [ ] Add query methods: `containsWindow`, `isCenterWindow`, `allWindowSlots`, `location`
-- [ ] Add mutation methods: `addWindow`, `removeWindow`, `scrollLeft`, `scrollRight`, `scrollToWindow`, `swapWindows`, `updateCenterFraction`
-- [ ] Add sizing method: `recomputeSizes`
-- [ ] Add helper: `appendToSide`
-- [ ] Move `ScrollingSlotLocation` enum into `Model/ScrollingRoot/`
-- [ ] Update `ScrollingRootStore` to call root methods
-- [ ] Delete `ScrollingPositionService.swift`
-- [ ] Update all external references
+- [x] Create `Model/ScrollingRoot/` directory
+- [x] Move `ScrollingRootSlot.swift` into `Model/ScrollingRoot/`
+- [x] Add query methods: `containsWindow`, `isCenterWindow`, `allWindowSlots`, `location`
+- [x] Add mutation methods: `addWindow`, `removeWindow`, `scrollLeft`, `scrollRight`, `scrollToWindow`, `swapWindows`, `updateCenterFraction`
+- [x] Add sizing method: `recomputeSizes`
+- [x] Add helper: `appendToSide`
+- [x] Move `ScrollingSlotLocation` enum into `Model/ScrollingRoot/`
+- [x] Update `ScrollingRootStore` to call root methods
+- [x] Delete `ScrollingPositionService.swift`
+- [x] Update all external references
 - [ ] Verify build and all functionality
 
 ---

@@ -26,7 +26,7 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
         if let root = tilingRoot {
             if root.id != lastTilingRootID {
                 lastTilingRootID = root.id
-                let count = TilingTreeQueryService().allLeaves(in: root).count
+                let count = root.allLeaves().count
                 WindowLister.logRootChanged(type: "tiling", rootID: root.id, windowCount: count)
             }
         } else {
@@ -82,20 +82,12 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
     private func allWindowSlots(in rootSlot: RootSlot) -> [WindowSlot] {
         switch rootSlot {
         case .tiling(let root):
-            return TilingTreeQueryService().allLeaves(in: root).compactMap {
+            return root.allLeaves().compactMap {
                 guard case .window(let w) = $0 else { return nil }
                 return w
             }
         case .scrolling(let root):
-            var slots: [WindowSlot] = []
-            for slot in [root.left, Optional(root.center), root.right].compactMap({ $0 }) {
-                switch slot {
-                case .window(let w):    slots.append(w)
-                case .stacking(let s): slots.append(contentsOf: s.children)
-                default: break
-                }
-            }
-            return slots
+            return root.allWindowSlots()
         }
     }
 }

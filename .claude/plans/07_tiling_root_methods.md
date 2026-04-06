@@ -2,23 +2,23 @@
 
 ## Checklist
 
-- [ ] Create `Model/TilingRoot/` directory
-- [ ] Move `TilingRootSlot.swift` into `Model/TilingRoot/`
-- [ ] Add query methods: `isTracked`, `allLeaves`, `findLeaf`, `maxLeafOrder`, `findParentOrientation`
-- [ ] Add mutation methods: `removeLeaf`, `extractAndWrap`, `updateLeaf`, `replaceLeafIdentity`, `flipParentOrientation`
-- [ ] Add insert methods: `insertAdjacent`, `swap`
-- [ ] Add sizing methods: `recomputeSizes`
-- [ ] Add resize method: `applyResize`
-- [ ] Create `Model/TilingRoot/TilingSlotRecursion.swift` for private recursive helpers
-- [ ] Update `TilingEditService` to call root methods
-- [ ] Update `TilingSnapService` to call root methods
-- [ ] Delete `TilingTreeQueryService.swift`
-- [ ] Delete `TilingTreeMutationService.swift`
-- [ ] Delete `TilingTreeInsertService.swift`
-- [ ] Delete `TilingPositionService.swift`
-- [ ] Delete `TilingResizeService.swift`
-- [ ] Update all external references to deleted services
-- [ ] Verify build and all functionality
+- [x] Create `Model/TilingRoot/` directory
+- [x] Move `TilingRootSlot.swift` into `Model/TilingRoot/`
+- [x] Add query methods: `isTracked`, `allLeaves`, `findLeaf`, `maxLeafOrder`, `findParentOrientation`
+- [x] Add mutation methods: `removeLeaf`, `extractAndWrap`, `updateLeaf`, `replaceLeafIdentity`, `flipParentOrientation`
+- [x] Add insert methods: `insertAdjacent`, `swap`
+- [x] Add sizing methods: `recomputeSizes`
+- [x] Add resize method: `applyResize`
+- [x] Create `Model/TilingRoot/TilingSlotRecursion.swift` for private recursive helpers
+- [x] Update `TilingEditService` to call root methods
+- [x] Update `TilingSnapService` to call root methods
+- [x] Delete `TilingTreeQueryService.swift`
+- [x] Delete `TilingTreeMutationService.swift`
+- [x] Delete `TilingTreeInsertService.swift`
+- [x] Delete `TilingPositionService.swift`
+- [x] Delete `TilingResizeService.swift`
+- [x] Update all external references to deleted services
+- [x] Verify build and all functionality
 
 ---
 

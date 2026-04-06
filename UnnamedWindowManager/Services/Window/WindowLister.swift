@@ -8,10 +8,9 @@ struct WindowLister {
     /// on-screen windows annotated with the root they belong to (or "untiled").
     static func logWindowEvent(action: String, windowHash: UInt, rootID: UUID) {
         let (visibleWindows, hashToRootID, roots) = snapshotVisibleWindows()
-        let treeQuery = TilingTreeQueryService()
         let windowCount: Int
         switch roots[rootID] {
-        case .tiling(let r):    windowCount = treeQuery.allLeaves(in: r).count
+        case .tiling(let r):    windowCount = r.allLeaves().count
         case .scrolling(let r): windowCount = countScrollingWindows(in: r)
         case nil:               windowCount = 0
         }
@@ -55,12 +54,11 @@ struct WindowLister {
         }
 
         let roots = SharedRootStore.shared.snapshotAllRoots()
-        let treeQuery = TilingTreeQueryService()
         var hashToRootID: [UInt: UUID] = [:]
         for (id, rootSlot) in roots {
             switch rootSlot {
             case .tiling(let root):
-                for leaf in treeQuery.allLeaves(in: root) {
+                for leaf in root.allLeaves() {
                     if case .window(let w) = leaf { hashToRootID[w.windowHash] = id }
                 }
             case .scrolling(let root):

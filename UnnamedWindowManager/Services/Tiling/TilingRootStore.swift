@@ -5,14 +5,13 @@ final class TilingRootStore {
     static let shared = TilingRootStore()
     private init() {}
 
-    private let store     = SharedRootStore.shared
-    private let treeQuery = TilingTreeQueryService()
+    private let store = SharedRootStore.shared
 
     func isTracked(_ key: WindowSlot) -> Bool {
         return store.queue.sync {
             store.roots.values.contains {
                 guard case .tiling(let root) = $0 else { return false }
-                return treeQuery.isTracked(key, in: root)
+                return root.isTracked(key)
             }
         }
     }
@@ -22,7 +21,7 @@ final class TilingRootStore {
         return store.queue.sync {
             guard let id = visibleRootID(),
                   case .tiling(let root) = store.roots[id] else { return [] }
-            return treeQuery.allLeaves(in: root).sorted { a, b in
+            return root.allLeaves().sorted { a, b in
                 if case .window(let wa) = a, case .window(let wb) = b { return wa.order < wb.order }
                 return false
             }
@@ -42,8 +41,7 @@ final class TilingRootStore {
         return store.queue.sync {
             for rootSlot in store.roots.values {
                 guard case .tiling(let root) = rootSlot else { continue }
-                if let slot = treeQuery.findLeafSlot(key, in: root),
-                   case .window(let w) = slot { return w }
+                if let slot = root.findLeaf(key), case .window(let w) = slot { return w }
             }
             return nil
         }
@@ -53,7 +51,7 @@ final class TilingRootStore {
         return store.queue.sync {
             guard let id = rootIDSync(containing: key),
                   case .tiling(let root) = store.roots[id] else { return nil }
-            return treeQuery.findParentOrientation(of: key, in: root)
+            return root.parentOrientation(of: key)
         }
     }
 
@@ -69,7 +67,7 @@ final class TilingRootStore {
     func rootIDSync(containing key: WindowSlot) -> UUID? {
         store.roots.first { _, rootSlot in
             guard case .tiling(let root) = rootSlot else { return false }
-            return treeQuery.isTracked(key, in: root)
+            return root.isTracked(key)
         }?.key
     }
 
@@ -78,7 +76,7 @@ final class TilingRootStore {
         let visibleHashes = OnScreenWindowCache.visibleHashes()
         for (id, rootSlot) in store.roots {
             guard case .tiling(let root) = rootSlot else { continue }
-            for leaf in treeQuery.allLeaves(in: root) {
+            for leaf in root.allLeaves() {
                 if case .window(let w) = leaf, visibleHashes.contains(w.windowHash) {
                     return id
                 }

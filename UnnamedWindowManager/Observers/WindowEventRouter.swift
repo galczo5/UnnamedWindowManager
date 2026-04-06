@@ -98,9 +98,7 @@ final class WindowEventRouter {
             for (id, rootSlot) in SharedRootStore.shared.roots {
                 switch rootSlot {
                 case .tiling(var root):
-                    if TilingTreeMutationService().replaceLeafIdentity(
-                        oldKey: oldKey, newPid: pid, newHash: newHash, in: &root
-                    ) {
+                    if root.replaceLeafIdentity(oldKey: oldKey, newPid: pid, newHash: newHash) {
                         SharedRootStore.shared.roots[id] = .tiling(root)
                         return
                     }

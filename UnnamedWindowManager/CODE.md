@@ -7,7 +7,6 @@ UnnamedWindowManager/
 ├── UnnamedWindowManagerApp.swift   # App entry point
 ├── AppDelegate.swift               # Lifecycle, observer startup, menu bar
 ├── Logger.swift                    # File-based debug logger
-├── Bridge/                         # C bridging header and SkyLight private API stubs
 ├── Config/                         # Configuration loading and accessors
 ├── Events/                         # AppEvent protocol and event data structs
 ├── Model/                          # Data types (slots, orientations, enums)
@@ -89,8 +88,10 @@ Value types that represent the slot tree and layout state. No business logic.
 | `WindowSlot.swift` | Leaf node — one managed window with its AX identity and pre-tile frame |
 | `SplitSlot.swift` | Binary split container (horizontal or vertical) |
 | `StackingSlot.swift` | Stacked children (used in scrolling side slots) |
-| `TilingRootSlot.swift` | Root of a tiling tree — one per screen/space |
-| `ScrollingRootSlot.swift` | Root of a scrolling layout — left/center/right zones |
+| `TilingRoot/TilingRootSlot.swift` | Root of a tiling tree with all tree operations (query, mutation, insert, sizing, resize) |
+| `TilingRoot/TilingSlotRecursion.swift` | Static recursive helpers for Slot-level tree operations used by TilingRootSlot |
+| `ScrollingRoot/ScrollingRootSlot.swift` | Root of a scrolling layout — left/center/right zones — with all query, mutation, and sizing operations |
+| `ScrollingRoot/ScrollingSlotLocation.swift` | Enum identifying which zone (center, left, right) a window occupies in a scrolling root |
 | `RootSlot.swift` | Enum wrapping `.tiling` or `.scrolling` root |
 | `Orientation.swift` | `.horizontal` / `.vertical` |
 | `StackingAlign.swift` | `.left` / `.right` alignment for stacking slots |
@@ -119,11 +120,6 @@ Tiling slot tree management and layout application.
 | `TilingEditService.swift` | High-level structural modifications (resize, swap, flip, insert) |
 | `TilingSnapService.swift` | Adds/removes windows from tiling roots |
 | `TilingNeighborService.swift` | Spatial neighbor-finding for directional operations |
-| `TilingPositionService.swift` | Computes pixel sizes from fractional slot shares |
-| `TilingResizeService.swift` | Translates user resizes into fraction adjustments |
-| `TilingTreeQueryService.swift` | Read-only tree traversal (find leaf, all leaves, max order) |
-| `TilingTreeMutationService.swift` | Structural tree mutations (remove, extract, wrap, flip) |
-| `TilingTreeInsertService.swift` | Insertion and swap on the slot tree |
 | `LayoutService.swift` | Walks the tiling tree and applies window positions via AX API |
 
 ### Services/Scrolling/
@@ -132,8 +128,7 @@ Scrolling layout management (left/center/right zones with stacking sides).
 
 | File | Description |
 |------|-------------|
-| `ScrollingRootStore.swift` | Creates/mutates ScrollingRootSlot in SharedRootStore |
-| `ScrollingPositionService.swift` | Computes pixel dimensions for all scrolling zones |
+| `ScrollingRootStore.swift` | Thread-safe store wrapper; delegates all tree logic to ScrollingRootSlot methods |
 | `ScrollingResizeService.swift` | Handles user-initiated resizes of the center slot |
 | `ScrollingLayoutService.swift` | Applies window positions for scrolling roots via AX API |
 | `ScrollingAnimationService.swift` | Direction-aware animator for scroll left/right; uses before-state positions to prevent jump artefacts |
