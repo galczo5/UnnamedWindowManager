@@ -44,7 +44,7 @@ enum PostResizeValidator {
                 // Clear the cache so applyLayout retries the AX call.
                 ScrollingLayoutService.shared.clearCache(for: r.key)
             } else {
-                TilingEditService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
+                TilingService.shared.resize(key: r.key, actualSize: r.actual, screen: screen)
             }
         }
         LayoutService.shared.applyLayout(screen: screen)

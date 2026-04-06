@@ -129,7 +129,7 @@ struct ReapplyHandler {
     /// Catches windows that moved to another Space or were closed without firing a destroy notification.
     /// Also consolidates multiple tiling roots that ended up on the same desktop.
     private static func pruneOffScreenWindows(screen: NSScreen) {
-        TilingSnapService.shared.consolidateVisibleRoots(screen: screen)
+        TilingService.shared.consolidateVisibleRoots(screen: screen)
         let onScreen = onScreenWindowIDs()
         guard !onScreen.isEmpty else { return }
         let leaves = TilingRootStore.shared.leavesInVisibleRoot()

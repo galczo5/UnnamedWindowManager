@@ -21,7 +21,7 @@ struct UntileHandler {
         let stored = TilingRootStore.shared.storedSlot(key)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         WindowVisibilityManager.shared.restoreAndForget(key)
-        TilingSnapService.shared.removeAndReflow(key, screen: screen)
+        TilingService.shared.removeAndReflow(key, screen: screen)
         WindowEventRouter.shared.stopObserving(key: key, pid: pid)
         if let stored { RestoreService.restore(stored, element: axWindow) }
         ReapplyHandler.reapplyAll()
@@ -30,7 +30,7 @@ struct UntileHandler {
     static func untileAll() {
         guard AXIsProcessTrusted() else { return }
         let elements = WindowTracker.shared.elements
-        let removed = TilingSnapService.shared.removeVisibleRoot()
+        let removed = TilingService.shared.removeVisibleRoot()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
             if let ax = elements[key] { RestoreService.restore(key, element: ax) }
@@ -50,7 +50,7 @@ struct UntileHandler {
         if isScrolling {
             ScrollingRootStore.shared.removeWindow(key, screen: screen)
         } else {
-            TilingSnapService.shared.removeAndReflow(key, screen: screen)
+            TilingService.shared.removeAndReflow(key, screen: screen)
         }
         WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
     }
@@ -58,7 +58,7 @@ struct UntileHandler {
     static func untileAllSpaces() {
         guard AXIsProcessTrusted() else { return }
         let elements = WindowTracker.shared.elements
-        let removed = TilingSnapService.shared.removeAllTilingRoots()
+        let removed = TilingService.shared.removeAllTilingRoots()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
             if let ax = elements[key] { RestoreService.restore(key, element: ax) }

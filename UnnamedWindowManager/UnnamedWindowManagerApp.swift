@@ -112,7 +112,7 @@ struct UnnamedWindowManagerApp: App {
             guard let screen = NSScreen.main else { return }
             LayoutService.shared.clearCache()
             ScrollingLayoutService.shared.clearCache()
-            TilingEditService.shared.recomputeVisibleRootSizes(screen: screen)
+            TilingService.shared.recomputeVisibleRootSizes(screen: screen)
             WallpaperService.shared.screenChanged()
             ReapplyHandler.reapplyAll()
         }

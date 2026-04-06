@@ -18,7 +18,7 @@ struct OrientFlipHandler {
     static func flipOrientation() {
         guard AXIsProcessTrusted(), let screen = NSScreen.main else { return }
         guard let key = focusedTrackedKey() else { return }
-        TilingEditService.shared.flipParentOrientation(key, screen: screen)
+        TilingService.shared.flipParentOrientation(key, screen: screen)
         ReapplyHandler.reapplyAll()
     }
 

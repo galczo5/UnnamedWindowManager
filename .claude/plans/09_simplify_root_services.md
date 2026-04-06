@@ -2,14 +2,14 @@
 
 ## Checklist
 
-- [ ] Audit `TilingEditService` — verify all methods are thin store wrappers
-- [ ] Audit `TilingSnapService` — verify all methods are thin store wrappers
-- [ ] Audit `ScrollingRootStore` — verify all methods are thin store wrappers
-- [ ] Merge `TilingEditService` into `TilingSnapService` (or vice versa) if both are now thin wrappers
-- [ ] Move `TilingRootStore` query methods onto `SharedRootStore` or inline where trivial
-- [ ] Remove any redundant intermediate service layers
-- [ ] Update `CODE.md` to reflect new `Model/TilingRoot/` and `Model/ScrollingRoot/` directories
-- [ ] Final grep cleanup — no references to deleted types remain
+- [x] Audit `TilingEditService` — verify all methods are thin store wrappers
+- [x] Audit `TilingSnapService` — verify all methods are thin store wrappers
+- [x] Audit `ScrollingRootStore` — verify all methods are thin store wrappers
+- [x] Merge `TilingEditService` into `TilingSnapService` (or vice versa) if both are now thin wrappers
+- [x] Move `TilingRootStore` query methods onto `SharedRootStore` or inline where trivial
+- [x] Remove any redundant intermediate service layers
+- [x] Update `CODE.md` to reflect new `Model/TilingRoot/` and `Model/ScrollingRoot/` directories
+- [x] Final grep cleanup — no references to deleted types remain
 - [ ] Verify build and all functionality
 
 ---

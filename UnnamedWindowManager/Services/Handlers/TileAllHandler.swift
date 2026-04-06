@@ -69,7 +69,7 @@ struct TileAllHandler {
             key.tabHashes = TabDetector.tabSiblingHashes(of: key.windowHash, pid: item.pid)
             let tabInfo = key.tabHashes.isEmpty ? "" : " [tab, siblings: \(key.tabHashes)]"
             Logger.shared.log("tileAll: pid=\(key.pid) hash=\(key.windowHash)\(tabInfo)")
-            TilingSnapService.shared.snap(key, screen: screen)
+            TilingService.shared.snap(key, screen: screen)
             WindowEventRouter.shared.observe(window: item.window, pid: item.pid, key: key)
             snappedKeys.insert(key)
         }

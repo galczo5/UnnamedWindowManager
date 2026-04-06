@@ -116,9 +116,8 @@ Tiling slot tree management and layout application.
 
 | File | Description |
 |------|-------------|
-| `TilingRootStore.swift` | Read-only queries and lookups for tiling roots |
-| `TilingEditService.swift` | High-level structural modifications (resize, swap, flip, insert) |
-| `TilingSnapService.swift` | Adds/removes windows from tiling roots |
+| `TilingRootStore.swift` | Read-only queries and lookup helpers for tiling roots |
+| `TilingService.swift` | All tiling store operations: snap/remove windows and structural edits (resize, swap, flip, insert) |
 | `TilingNeighborService.swift` | Spatial neighbor-finding for directional operations |
 | `LayoutService.swift` | Walks the tiling tree and applies window positions via AX API |
 
@@ -129,7 +128,6 @@ Scrolling layout management (left/center/right zones with stacking sides).
 | File | Description |
 |------|-------------|
 | `ScrollingRootStore.swift` | Thread-safe store wrapper; delegates all tree logic to ScrollingRootSlot methods |
-| `ScrollingResizeService.swift` | Handles user-initiated resizes of the center slot |
 | `ScrollingLayoutService.swift` | Applies window positions for scrolling roots via AX API |
 | `ScrollingAnimationService.swift` | Direction-aware animator for scroll left/right; uses before-state positions to prevent jump artefacts |
 | `ScrollingFocusService.swift` | Left/right navigation, rotating windows between zones |

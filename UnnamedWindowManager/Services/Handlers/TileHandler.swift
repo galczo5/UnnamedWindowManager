@@ -46,7 +46,7 @@ struct TileHandler {
             mutableKey.tabHashes = tabSiblings
         }
         SharedRootStore.shared.setActiveRootType(.tiling)
-        TilingSnapService.shared.snap(mutableKey, screen: screen)
+        TilingService.shared.snap(mutableKey, screen: screen)
         WindowEventRouter.shared.observe(window: axWindow, pid: pid, key: mutableKey)
         ReapplyHandler.reapplyAll()
     }
@@ -86,7 +86,7 @@ struct TileHandler {
             key.isTabbed = true
             key.tabHashes = tabSiblings
         }
-        TilingSnapService.shared.snap(key, screen: screen)
+        TilingService.shared.snap(key, screen: screen)
         WindowEventRouter.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }

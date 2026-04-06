@@ -66,8 +66,9 @@ final class DragReapplyScheduler {
             if isCenterResize,
                let axElement = tracker.elements[key],
                let actualSize = readSize(of: axElement) {
-                ScrollingResizeService().applyResize(
-                    centerKey: key, actualWidth: actualSize.width, screen: screen)
+                let screenWidth = screenTilingArea(screen).width
+                ScrollingRootStore.shared.updateCenterFraction(
+                    for: key, proposedWidth: actualSize.width, screenWidth: screenWidth, screen: screen)
             }
             ScrollingLayoutService.shared.clearCache(for: key)
             LayoutService.shared.applyLayout(screen: screen, scrollingSidesPositionOnly: isCenterResize)
@@ -91,7 +92,7 @@ final class DragReapplyScheduler {
               let axElement = tracker.elements[key],
               let actualSize = readSize(of: axElement) else { return }
 
-        TilingEditService.shared.resize(key: key, actualSize: actualSize, screen: screen)
+        TilingService.shared.resize(key: key, actualSize: actualSize, screen: screen)
         ReapplyHandler.reapplyAll()
     }
 
@@ -105,9 +106,9 @@ final class DragReapplyScheduler {
         let dropAllowed = hoverDuration >= Config.dropZoneHoverDelay
         if dropAllowed, let drop = ReapplyHandler.findDropTarget(forKey: key) {
             if drop.zone == .center {
-                TilingEditService.shared.swap(key, drop.window)
+                TilingService.shared.swap(key, drop.window)
             } else if let screen = NSScreen.main {
-                TilingEditService.shared.insertAdjacent(dragged: key, target: drop.window,
+                TilingService.shared.insertAdjacent(dragged: key, target: drop.window,
                                                   zone: drop.zone, screen: screen)
             }
             ReapplyHandler.reapplyAll()

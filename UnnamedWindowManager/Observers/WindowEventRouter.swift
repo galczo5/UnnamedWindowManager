@@ -129,10 +129,10 @@ final class WindowEventRouter {
             if isScrolling {
                 ScrollingRootStore.shared.removeWindow(key, screen: screen)
             } else {
-                TilingSnapService.shared.removeAndReflow(key, screen: screen)
+                TilingService.shared.removeAndReflow(key, screen: screen)
             }
         } else {
-            TilingSnapService.shared.remove(key)
+            TilingService.shared.remove(key)
         }
         WindowTracker.shared.cleanup(key: key, pid: pid)
         cleanupPidIfEmpty(pid)
