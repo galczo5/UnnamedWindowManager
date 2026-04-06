@@ -2,22 +2,22 @@
 
 ## Checklist
 
-- [ ] Create `KeyDownEvent` in `Events/`
-- [ ] Create `KeyDownObserver` in `Observers/`
-- [ ] Refactor `KeybindingService` to subscribe to `KeyDownObserver`
-- [ ] Create `DisplayLinkTickEvent` in `Events/`
-- [ ] Create `DisplayLinkTickObserver` in `Observers/`
-- [ ] Refactor `AnimationService` to subscribe to `DisplayLinkTickObserver`
-- [ ] Create `ScrollingDisplayLinkTickEvent` in `Events/`
-- [ ] Create `ScrollingDisplayLinkTickObserver` in `Observers/`
-- [ ] Refactor `ScrollingAnimationService` to subscribe to `ScrollingDisplayLinkTickObserver`
-- [ ] Create `WindowOcclusionChangedEvent` in `Events/`
-- [ ] Create `WindowOcclusionChangedObserver` in `Observers/`
-- [ ] Refactor `GifImageView` to use `WindowOcclusionChangedObserver`
-- [ ] Delete `Services/Observation/AppObserverManager.swift` if no longer referenced
-- [ ] Clean up `Services/Observation/` directory (remove if empty)
-- [ ] Update `CODE.md` to reflect new directory structure
-- [ ] Verify build and all functionality
+- [x] Create `KeyDownEvent` in `Events/`
+- [x] Create `KeyDownObserver` in `Observers/`
+- [x] Refactor `KeybindingService` to subscribe to `KeyDownObserver`
+- [x] Create `DisplayLinkTickEvent` in `Events/`
+- [x] Create `DisplayLinkTickObserver` in `Observers/`
+- [x] Refactor `AnimationService` to subscribe to `DisplayLinkTickObserver`
+- [x] Create `ScrollingDisplayLinkTickEvent` in `Events/`
+- [x] Create `ScrollingDisplayLinkTickObserver` in `Observers/`
+- [x] Refactor `ScrollingAnimationService` to subscribe to `ScrollingDisplayLinkTickObserver`
+- [x] Create `WindowOcclusionChangedEvent` in `Events/`
+- [x] Create `WindowOcclusionChangedObserver` in `Observers/`
+- [x] Refactor `GifImageView` to use `WindowOcclusionChangedObserver`
+- [x] Delete `Services/Observation/AppObserverManager.swift` if no longer referenced
+- [x] Clean up `Services/Observation/` directory (remove if empty)
+- [x] Update `CODE.md` to reflect new directory structure
+- [x] Verify build and all functionality
 
 ---
 

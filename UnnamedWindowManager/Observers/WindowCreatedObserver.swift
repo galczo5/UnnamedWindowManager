@@ -26,23 +26,39 @@ private func windowCreatedCallback(
 // Observes kAXWindowCreatedNotification for every active app and fires WindowCreatedEvent.
 final class WindowCreatedObserver: EventObserver<WindowCreatedEvent> {
     static let shared = WindowCreatedObserver()
-    private var observerManager: AppObserverManager?
+    private var appObservers: [pid_t: AXObserver] = [:]
+    private let notifications: [CFString] = [kAXWindowCreatedNotification as CFString]
 
     func start() {
-        observerManager = AppObserverManager(
-            callback: windowCreatedCallback,
-            notifications: [kAXWindowCreatedNotification as CFString],
-            refcon: Unmanaged.passUnretained(self).toOpaque())
+        let refcon = Unmanaged.passUnretained(self).toOpaque()
 
         AppActivatedObserver.shared.subscribe { [weak self] event in
-            self?.observerManager?.observeApp(pid: event.app.processIdentifier)
+            self?.observeApp(pid: event.app.processIdentifier, refcon: refcon)
         }
         AppTerminatedObserver.shared.subscribe { [weak self] event in
-            self?.observerManager?.removeAppObserver(pid: event.app.processIdentifier)
+            self?.removeAppObserver(pid: event.app.processIdentifier)
         }
 
         for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
-            observerManager?.observeApp(pid: app.processIdentifier)
+            observeApp(pid: app.processIdentifier, refcon: refcon)
         }
+    }
+
+    private func observeApp(pid: pid_t, refcon: UnsafeMutableRawPointer) {
+        guard appObservers[pid] == nil else { return }
+        var axObs: AXObserver?
+        guard AXObserverCreate(pid, windowCreatedCallback, &axObs) == .success, let axObs else { return }
+        let appEl = AXUIElementCreateApplication(pid)
+        for n in notifications {
+            AXObserverAddNotification(axObs, appEl, n, refcon)
+        }
+        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(axObs), .commonModes)
+        appObservers[pid] = axObs
+    }
+
+    private func removeAppObserver(pid: pid_t) {
+        guard let axObs = appObservers[pid] else { return }
+        CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(axObs), .commonModes)
+        appObservers.removeValue(forKey: pid)
     }
 }

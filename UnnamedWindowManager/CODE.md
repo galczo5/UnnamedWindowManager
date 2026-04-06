@@ -170,7 +170,6 @@ Event-driven observers that react to AX notifications, app lifecycle, and screen
 
 | File | Description |
 |------|-------------|
-| `AppObserverManager.swift` | Per-app AXObserver lifecycle (create, run-loop, cleanup) |
 | `DragReapplyScheduler.swift` | Polls for mouse-up during drag and triggers reapply |
 | `SwapOverlay.swift` | Translucent overlay shown over drop targets during drag |
 | `WindowTracker.swift` | Central registry mapping WindowSlots to AXUIElements, PIDs, and reapply state |
