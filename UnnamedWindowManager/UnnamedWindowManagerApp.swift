@@ -48,6 +48,7 @@ struct UnnamedWindowManagerApp: App {
         ScreenParametersChangedObserver.shared.start()
         SpaceChangedObserver.shared.start()
         WindowCreatedObserver.shared.start()
+        KeyDownObserver.shared.start()
         WallpaperService.shared.apply()
 
         FocusedWindowChangedObserver.shared.subscribe { event in

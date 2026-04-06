@@ -24,9 +24,12 @@ Marker protocol and event data structs shared across all observer classes.
 |------|-------------|
 | `AppActivatedEvent.swift` | Event carrying the app that just became frontmost |
 | `AppTerminatedEvent.swift` | Event carrying the app that just terminated |
+| `DisplayLinkTickEvent.swift` | Event fired on each CVDisplayLink frame tick for tiling animations |
 | `EventProtocol.swift` | Marker protocol `AppEvent` that all event data structs conform to |
 | `FocusedWindowChangedEvent.swift` | Event carrying the pid of the app whose focused window changed |
+| `KeyDownEvent.swift` | Event carrying key code, characters, and modifier flags for a global key-down |
 | `ScreenParametersChangedEvent.swift` | Event fired when screen parameters change (resolution, display connect/disconnect) |
+| `ScrollingDisplayLinkTickEvent.swift` | Event fired on each CVDisplayLink frame tick for scrolling animations |
 | `SpaceChangedEvent.swift` | Event fired when the active macOS space changes |
 | `TileStateChangedEvent.swift` | Event fired when the tiling/scrolling layout state changes |
 | `WindowCreatedEvent.swift` | Event carrying the new window element, pid, app name, title, and window hash |
@@ -34,6 +37,7 @@ Marker protocol and event data structs shared across all observer classes.
 | `WindowFocusChangedEvent.swift` | Event fired when the focused window changes |
 | `WindowMiniaturizedEvent.swift` | Event carrying the key and pid of a miniaturized tracked window |
 | `WindowMovedEvent.swift` | Event carrying the key, element, and pid of a moved tracked window |
+| `WindowOcclusionChangedEvent.swift` | Event fired when an NSWindow's occlusion state changes |
 | `WindowResizedEvent.swift` | Event carrying the key, element, pid, and fullscreen flag of a resized tracked window |
 | `WindowTitleChangedEvent.swift` | Event carrying the key and pid of a tracked window whose title changed |
 
@@ -45,9 +49,13 @@ Pub/sub base class for all observer types in the app.
 |------|-------------|
 | `AppActivatedObserver.swift` | Wraps `NSWorkspace.didActivateApplicationNotification` as a pub/sub event |
 | `AppTerminatedObserver.swift` | Wraps `NSWorkspace.didTerminateApplicationNotification` as a pub/sub event |
+| `ConsumingEventObserver.swift` | Base class for observers where the first subscriber returning true consumes the event |
+| `DisplayLinkTickObserver.swift` | Drives tiling animations via CVDisplayLink; call `startIfNeeded()`/`stopIfIdle()` |
 | `EventObserver.swift` | Generic base class with `subscribe`/`unsubscribe`/`notify` pub/sub mechanics |
 | `FocusedWindowChangedObserver.swift` | Manages per-app AXObservers for focused-window changes; fires on app activation too |
+| `KeyDownObserver.swift` | Wraps CGEventTap and fires `KeyDownEvent`; consuming — first true subscriber stops propagation |
 | `ScreenParametersChangedObserver.swift` | Wraps `NSApplication.didChangeScreenParametersNotification` as a pub/sub event |
+| `ScrollingDisplayLinkTickObserver.swift` | Drives scrolling animations via CVDisplayLink; call `startIfNeeded()`/`stopIfIdle()` |
 | `SpaceChangedObserver.swift` | Wraps `NSWorkspace.activeSpaceDidChangeNotification`; handles displaced-window untiling and root-type tracking |
 | `TileStateChangedObserver.swift` | Pure relay hub; `ReapplyHandler` and untile handlers call `notify()` directly |
 | `WindowCreatedObserver.swift` | Manages per-app AXObservers for `kAXWindowCreatedNotification` and fires `WindowCreatedEvent` |
@@ -56,6 +64,7 @@ Pub/sub base class for all observer types in the app.
 | `WindowFocusChangedObserver.swift` | Pure relay hub; fired by `FocusedWindowChangedObserver` subscriber |
 | `WindowMiniaturizedObserver.swift` | Notifies subscribers when a tracked window is miniaturized |
 | `WindowMovedObserver.swift` | Notifies subscribers when a tracked window is moved |
+| `WindowOcclusionChangedObserver.swift` | Observes per-window occlusion state changes via `NSWindow.didChangeOcclusionStateNotification` |
 | `WindowResizedObserver.swift` | Notifies subscribers when a tracked window is resized (including fullscreen entry) |
 | `WindowTitleChangedObserver.swift` | Notifies subscribers when a tracked window's title changes |
 

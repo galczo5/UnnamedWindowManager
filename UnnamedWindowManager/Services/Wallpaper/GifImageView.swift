@@ -7,7 +7,7 @@ import QuartzCore
 final class GifImageView: NSView {
     private var frames: [CGImage] = []
     private var gifAnimation: CAKeyframeAnimation?
-    private var occlusionObserver: NSObjectProtocol?
+    private var occlusionSubscriptionId: UUID?
     private(set) var loadedURL: URL?
 
     var scaling: String = "fill" {
@@ -23,8 +23,11 @@ final class GifImageView: NSView {
     required init?(coder: NSCoder) { fatalError() }
 
     deinit {
-        if let obs = occlusionObserver {
-            NotificationCenter.default.removeObserver(obs)
+        if let id = occlusionSubscriptionId {
+            WindowOcclusionChangedObserver.shared.unsubscribe(id: id)
+        }
+        if let win = window {
+            WindowOcclusionChangedObserver.shared.stopObserving(window: win)
         }
     }
 
@@ -62,9 +65,12 @@ final class GifImageView: NSView {
         gifAnimation = nil
         frames = []
         loadedURL = nil
-        if let obs = occlusionObserver {
-            NotificationCenter.default.removeObserver(obs)
-            occlusionObserver = nil
+        if let id = occlusionSubscriptionId {
+            WindowOcclusionChangedObserver.shared.unsubscribe(id: id)
+            occlusionSubscriptionId = nil
+        }
+        if let win = window {
+            WindowOcclusionChangedObserver.shared.stopObserving(window: win)
         }
     }
 
@@ -105,22 +111,14 @@ final class GifImageView: NSView {
     // MARK: - Occlusion
 
     private func observeOcclusion() {
-        guard occlusionObserver == nil, let win = window else { return }
-        occlusionObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didChangeOcclusionStateNotification,
-            object: win,
-            queue: .main
-        ) { [weak self] _ in
-            self?.occlusionChanged()
-        }
-    }
-
-    private func occlusionChanged() {
-        guard gifAnimation != nil else { return }
-        if window?.occlusionState.contains(.visible) == true {
-            resumeAnimation()
-        } else {
-            pauseAnimation()
+        guard occlusionSubscriptionId == nil, let win = window else { return }
+        occlusionSubscriptionId = WindowOcclusionChangedObserver.shared.subscribe(window: win) { [weak self] event in
+            guard let self, event.window === self.window, gifAnimation != nil else { return }
+            if event.isVisible {
+                resumeAnimation()
+            } else {
+                pauseAnimation()
+            }
         }
     }
 

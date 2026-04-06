@@ -1,14 +1,13 @@
 import ApplicationServices
-import CoreVideo
+import CoreFoundation
 import Foundation
 import os
 
 /// Direction-aware window animator for scrolling roots.
-/// Uses logical before-layout positions as start points to prevent jump artefacts on rapid scrolling.
+/// Uses before-layout positions as start points to prevent jump artefacts on rapid scrolling.
 /// Ticks run directly on the CVDisplayLink render thread for frame-accurate timing.
 final class ScrollingAnimationService {
     static let shared = ScrollingAnimationService()
-    private init() {}
 
     private struct Animation {
         let ax: AXUIElement
@@ -24,7 +23,6 @@ final class ScrollingAnimationService {
 
     private var animations: [UInt: Animation] = [:]
     private let lock = OSAllocatedUnfairLock()
-    private var displayLink: CVDisplayLink?
 
     /// Keys whose reapplying removal is deferred until all animations finish.
     private var pendingReapplyRemoval = Set<WindowSlot>()
@@ -32,6 +30,12 @@ final class ScrollingAnimationService {
     /// Hashes that have already been animated once; subsequent calls skip animation.
     private var animatedOnce = Set<UInt>()
     private var clearAnimatedOnceWork: DispatchWorkItem?
+
+    private init() {
+        ScrollingDisplayLinkTickObserver.shared.subscribe { [weak self] _ in
+            self?.tickAll()
+        }
+    }
 
     var isAnimating: Bool {
         lock.withLock { !animations.isEmpty }
@@ -97,7 +101,7 @@ final class ScrollingAnimationService {
                 applyImmediate(ax: ax, pos: end.pos, size: end.size, positionOnly: false)
             }
         }
-        startDisplayLinkIfNeeded()
+        ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
 
         // Remove side windows from reapplying after a short delay so ResizeObserver
         // ignores the position changes from applyImmediate above.
@@ -148,14 +152,15 @@ final class ScrollingAnimationService {
                 sizeChanged: !positionOnly && sizeDelta >= 1
             )
         }
-        startDisplayLinkIfNeeded()
+        ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
     }
 
     func cancel(hash: UInt) {
         let anim: Animation? = lock.withLock { animations.removeValue(forKey: hash) }
         guard let anim else { return }
         WindowTracker.shared.reapplying.remove(anim.key)
-        stopDisplayLinkIfIdle()
+        let empty = lock.withLock { animations.isEmpty }
+        if empty { ScrollingDisplayLinkTickObserver.shared.stopIfIdle() }
     }
 
     func cancelAll() {
@@ -170,7 +175,7 @@ final class ScrollingAnimationService {
         animatedOnce.removeAll()
         clearAnimatedOnceWork?.cancel()
         clearAnimatedOnceWork = nil
-        stopDisplayLinkIfIdle()
+        ScrollingDisplayLinkTickObserver.shared.stopIfIdle()
     }
 
     // MARK: - Position computation
@@ -223,31 +228,6 @@ final class ScrollingAnimationService {
         case .stacking(let s): return Set(s.children.map(\.windowHash))
         default:               return []
         }
-    }
-
-    // MARK: - Display Link
-
-    private func startDisplayLinkIfNeeded() {
-        guard displayLink == nil else { return }
-        var link: CVDisplayLink?
-        CVDisplayLinkCreateWithActiveCGDisplays(&link)
-        guard let link else { return }
-
-        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
-        CVDisplayLinkSetOutputCallback(link, { _, _, _, _, _, userInfo -> CVReturn in
-            let service = Unmanaged<ScrollingAnimationService>.fromOpaque(userInfo!).takeUnretainedValue()
-            service.tickAll()
-            return kCVReturnSuccess
-        }, selfPtr)
-        CVDisplayLinkStart(link)
-        displayLink = link
-    }
-
-    private func stopDisplayLinkIfIdle() {
-        let empty = lock.withLock { animations.isEmpty }
-        guard empty, let link = displayLink else { return }
-        CVDisplayLinkStop(link)
-        displayLink = nil
     }
 
     // MARK: - Tick (runs on CVDisplayLink render thread)
@@ -308,7 +288,7 @@ final class ScrollingAnimationService {
                 return animations.isEmpty
             }
             if allDone {
-                stopDisplayLinkIfIdle()
+                ScrollingDisplayLinkTickObserver.shared.stopIfIdle()
                 let pending = pendingReapplyRemoval
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {

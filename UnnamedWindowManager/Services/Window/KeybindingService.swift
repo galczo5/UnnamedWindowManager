@@ -1,8 +1,7 @@
-import CoreGraphics
 import AppKit
-import ApplicationServices
 
-// Registers global keyboard shortcuts via a CGEventTap, consuming matched events.
+// Registers global keyboard shortcuts by subscribing to KeyDownObserver.
+// Parses config shortcuts into Bindings and matches incoming KeyDownEvents.
 final class KeybindingService {
     static let shared = KeybindingService()
 
@@ -17,8 +16,7 @@ final class KeybindingService {
     }
 
     private var bindings: [Binding] = []
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
+    private var subscriptionId: UUID?
 
     private init() {}
 
@@ -29,7 +27,22 @@ final class KeybindingService {
         }
         let all = makeBuiltInCandidates() + makeCommandCandidates()
         guard buildBindings(from: all) else { return }
-        installEventTap()
+
+        subscriptionId = KeyDownObserver.shared.subscribe { [weak self] event in
+            guard let self else { return false }
+            for binding in self.bindings {
+                guard event.modifiers == binding.modifiers else { continue }
+                if let keyCode = binding.keyCode {
+                    guard event.keyCode == keyCode else { continue }
+                } else if let key = binding.key {
+                    guard event.characters == key else { continue }
+                } else { continue }
+                let action = binding.action
+                DispatchQueue.main.async { action() }
+                return true
+            }
+            return false
+        }
     }
 
     private func makeBuiltInCandidates() -> [(String, String, () -> Void)] {
@@ -113,67 +126,10 @@ final class KeybindingService {
         return true
     }
 
-    private func installEventTap() {
-        let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
-        let userInfo = Unmanaged.passUnretained(self).toOpaque()
-
-        guard let tap = CGEvent.tapCreate(
-            tap: .cghidEventTap,
-            place: .headInsertEventTap,
-            options: .defaultTap,
-            eventsOfInterest: eventMask,
-            callback: { _, type, event, refcon -> Unmanaged<CGEvent>? in
-                if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-                    if let refcon, let tap = Unmanaged<KeybindingService>.fromOpaque(refcon).takeUnretainedValue().eventTap {
-                        CGEvent.tapEnable(tap: tap, enable: true)
-                    }
-                    return Unmanaged.passRetained(event)
-                }
-                guard let refcon, type == .keyDown else {
-                    return Unmanaged.passRetained(event)
-                }
-                let service = Unmanaged<KeybindingService>.fromOpaque(refcon).takeUnretainedValue()
-                guard let nsEvent = NSEvent(cgEvent: event) else {
-                    return Unmanaged.passRetained(event)
-                }
-                let flags = nsEvent.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.numericPad, .function])
-                for binding in service.bindings {
-                    guard flags == binding.modifiers else { continue }
-                    if let keyCode = binding.keyCode {
-                        guard nsEvent.keyCode == keyCode else { continue }
-                    } else if let key = binding.key {
-                        guard nsEvent.charactersIgnoringModifiers == key else { continue }
-                    } else { continue }
-                    let action = binding.action
-                    DispatchQueue.main.async {
-                        action()
-                    }
-                    return nil
-                }
-                return Unmanaged.passRetained(event)
-            },
-            userInfo: userInfo
-        ) else {
-            Logger.shared.log("KeybindingService: failed to create event tap")
-            return
-        }
-
-        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
-
-        eventTap = tap
-        runLoopSource = source
-    }
-
     func stop() {
-        if let tap = eventTap {
-            CGEvent.tapEnable(tap: tap, enable: false)
-            if let source = runLoopSource {
-                CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
-            }
-            eventTap = nil
-            runLoopSource = nil
+        if let id = subscriptionId {
+            KeyDownObserver.shared.unsubscribe(id: id)
+            subscriptionId = nil
         }
         bindings = []
     }

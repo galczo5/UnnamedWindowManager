@@ -1,5 +1,5 @@
 import ApplicationServices
-import CoreVideo
+import CoreFoundation
 import Foundation
 import os
 
@@ -7,7 +7,6 @@ import os
 /// Ticks run directly on the CVDisplayLink render thread for frame-accurate timing.
 final class AnimationService {
     static let shared = AnimationService()
-    private init() {}
 
     private struct Animation {
         let ax: AXUIElement
@@ -23,7 +22,6 @@ final class AnimationService {
 
     private var animations: [UInt: Animation] = [:]
     private let lock = OSAllocatedUnfairLock()
-    private var displayLink: CVDisplayLink?
 
     /// Keys whose reapplying removal is deferred until all animations finish.
     private var pendingReapplyRemoval = Set<WindowSlot>()
@@ -31,6 +29,12 @@ final class AnimationService {
     /// Hashes that have already been animated once; subsequent calls skip animation.
     private var animatedOnce = Set<UInt>()
     private var clearAnimatedOnceWork: DispatchWorkItem?
+
+    private init() {
+        DisplayLinkTickObserver.shared.subscribe { [weak self] _ in
+            self?.tickAll()
+        }
+    }
 
     /// Animates `ax` from its current frame to `(pos, size)`.
     /// Falls through to an immediate AX call when duration is 0 or the current frame can't be read.
@@ -67,14 +71,15 @@ final class AnimationService {
                              startTime: CFAbsoluteTimeGetCurrent(),
                              duration: duration, sizeChanged: sizeChanged)
         lock.withLock { animations[hash] = anim }
-        startDisplayLinkIfNeeded()
+        DisplayLinkTickObserver.shared.startIfNeeded()
     }
 
     func cancel(hash: UInt) {
         let anim: Animation? = lock.withLock { animations.removeValue(forKey: hash) }
         guard let anim else { return }
         WindowTracker.shared.reapplying.remove(anim.key)
-        stopDisplayLinkIfIdle()
+        let empty = lock.withLock { animations.isEmpty }
+        if empty { DisplayLinkTickObserver.shared.stopIfIdle() }
     }
 
     func cancelAll() {
@@ -89,36 +94,11 @@ final class AnimationService {
         animatedOnce.removeAll()
         clearAnimatedOnceWork?.cancel()
         clearAnimatedOnceWork = nil
-        stopDisplayLinkIfIdle()
+        DisplayLinkTickObserver.shared.stopIfIdle()
     }
 
     var isAnimating: Bool {
         lock.withLock { !animations.isEmpty }
-    }
-
-    // MARK: - Display Link
-
-    private func startDisplayLinkIfNeeded() {
-        guard displayLink == nil else { return }
-        var link: CVDisplayLink?
-        CVDisplayLinkCreateWithActiveCGDisplays(&link)
-        guard let link else { return }
-
-        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
-        CVDisplayLinkSetOutputCallback(link, { _, _, _, _, _, userInfo -> CVReturn in
-            let service = Unmanaged<AnimationService>.fromOpaque(userInfo!).takeUnretainedValue()
-            service.tickAll()
-            return kCVReturnSuccess
-        }, selfPtr)
-        CVDisplayLinkStart(link)
-        displayLink = link
-    }
-
-    private func stopDisplayLinkIfIdle() {
-        let empty = lock.withLock { animations.isEmpty }
-        guard empty, let link = displayLink else { return }
-        CVDisplayLinkStop(link)
-        displayLink = nil
     }
 
     // MARK: - Tick (runs on CVDisplayLink render thread)
@@ -179,7 +159,7 @@ final class AnimationService {
                 return animations.isEmpty
             }
             if allDone {
-                stopDisplayLinkIfIdle()
+                DisplayLinkTickObserver.shared.stopIfIdle()
                 let pending = pendingReapplyRemoval
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {
