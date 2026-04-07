@@ -80,7 +80,7 @@ final class ScrollingAnimationService {
             let sizeDelta = abs(start.size.width - end.size.width) + abs(start.size.height - end.size.height)
             guard posDelta >= 1 || sizeDelta >= 1 else { continue }
 
-            if duration > 0 && centerHashes.contains(hash) {
+            if duration > 0 && centerHashes.contains(hash) && !key.isBeingAnimated {
                 cancel(hash: hash)
                 WindowTracker.shared.reapplying.insert(key)
                 lock.withLock {
@@ -122,7 +122,7 @@ final class ScrollingAnimationService {
         let hash = key.windowHash
         cancel(hash: hash)
 
-        if animatedOnce.contains(hash) {
+        if key.isBeingAnimated || animatedOnce.contains(hash) {
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }

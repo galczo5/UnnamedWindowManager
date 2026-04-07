@@ -17,6 +17,8 @@ struct WindowSlot: Hashable, Sendable {
     var preTileOrigin: CGPoint?
     /// Window size before it was tiled. Set once at tile time.
     var preTileSize: CGSize?
+    /// True while an animation is in flight; the next move will skip animation and jump immediately.
+    var isBeingAnimated: Bool = false
     /// True when this window was detected as part of a native macOS tab group.
     var isTabbed: Bool = false
     /// CGWindowIDs of all windows in the same native tab group, including self.

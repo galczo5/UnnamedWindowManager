@@ -45,7 +45,7 @@ final class TilingAnimationService {
 
         cancel(hash: hash)
 
-        if animatedOnce.contains(hash) {
+        if key.isBeingAnimated || animatedOnce.contains(hash) {
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }
