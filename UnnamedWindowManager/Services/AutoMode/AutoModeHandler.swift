@@ -92,7 +92,7 @@ struct AutoModeHandler {
                     && abs(actual.height - (key.size.height - gap)) <= 2
             }
         }) { _ in
-            PostResizeValidator.checkAndFixRefusals(windows: allKeys, screen: screen)
+            WindowPostResizeValidator.checkAndFixRefusals(windows: allKeys, screen: screen)
         }
     }
 }

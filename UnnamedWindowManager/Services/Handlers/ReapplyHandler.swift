@@ -15,7 +15,7 @@ struct ReapplyHandler {
 
     /// Reapplies the layout for all tiled windows, debounced to 10 ms.
     /// Multiple calls within 10 ms collapse into one execution. After the layout
-    /// runs, PostResizeValidator fires 300 ms later to catch any refusing windows.
+    /// runs, WindowPostResizeValidator fires 300 ms later to catch any refusing windows.
     static func reapplyAll() {
         pendingLayout?.cancel()
         let work = DispatchWorkItem {
@@ -35,7 +35,7 @@ struct ReapplyHandler {
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1)) {
                 guard let screen = NSScreen.main else { return }
-                let pass2Refusals = PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+                let pass2Refusals = WindowPostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
 
                 for key in pass2Refusals {
                     let appName = NSRunningApplication(processIdentifier: key.pid)?.localizedName ?? "Unknown"
@@ -58,7 +58,7 @@ struct ReapplyHandler {
                     }
                 }) { _ in
                     guard let screen = NSScreen.main else { return }
-                    let pass3Refusals = PostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
+                    let pass3Refusals = WindowPostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
                     let persistent = pass2Refusals.intersection(pass3Refusals)
                     guard !persistent.isEmpty else { return }
 
@@ -181,7 +181,7 @@ struct ReapplyHandler {
     }
 
     private static func onScreenWindowIDs() -> Set<UInt> {
-        OnScreenWindowCache.visibleHashes()
+        WindowOnScreenCache.visibleHashes()
     }
 
     /// Returns `size` clamped to the per-screen maximums defined in `Config`.

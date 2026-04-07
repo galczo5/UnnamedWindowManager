@@ -16,7 +16,7 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
     }
 
     @objc private func activeSpaceDidChange() {
-        OnScreenWindowCache.invalidate()
+        WindowOnScreenCache.invalidate()
         untileDisplacedWindows()
         ReapplyHandler.reapplyAll()
 
@@ -57,7 +57,7 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
 
     private func untileDisplacedWindows() {
         guard let screen = NSScreen.main else { return }
-        let visibleHashes = OnScreenWindowCache.visibleHashes()
+        let visibleHashes = WindowOnScreenCache.visibleHashes()
         let toUntile = displacedWindows(visibleHashes: visibleHashes)
         for key in toUntile {
             UntileHandler.untileByKey(key, screen: screen)

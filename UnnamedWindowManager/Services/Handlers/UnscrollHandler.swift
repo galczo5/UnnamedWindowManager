@@ -19,7 +19,7 @@ struct UnscrollHandler {
         let stored = ScrollingRootStore.shared.removeWindow(key, screen: screen)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         WindowEventRouter.shared.stopObserving(key: key, pid: pid)
-        if let stored { RestoreService.restore(stored, element: axWindow) }
+        if let stored { WindowRestoreService.restore(stored, element: axWindow) }
         ReapplyHandler.reapplyAll()
         TileStateChangedObserver.shared.notify(TileStateChangedEvent())
     }
@@ -30,7 +30,7 @@ struct UnscrollHandler {
         let removed = ScrollingRootStore.shared.removeVisibleScrollingRoot()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
-            if let ax = elements[key] { RestoreService.restore(key, element: ax) }
+            if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
             WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
         }
         TileStateChangedObserver.shared.notify(TileStateChangedEvent())
@@ -42,7 +42,7 @@ struct UnscrollHandler {
         let removed = ScrollingRootStore.shared.removeAllScrollingRoots()
         WindowOpacityService.shared.restoreAll()
         for key in removed {
-            if let ax = elements[key] { RestoreService.restore(key, element: ax) }
+            if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
             WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
         }
     }

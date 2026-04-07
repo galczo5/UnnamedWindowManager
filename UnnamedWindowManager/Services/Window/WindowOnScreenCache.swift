@@ -2,7 +2,7 @@ import AppKit
 
 // Time-cached CGWindowListCopyWindowInfo result, shared across callers to avoid
 // redundant window-server queries within the same operation burst.
-enum OnScreenWindowCache {
+enum WindowOnScreenCache {
     private static var cachedHashes: Set<UInt> = []
     private static var cacheTime: UInt64 = 0
 

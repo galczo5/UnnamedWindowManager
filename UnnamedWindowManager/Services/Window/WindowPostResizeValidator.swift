@@ -1,7 +1,7 @@
 import AppKit
 
 // Checks tiled windows after a resize and corrects any that refused the target size.
-enum PostResizeValidator {
+enum WindowPostResizeValidator {
 
     @discardableResult
     static func checkAndFixRefusals(windows: Set<WindowSlot>, screen: NSScreen) -> Set<WindowSlot> {

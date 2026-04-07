@@ -26,7 +26,7 @@ struct TileHandler {
 
         // If a managed window from the same PID is no longer on screen, it became an
         // inactive tab. Swap its slot identity to the focused window instead of adding a new slot.
-        let onScreen = OnScreenWindowCache.visibleHashes()
+        let onScreen = WindowOnScreenCache.visibleHashes()
         let managedSiblings = WindowTracker.shared.keysByPid[pid] ?? []
         for siblingKey in managedSiblings {
             if siblingKey.isSameTabGroup(hash: key.windowHash) || !onScreen.contains(siblingKey.windowHash) {

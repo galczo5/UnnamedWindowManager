@@ -77,7 +77,7 @@ final class TilingDragHandler {
                         guard case .window(let w) = slot else { return nil }
                         return w
                     })
-                PostResizeValidator.checkAndFixRefusals(windows: windows, screen: screen)
+                WindowPostResizeValidator.checkAndFixRefusals(windows: windows, screen: screen)
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) { [weak tracker] in

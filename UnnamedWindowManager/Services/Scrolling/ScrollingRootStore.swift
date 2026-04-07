@@ -238,7 +238,7 @@ final class ScrollingRootStore {
     // MARK: - Private
 
     private func visibleScrollingRootID() -> UUID? {
-        let visibleHashes = OnScreenWindowCache.visibleHashes()
+        let visibleHashes = WindowOnScreenCache.visibleHashes()
         for (id, rootSlot) in store.roots {
             guard case .scrolling(let root) = rootSlot else { continue }
             if root.allWindowSlots().contains(where: { visibleHashes.contains($0.windowHash) }) { return id }
