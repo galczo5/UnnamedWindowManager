@@ -28,7 +28,7 @@ final class KeybindingService {
         let all = makeBuiltInCandidates() + makeCommandCandidates()
         guard buildBindings(from: all) else { return }
 
-        subscriptionId = KeyDownObserver.shared.subscribe { [weak self] event in
+        subscriptionId = KeyDownObserver.shared.subscribe("KeybindingService:start") { [weak self] event in
             guard let self else { return false }
             for binding in self.bindings {
                 guard event.modifiers == binding.modifiers else { continue }

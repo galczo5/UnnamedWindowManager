@@ -51,12 +51,12 @@ struct UnnamedWindowManagerApp: App {
         KeyDownObserver.shared.start()
         WallpaperService.shared.apply()
 
-        FocusedWindowChangedObserver.shared.subscribe { event in
+        FocusedWindowChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
             WindowFocusChangedObserver.shared.notify(WindowFocusChangedEvent())
             FocusChangeHandler.shared.handleFocusChange(pid: event.pid)
         }
 
-        WindowCreatedObserver.shared.subscribe { event in
+        WindowCreatedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
             let label = event.title.isEmpty ? event.appName : "\(event.appName) – \(event.title)"
             let key = windowSlot(for: event.window, pid: event.pid)
             let rootDesc: String
@@ -74,15 +74,15 @@ struct UnnamedWindowManagerApp: App {
         let tracker = WindowTracker.shared
         let router = WindowEventRouter.shared
 
-        WindowDestroyedObserver.shared.subscribe { event in
+        WindowDestroyedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
             let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
             router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
         }
-        WindowMiniaturizedObserver.shared.subscribe { event in
+        WindowMiniaturizedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
             let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
             router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
         }
-        WindowResizedObserver.shared.subscribe { event in
+        WindowResizedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
             let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
             if event.isFullScreen {
                 router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
@@ -95,7 +95,7 @@ struct UnnamedWindowManagerApp: App {
             guard !tracker.reapplying.contains(event.key) else { return }
             tracker.reapplyScheduler.schedule(key: event.key, isResize: true, isScrolling: isScrolling)
         }
-        WindowMovedObserver.shared.subscribe { event in
+        WindowMovedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
             let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
             if let axElement = tracker.elements[event.key] {
                 FocusedWindowBorderService.shared.updateIfActive(key: event.key, axElement: axElement)
@@ -108,7 +108,7 @@ struct UnnamedWindowManagerApp: App {
             tracker.reapplyScheduler.schedule(key: event.key, isResize: false, isScrolling: isScrolling)
         }
 
-        ScreenParametersChangedObserver.shared.subscribe { _ in
+        ScreenParametersChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
             guard let screen = NSScreen.main else { return }
             TilingService.shared.recomputeVisibleRootSizes(screen: screen)
             WallpaperService.shared.screenChanged()
@@ -116,13 +116,13 @@ struct UnnamedWindowManagerApp: App {
         }
 
         let state = menuState
-        TileStateChangedObserver.shared.subscribe { _ in
+        TileStateChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
             state.refresh()
         }
-        WindowFocusChangedObserver.shared.subscribe { _ in
+        WindowFocusChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
             state.refresh()
         }
-        SpaceChangedObserver.shared.subscribe { _ in
+        SpaceChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
             state.refresh()
         }
     }

@@ -30,13 +30,13 @@ final class FocusedWindowChangedObserver: EventObserver<FocusedWindowChangedEven
     func start() {
         let refcon = Unmanaged.passUnretained(self).toOpaque()
 
-        AppActivatedObserver.shared.subscribe { [weak self] event in
+        AppActivatedObserver.shared.subscribe("FocusedWindowChangedObserver:start") { [weak self] event in
             guard let self else { return }
             let pid = event.app.processIdentifier
             observeApp(pid: pid, refcon: refcon)
             notify(FocusedWindowChangedEvent(pid: pid))
         }
-        AppTerminatedObserver.shared.subscribe { [weak self] event in
+        AppTerminatedObserver.shared.subscribe("FocusedWindowChangedObserver:start") { [weak self] event in
             self?.removeAppObserver(pid: event.app.processIdentifier)
         }
 

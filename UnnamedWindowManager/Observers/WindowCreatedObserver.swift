@@ -32,10 +32,10 @@ final class WindowCreatedObserver: EventObserver<WindowCreatedEvent> {
     func start() {
         let refcon = Unmanaged.passUnretained(self).toOpaque()
 
-        AppActivatedObserver.shared.subscribe { [weak self] event in
+        AppActivatedObserver.shared.subscribe("WindowCreatedObserver:start") { [weak self] event in
             self?.observeApp(pid: event.app.processIdentifier, refcon: refcon)
         }
-        AppTerminatedObserver.shared.subscribe { [weak self] event in
+        AppTerminatedObserver.shared.subscribe("WindowCreatedObserver:start") { [weak self] event in
             self?.removeAppObserver(pid: event.app.processIdentifier)
         }
 

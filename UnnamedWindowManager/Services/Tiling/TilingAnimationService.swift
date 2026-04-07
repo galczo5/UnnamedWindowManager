@@ -31,7 +31,7 @@ final class TilingAnimationService {
     private var clearAnimatedOnceWork: DispatchWorkItem?
 
     private init() {
-        DisplayLinkTickObserver.shared.subscribe { [weak self] _ in
+        DisplayLinkTickObserver.shared.subscribe("TilingAnimationService:init") { [weak self] _ in
             self?.tickAll()
         }
     }

@@ -10,7 +10,7 @@ final class WindowOcclusionChangedObserver: EventObserver<WindowOcclusionChanged
 
     @discardableResult
     func subscribe(window: NSWindow, handler: @escaping (WindowOcclusionChangedEvent) -> Void) -> UUID {
-        let id = super.subscribe(handler: handler)
+        let id = super.subscribe("WindowOcclusionChangedObserver:subscribe(\(window.windowNumber))", handler: handler)
         let winID = ObjectIdentifier(window)
         if observed[winID] == nil {
             let obs = NotificationCenter.default.addObserver(

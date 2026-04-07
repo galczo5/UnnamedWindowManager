@@ -32,7 +32,7 @@ final class ScrollingAnimationService {
     private var clearAnimatedOnceWork: DispatchWorkItem?
 
     private init() {
-        ScrollingDisplayLinkTickObserver.shared.subscribe { [weak self] _ in
+        ScrollingDisplayLinkTickObserver.shared.subscribe("ScrollingAnimationService:init") { [weak self] _ in
             self?.tickAll()
         }
     }
