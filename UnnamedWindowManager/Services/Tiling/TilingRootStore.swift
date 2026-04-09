@@ -73,11 +73,11 @@ final class TilingRootStore {
 
     /// Returns the UUID of the tiling root that owns a window currently visible on screen, or `nil`.
     func visibleRootID() -> UUID? {
-        let visibleHashes = WindowOnScreenCache.visibleHashes()
+        let onScreen = WindowOnScreenCache.visibleSet()
         for (id, rootSlot) in store.roots {
             guard case .tiling(let root) = rootSlot else { continue }
             for leaf in root.allLeaves() {
-                if case .window(let w) = leaf, visibleHashes.contains(w.windowHash) {
+                if case .window(let w) = leaf, onScreen.contains(pid: w.pid, hash: w.windowHash) {
                     return id
                 }
             }

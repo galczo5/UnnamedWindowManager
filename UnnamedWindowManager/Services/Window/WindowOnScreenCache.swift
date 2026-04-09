@@ -1,33 +1,36 @@
 import AppKit
 
-// Time-cached CGWindowListCopyWindowInfo result, shared across callers to avoid
-// redundant window-server queries within the same operation burst.
+struct OnScreenWindow: Hashable {
+    let windowID: CGWindowID
+    let pid: pid_t
+    let hash: UInt
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.pid == rhs.pid && lhs.hash == rhs.hash }
+    func hash(into hasher: inout Hasher) { hasher.combine(pid); hasher.combine(hash) }
+}
+
+extension Set<OnScreenWindow> {
+    func contains(pid: pid_t, hash: UInt) -> Bool {
+        contains(OnScreenWindow(windowID: CGWindowID(hash), pid: pid, hash: hash))
+    }
+}
+
+// Queries CGWindowListCopyWindowInfo for windows currently visible on screen.
 enum WindowOnScreenCache {
-    private static var cachedHashes: Set<UInt> = []
-    private static var cacheTime: UInt64 = 0
-
-    static func invalidate() { cacheTime = 0 }
-
-    static func visibleHashes() -> Set<UInt> {
-        let now = DispatchTime.now().uptimeNanoseconds
-        if now - cacheTime < 50_000_000, !cachedHashes.isEmpty {
-            return cachedHashes
-        }
+    static func visibleSet() -> Set<OnScreenWindow> {
         let ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
         guard let list = CGWindowListCopyWindowInfo(
             [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
         ) as? [[String: Any]] else { return [] }
-        var ids = Set<UInt>()
+        var result = Set<OnScreenWindow>()
         for info in list {
             guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
                   let pid   = info[kCGWindowOwnerPID as String] as? Int,
                   let wid   = info[kCGWindowNumber as String] as? CGWindowID,
                   pid_t(pid) != ownPID
             else { continue }
-            ids.insert(UInt(wid))
+            result.insert(OnScreenWindow(windowID: wid, pid: pid_t(pid), hash: UInt(wid)))
         }
-        cachedHashes = ids
-        cacheTime = now
-        return ids
+        return result
     }
 }

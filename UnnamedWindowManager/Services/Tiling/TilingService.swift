@@ -131,13 +131,13 @@ final class TilingService {
     func consolidateVisibleRoots(screen: NSScreen) {
         var mergedRootID: UUID? = nil
         store.queue.sync(flags: .barrier) {
-            let visibleHashes = WindowOnScreenCache.visibleHashes()
+            let onScreen = WindowOnScreenCache.visibleSet()
 
             let visiblePairs: [(id: UUID, root: TilingRootSlot)] = store.roots.compactMap { id, slot in
                 guard case .tiling(let root) = slot else { return nil }
                 let hasVisible = root.allLeaves().contains {
                     guard case .window(let w) = $0 else { return false }
-                    return visibleHashes.contains(w.windowHash)
+                    return onScreen.contains(pid: w.pid, hash: w.windowHash)
                 }
                 return hasVisible ? (id, root) : nil
             }

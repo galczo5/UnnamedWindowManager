@@ -131,7 +131,7 @@ struct ReapplyHandler {
         let leaves = TilingRootStore.shared.leavesInVisibleRoot()
         for leaf in leaves {
             guard case .window(let w) = leaf else { continue }
-            guard !onScreen.contains(w.windowHash) else { continue }
+            guard !onScreen.contains(pid: w.pid, hash: w.windowHash) else { continue }
 
             // Check for tab switch: enumerate AX windows for the same PID and look for
             // an unmanaged on-screen sibling that replaced this window (inactive tab).
@@ -143,7 +143,7 @@ struct ReapplyHandler {
                 for ax in axWindows {
                     guard let wid = windowID(of: ax).map(UInt.init),
                           wid != w.windowHash,
-                          onScreen.contains(wid),
+                          onScreen.contains(pid: w.pid, hash: wid),
                           WindowTracker.shared.keysByHash[wid] == nil else { continue }
                     WindowEventRouter.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
                     didSwap = true
@@ -157,7 +157,7 @@ struct ReapplyHandler {
         let scrollingLeaves = ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
         for leaf in scrollingLeaves {
             guard case .window(let w) = leaf else { continue }
-            guard !onScreen.contains(w.windowHash) else { continue }
+            guard !onScreen.contains(pid: w.pid, hash: w.windowHash) else { continue }
 
             var didSwap = false
             let axApp = AXUIElementCreateApplication(w.pid)
@@ -167,7 +167,7 @@ struct ReapplyHandler {
                 for ax in axWindows {
                     guard let wid = windowID(of: ax).map(UInt.init),
                           wid != w.windowHash,
-                          onScreen.contains(wid),
+                          onScreen.contains(pid: w.pid, hash: wid),
                           WindowTracker.shared.keysByHash[wid] == nil else { continue }
                     WindowEventRouter.shared.swapTab(oldKey: w, newWindow: ax, newHash: wid)
                     didSwap = true
@@ -180,8 +180,8 @@ struct ReapplyHandler {
         }
     }
 
-    private static func onScreenWindowIDs() -> Set<UInt> {
-        WindowOnScreenCache.visibleHashes()
+    private static func onScreenWindowIDs() -> Set<OnScreenWindow> {
+        WindowOnScreenCache.visibleSet()
     }
 
     /// Returns `size` clamped to the per-screen maximums defined in `Config`.

@@ -16,7 +16,6 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
     }
 
     @objc private func activeSpaceDidChange() {
-        WindowOnScreenCache.invalidate()
         untileDisplacedWindows()
         ReapplyHandler.reapplyAll()
 
@@ -57,20 +56,20 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
 
     private func untileDisplacedWindows() {
         guard let screen = NSScreen.main else { return }
-        let visibleHashes = WindowOnScreenCache.visibleHashes()
-        let toUntile = displacedWindows(visibleHashes: visibleHashes)
+        let onScreen = WindowOnScreenCache.visibleSet()
+        let toUntile = displacedWindows(onScreen: onScreen)
         for key in toUntile {
             UntileHandler.untileByKey(key, screen: screen)
         }
     }
 
-    private func displacedWindows(visibleHashes: Set<UInt>) -> [WindowSlot] {
+    private func displacedWindows(onScreen: Set<OnScreenWindow>) -> [WindowSlot] {
         SharedRootStore.shared.queue.sync {
             var displaced: [WindowSlot] = []
             for (_, rootSlot) in SharedRootStore.shared.roots {
                 let leaves = allWindowSlots(in: rootSlot)
-                let visible = leaves.filter { visibleHashes.contains($0.windowHash) }
-                let hidden  = leaves.filter { !visibleHashes.contains($0.windowHash) }
+                let visible = leaves.filter { onScreen.contains(pid: $0.pid, hash: $0.windowHash) }
+                let hidden  = leaves.filter { !onScreen.contains(pid: $0.pid, hash: $0.windowHash) }
                 if !visible.isEmpty && !hidden.isEmpty {
                     displaced.append(contentsOf: visible)
                 }

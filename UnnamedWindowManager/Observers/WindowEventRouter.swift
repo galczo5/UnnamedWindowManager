@@ -111,8 +111,6 @@ final class WindowEventRouter {
             }
         }
 
-        WindowOnScreenCache.invalidate()
-
         var newKey = WindowSlot(pid: pid, windowHash: newHash,
                                 id: UUID(), parentId: UUID(), order: 0, size: .zero,
                                 isTabbed: true)

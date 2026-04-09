@@ -31,8 +31,7 @@ final class FocusChangeHandler {
         retryWorkItem = nil
 
         if !isManaged, let hash {
-            WindowOnScreenCache.invalidate()
-            let onScreen = WindowOnScreenCache.visibleHashes()
+            let onScreen = WindowOnScreenCache.visibleSet()
             let managedSiblings = WindowTracker.shared.keysByPid[pid] ?? []
             // freshTabGroup uses bounds-matching (the authoritative check) and catches
             // new tabs whose hash was never in the existing slot's tabHashes.
@@ -50,7 +49,7 @@ final class FocusChangeHandler {
                     }
                 }
                 if siblingKey.isSameTabGroup(hash: hash)
-                    || !onScreen.contains(siblingKey.windowHash)
+                    || !onScreen.contains(pid: siblingKey.pid, hash: siblingKey.windowHash)
                     || freshTabGroup.contains(siblingKey.windowHash) {
                     WindowEventRouter.shared.swapTab(oldKey: siblingKey, newWindow: axWindow, newHash: hash)
                     ReapplyHandler.reapplyAll()
@@ -63,8 +62,7 @@ final class FocusChangeHandler {
             if !swapped, !managedSiblings.isEmpty {
                 let work = DispatchWorkItem { [weak self] in
                     SettlePoller.poll(condition: {
-                        WindowOnScreenCache.invalidate()
-                        return WindowOnScreenCache.visibleHashes().contains(hash)
+                        WindowOnScreenCache.visibleSet().contains(pid: pid, hash: hash)
                     }) { settled in
                         guard settled else { return }
                         self?.handleFocusChange(pid: pid)
