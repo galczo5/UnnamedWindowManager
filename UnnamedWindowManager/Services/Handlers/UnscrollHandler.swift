@@ -29,6 +29,7 @@ struct UnscrollHandler {
         let elements = WindowTracker.shared.elements
         let removed = ScrollingRootStore.shared.removeVisibleScrollingRoot()
         WindowOpacityService.shared.restoreAll()
+        FocusedWindowBorderService.shared.hide()
         for key in removed {
             if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
             WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)

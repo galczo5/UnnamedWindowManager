@@ -31,6 +31,7 @@ struct UntileHandler {
         let elements = WindowTracker.shared.elements
         let removed = TilingService.shared.removeVisibleRoot()
         WindowOpacityService.shared.restoreAll()
+        FocusedWindowBorderService.shared.hide()
         for key in removed {
             if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
             WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)

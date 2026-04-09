@@ -99,6 +99,7 @@ final class ScrollingAnimationService {
                 applyImmediate(ax: ax, pos: end.pos, size: end.size, positionOnly: false)
             }
         }
+        FocusedWindowBorderService.shared.hideForAnimation()
         ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
 
         // Remove side windows from reapplying after a short delay so ResizeObserver
@@ -150,6 +151,7 @@ final class ScrollingAnimationService {
                 sizeChanged: !positionOnly && sizeDelta >= 1
             )
         }
+        FocusedWindowBorderService.shared.hideForAnimation()
         ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
     }
 
@@ -291,7 +293,9 @@ final class ScrollingAnimationService {
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {
                     WindowTracker.shared.reapplying.subtract(pending)
-                    FocusedWindowBorderService.shared.recheckActive()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Config.borderRestoreDelay) {
+                        FocusedWindowBorderService.shared.recheckActive()
+                    }
                 }
             }
         }

@@ -10,19 +10,31 @@ final class FocusedWindowBorderService {
     private var drawingView: BorderDrawingView?
     private(set) var activeWindowID: CGWindowID?
     private var configuredForID: CGWindowID?
+    private var suppressedForAnimation = false
 
     func show(windowID: CGWindowID, axElement: AXUIElement) {
+        suppressedForAnimation = false
         activeWindowID = windowID
         applyFull(axElement: axElement, windowID: windowID)
     }
 
+    /// Fully hides the border and clears the tracked window. Use when the window leaves the layout.
     func hide() {
+        suppressedForAnimation = false
         activeWindowID = nil
         configuredForID = nil
         overlay?.orderOut(nil)
     }
 
+    /// Hides the overlay visually but keeps activeWindowID so recheckActive can restore it after animation.
+    func hideForAnimation() {
+        suppressedForAnimation = true
+        configuredForID = nil
+        overlay?.orderOut(nil)
+    }
+
     func recheckActive() {
+        suppressedForAnimation = false
         guard let activeID = activeWindowID,
               let key = WindowTracker.shared.keysByHash[UInt(activeID)],
               let axElement = WindowTracker.shared.elements[key] else { return }
@@ -30,7 +42,8 @@ final class FocusedWindowBorderService {
     }
 
     func updateIfActive(key: WindowSlot, axElement: AXUIElement) {
-        guard let activeID = activeWindowID,
+        guard !suppressedForAnimation,
+              let activeID = activeWindowID,
               key.windowHash == UInt(activeID) else { return }
         if overlay?.isVisible == true {
             moveOverlay(axElement: axElement, windowID: activeID)

@@ -71,6 +71,7 @@ final class TilingAnimationService {
                              startTime: CFAbsoluteTimeGetCurrent(),
                              duration: duration, sizeChanged: sizeChanged)
         lock.withLock { animations[hash] = anim }
+        FocusedWindowBorderService.shared.hideForAnimation()
         DisplayLinkTickObserver.shared.startIfNeeded()
     }
 
@@ -164,7 +165,9 @@ final class TilingAnimationService {
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {
                     WindowTracker.shared.reapplying.subtract(pending)
-                    FocusedWindowBorderService.shared.recheckActive()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Config.borderRestoreDelay) {
+                        FocusedWindowBorderService.shared.recheckActive()
+                    }
                 }
             }
         }
