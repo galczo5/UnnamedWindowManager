@@ -67,7 +67,13 @@ final class FocusedWindowBorderService {
         view.borderWidth = borderWidth
         view.cornerRadius = windowCornerRadius(for: windowID)
         win.setFrame(overlayFrame, display: true)
+        win.alphaValue = 0
         win.order(.above, relativeTo: Int(windowID))
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = Config.borderFadeInDuration
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            win.animator().alphaValue = 1
+        }
     }
 
     // Lightweight reposition: only moves the overlay origin. Called on move/resize notifications.

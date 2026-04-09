@@ -49,6 +49,7 @@ final class Config {
     static let scrollCenterMaxWidthFraction: CGFloat = 0.95
     static let animatedOnceTTL: TimeInterval  = 0.25
     static let borderRestoreDelay: TimeInterval = 0.1
+    static let borderFadeInDuration: TimeInterval = 0.15
     static var dimColor: NSColor               { SystemColor.resolve(shared.s.behavior!.dimColor!) ?? .black }
     static var logPath: String?                { let p = shared.s.behavior!.logPath!; return p.isEmpty ? nil : p }
     static var wallpaperEnabled: Bool          { shared.s.wallpaper!.enabled! }
