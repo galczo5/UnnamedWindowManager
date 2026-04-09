@@ -40,16 +40,16 @@ final class FocusChangeHandler {
             for siblingKey in managedSiblings {
                 // Skip tab swap if sibling is in a root whose type doesn't match
                 // the active root — avoids pulling windows across spaces.
-                if let activeType = SharedRootStore.shared.activeRootType {
-                    let inTiling = TilingRootStore.shared.rootID(containing: siblingKey) != nil
-                    let inScrolling = ScrollingRootStore.shared.scrollingRootInfo(containing: siblingKey) != nil
-                    if (inTiling && activeType != .tiling)
-                        || (inScrolling && activeType != .scrolling) {
-                        continue
-                    }
+                // If activeRootType is nil, the current desktop has no root at all,
+                // so any managed sibling belongs to a root on another space — skip it.
+                guard let activeType = SharedRootStore.shared.activeRootType else { continue }
+                let inTiling = TilingRootStore.shared.rootID(containing: siblingKey) != nil
+                let inScrolling = ScrollingRootStore.shared.scrollingRootInfo(containing: siblingKey) != nil
+                if (inTiling && activeType != .tiling)
+                    || (inScrolling && activeType != .scrolling) {
+                    continue
                 }
                 if siblingKey.isSameTabGroup(hash: hash)
-                    || !onScreen.contains(pid: siblingKey.pid, hash: siblingKey.windowHash)
                     || freshTabGroup.contains(siblingKey.windowHash) {
                     WindowEventRouter.shared.swapTab(oldKey: siblingKey, newWindow: axWindow, newHash: hash)
                     ReapplyHandler.reapplyAll()

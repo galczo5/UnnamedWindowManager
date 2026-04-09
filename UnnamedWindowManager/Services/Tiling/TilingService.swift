@@ -19,10 +19,12 @@ final class TilingService {
         store.queue.sync(flags: .barrier) {
             let targetRootID: UUID
             if let visibleID = rootStore.visibleRootID() {
+                Logger.shared.log("[TilingService] snap wid=\(key.windowHash) -> existing visible root \(visibleID.uuidString.prefix(8))")
                 targetRootID = visibleID
             } else {
                 let id = UUID()
                 let f  = screen.visibleFrame
+                Logger.shared.log("[TilingService] snap wid=\(key.windowHash) -> no visible root, creating new root \(id.uuidString.prefix(8))")
                 store.roots[id] = .tiling(TilingRootSlot(id: id, size: f.size,
                                                          orientation: .horizontal, children: []))
                 targetRootID = id

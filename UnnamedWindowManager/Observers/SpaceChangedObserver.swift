@@ -22,6 +22,10 @@ final class SpaceChangedObserver: EventObserver<SpaceChangedEvent> {
         let tilingRoot = TilingRootStore.shared.snapshotVisibleRoot()
         let scrollingRoot = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
 
+        let tilingCount = tilingRoot.map { $0.allLeaves().count } ?? 0
+        let scrollingCount = scrollingRoot.map { DebugLogger.countScrollingWindows(in: $0) } ?? 0
+        Logger.shared.log("[SpaceChanged] desktop changed — tilingRoot=\(tilingRoot.map { $0.id.uuidString.prefix(8) } ?? "none") windows=\(tilingCount) | scrollingRoot=\(scrollingRoot.map { $0.id.uuidString.prefix(8) } ?? "none") windows=\(scrollingCount)")
+
         if let root = tilingRoot {
             if root.id != lastTilingRootID {
                 lastTilingRootID = root.id

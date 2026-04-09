@@ -51,21 +51,34 @@ struct AutoModeHandler {
 
     private static func snap(_ window: AXUIElement, pid: pid_t) {
         let key = windowSlot(for: window, pid: pid)
+        Logger.shared.log("[AutoMode] snap called pid=\(pid) wid=\(key.windowHash)")
 
-        guard !TilingRootStore.shared.isTracked(key) else { return }
-        guard !ScrollingRootStore.shared.isTracked(key) else { return }
+        guard !TilingRootStore.shared.isTracked(key) else {
+            Logger.shared.log("[AutoMode] already tracked in tiling root, skipping")
+            return
+        }
+        guard !ScrollingRootStore.shared.isTracked(key) else {
+            Logger.shared.log("[AutoMode] already tracked in scrolling root, skipping")
+            return
+        }
 
         var minRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minRef) == .success,
            (minRef as? Bool) == true {
+            Logger.shared.log("[AutoMode] window is minimized, skipping")
             return
         }
-        if let size = readSize(of: window), size.width < 100 || size.height < 100 { return }
+        if let size = readSize(of: window), size.width < 100 || size.height < 100 {
+            Logger.shared.log("[AutoMode] window too small (\(size)), skipping")
+            return
+        }
 
         let tilingRoot = TilingRootStore.shared.snapshotVisibleRoot()
         let scrollingRoot = ScrollingRootStore.shared.snapshotVisibleScrollingRoot()
+        Logger.shared.log("[AutoMode] visibleTilingRoot=\(tilingRoot != nil) visibleScrollingRoot=\(scrollingRoot != nil)")
 
         if tilingRoot != nil && scrollingRoot != nil {
+            Logger.shared.log("[AutoMode] both roots visible, activeRootType=\(SharedRootStore.shared.activeRootType)")
             switch SharedRootStore.shared.activeRootType {
             case .scrolling:
                 ScrollHandler.scrollWindow(window, pid: pid)
@@ -73,10 +86,13 @@ struct AutoModeHandler {
                 TileHandler.tileLeft(window: window, pid: pid)
             }
         } else if tilingRoot != nil {
+            Logger.shared.log("[AutoMode] tiling root visible, tiling window")
             TileHandler.tileLeft(window: window, pid: pid)
         } else if scrollingRoot != nil {
+            Logger.shared.log("[AutoMode] scrolling root visible, scrolling window")
             ScrollHandler.scrollWindow(window, pid: pid)
         } else {
+            Logger.shared.log("[AutoMode] no visible root on current desktop, skipping")
             return
         }
 
