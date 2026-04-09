@@ -31,6 +31,7 @@ final class ScrollingAnimationService {
     private var animatedOnce = Set<UInt>()
     private var clearAnimatedOnceWork: DispatchWorkItem?
 
+
     private init() {
         ScrollingDisplayLinkTickObserver.shared.subscribe("ScrollingAnimationService:init") { [weak self] _ in
             self?.tickAll()
@@ -56,14 +57,16 @@ final class ScrollingAnimationService {
         let beforeRightHashes = before.right.map { slotHashes($0) } ?? []
 
         let keysByHash = Dictionary(uniqueKeysWithValues: elements.map { ($0.key.windowHash, $0) })
+        var anyAnimated = false
 
         for (hash, end) in afterPos {
             guard let (key, ax) = keysByHash[hash] else { continue }
+            let isCenter = centerHashes.contains(hash)
             var start = beforePos[hash] ?? end
 
             // In symmetric layouts the computed before/after positions can match for the
             // arriving center window. Manufacture a start offset from the side it came from.
-            if centerHashes.contains(hash) {
+            if isCenter {
                 let delta = abs(start.pos.x - end.pos.x) + abs(start.pos.y - end.pos.y)
                            + abs(start.size.width - end.size.width) + abs(start.size.height - end.size.height)
                 if delta < 1 {
@@ -80,7 +83,7 @@ final class ScrollingAnimationService {
             let sizeDelta = abs(start.size.width - end.size.width) + abs(start.size.height - end.size.height)
             guard posDelta >= 1 || sizeDelta >= 1 else { continue }
 
-            if duration > 0 && centerHashes.contains(hash) && !key.isBeingAnimated {
+            if duration > 0 && isCenter && !key.isBeingAnimated {
                 cancel(hash: hash)
                 WindowTracker.shared.reapplying.insert(key)
                 lock.withLock {
@@ -93,13 +96,14 @@ final class ScrollingAnimationService {
                         sizeChanged: sizeDelta >= 1
                     )
                 }
+                anyAnimated = true
             } else {
                 cancel(hash: hash)
                 WindowTracker.shared.reapplying.insert(key)
                 applyImmediate(ax: ax, pos: end.pos, size: end.size, positionOnly: false)
             }
         }
-        FocusedWindowBorderService.shared.hideForAnimation()
+        if anyAnimated { FocusedWindowBorderService.shared.hideForAnimation() }
         ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
 
         // Remove side windows from reapplying after a short delay so ResizeObserver

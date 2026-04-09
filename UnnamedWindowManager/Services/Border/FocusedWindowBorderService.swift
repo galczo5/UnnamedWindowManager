@@ -13,8 +13,8 @@ final class FocusedWindowBorderService {
     private var suppressedForAnimation = false
 
     func show(windowID: CGWindowID, axElement: AXUIElement) {
-        suppressedForAnimation = false
         activeWindowID = windowID
+        guard !suppressedForAnimation else { return }
         applyFull(axElement: axElement, windowID: windowID)
     }
 
