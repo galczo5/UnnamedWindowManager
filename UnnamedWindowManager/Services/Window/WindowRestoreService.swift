@@ -5,6 +5,7 @@ struct WindowRestoreService {
 
     static func restore(_ slot: WindowSlot, element: AXUIElement) {
         guard let pos = slot.preTileOrigin, let size = slot.preTileSize else { return }
+        Logger.shared.log("restore wid=\(slot.windowHash) pid=\(slot.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
         var p = pos
         if let posVal = AXValueCreate(.cgPoint, &p) {
             AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, posVal)

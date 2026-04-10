@@ -96,10 +96,12 @@ final class ScrollingAnimationService {
                         sizeChanged: sizeDelta >= 1
                     )
                 }
+                Logger.shared.log("scrolling animate wid=\(hash) pid=\(key.pid) pos=(\(Int(end.pos.x)),\(Int(end.pos.y))) size=\(Int(end.size.width))x\(Int(end.size.height))")
                 anyAnimated = true
             } else {
                 cancel(hash: hash)
                 WindowTracker.shared.reapplying.insert(key)
+                Logger.shared.log("scrolling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(end.pos.x)),\(Int(end.pos.y))) size=\(Int(end.size.width))x\(Int(end.size.height))")
                 applyImmediate(ax: ax, pos: end.pos, size: end.size, positionOnly: false)
             }
         }
@@ -128,6 +130,7 @@ final class ScrollingAnimationService {
         cancel(hash: hash)
 
         if key.isBeingAnimated || animatedOnce.contains(hash) {
+            Logger.shared.log("scrolling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }
@@ -135,6 +138,7 @@ final class ScrollingAnimationService {
         guard duration > 0,
               let curPos  = readOrigin(of: ax),
               let curSize = readSize(of: ax) else {
+            Logger.shared.log("scrolling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }
@@ -155,6 +159,7 @@ final class ScrollingAnimationService {
                 sizeChanged: !positionOnly && sizeDelta >= 1
             )
         }
+        Logger.shared.log("scrolling animate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
         FocusedWindowBorderService.shared.hideForAnimation()
         ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
     }

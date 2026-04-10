@@ -46,6 +46,7 @@ final class TilingAnimationService {
         cancel(hash: hash)
 
         if key.isBeingAnimated || animatedOnce.contains(hash) {
+            Logger.shared.log("tiling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }
@@ -53,6 +54,7 @@ final class TilingAnimationService {
         guard duration > 0,
               let curPos = readOrigin(of: ax),
               let curSize = readSize(of: ax) else {
+            Logger.shared.log("tiling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }
@@ -71,6 +73,7 @@ final class TilingAnimationService {
                              startTime: CFAbsoluteTimeGetCurrent(),
                              duration: duration, sizeChanged: sizeChanged)
         lock.withLock { animations[hash] = anim }
+        Logger.shared.log("tiling animate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
         FocusedWindowBorderService.shared.hideForAnimation()
         DisplayLinkTickObserver.shared.startIfNeeded()
     }
