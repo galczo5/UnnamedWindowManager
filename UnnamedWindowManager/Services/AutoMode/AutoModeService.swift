@@ -6,7 +6,7 @@ final class AutoModeService {
     static let shared = AutoModeService()
     private init() {}
 
-    var isEnabled: Bool = false
+    var isEnabled: Bool = Config.autoModeEnabledOnStart
 
     func toggle() {
         isEnabled.toggle()

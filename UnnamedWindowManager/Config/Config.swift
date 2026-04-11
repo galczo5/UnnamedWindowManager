@@ -55,6 +55,8 @@ final class Config {
     static var wallpaperEnabled: Bool          { shared.s.wallpaper!.enabled! }
     static var wallpaperPath: String           { shared.s.wallpaper!.path! }
     static var wallpaperScaling: String        { shared.s.wallpaper!.scaling! }
+    static var autoModeKeybinding: String      { shared.s.autoMode!.keybinding! }
+    static var autoModeEnabledOnStart: Bool    { shared.s.autoMode!.enabledOnStart! }
     static var tileAllShortcut: String          { shared.s.shortcuts!.tileAll! }
     static var tileShortcut: String            { shared.s.shortcuts!.tile! }
     static var resetLayoutShortcut: String     { shared.s.shortcuts!.resetLayout! }

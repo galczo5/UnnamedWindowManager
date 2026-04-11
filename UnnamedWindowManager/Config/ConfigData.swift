@@ -11,6 +11,7 @@ struct ConfigData: Codable {
         var focusedBorder: FocusedBorderConfig?
         var behavior: BehaviorConfig?
         var wallpaper: WallpaperConfig?
+        var autoMode: AutoModeConfig?
         var shortcuts: ShortcutsConfig?
         var commands: [CommandConfig]?
     }
@@ -70,6 +71,11 @@ struct ConfigData: Codable {
         var run: String?
     }
 
+    struct AutoModeConfig: Codable {
+        var keybinding: String?
+        var enabledOnStart: Bool?
+    }
+
     struct ShortcutsConfig: Codable {
         var tileAll: String?
         var tile: String?
@@ -96,6 +102,7 @@ struct ConfigData: Codable {
         focusedBorder: FocusedBorderConfig(color: "gray", width: 6),
         behavior: BehaviorConfig(dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, animationDuration: 0.15, dimColor: "black", logPath: ""),
         wallpaper: WallpaperConfig(enabled: false, path: "", scaling: "fill"),
+        autoMode: AutoModeConfig(keybinding: "", enabledOnStart: false),
         shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down", toggleWallpaper: ""),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
@@ -133,6 +140,8 @@ struct ConfigData: Codable {
         check(s?.wallpaper?.enabled,                   "config.wallpaper.enabled")
         check(s?.wallpaper?.path,                      "config.wallpaper.path")
         check(s?.wallpaper?.scaling,                   "config.wallpaper.scaling")
+        check(s?.autoMode?.keybinding,                 "config.autoMode.keybinding")
+        check(s?.autoMode?.enabledOnStart,             "config.autoMode.enabledOnStart")
         check(s?.shortcuts?.tileAll,             "config.shortcuts.tileAll")
         check(s?.shortcuts?.tile,               "config.shortcuts.tile")
         check(s?.shortcuts?.resetLayout,        "config.shortcuts.resetLayout")
@@ -198,6 +207,10 @@ struct ConfigData: Codable {
                 enabled: s?.wallpaper?.enabled ?? d.wallpaper!.enabled,
                 path:    s?.wallpaper?.path    ?? d.wallpaper!.path,
                 scaling: s?.wallpaper?.scaling ?? d.wallpaper!.scaling
+            ),
+            autoMode: AutoModeConfig(
+                keybinding:     s?.autoMode?.keybinding     ?? d.autoMode!.keybinding,
+                enabledOnStart: s?.autoMode?.enabledOnStart ?? d.autoMode!.enabledOnStart
             ),
             shortcuts: ShortcutsConfig(
                 tileAll:         s?.shortcuts?.tileAll         ?? d.shortcuts!.tileAll,

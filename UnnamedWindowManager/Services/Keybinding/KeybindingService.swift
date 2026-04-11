@@ -89,6 +89,7 @@ final class KeybindingService {
                 }
             }),
             (Config.toggleWallpaperShortcut, "toggleWallpaper", { WallpaperService.shared.toggle() }),
+            (Config.autoModeKeybinding, "autoMode", { AutoModeService.shared.toggle() }),
         ]
     }
 

@@ -53,6 +53,7 @@ struct ConfigLoader {
         let fb = s?.focusedBorder ?? d.focusedBorder!
         let bh = s?.behavior  ?? d.behavior!
         let wp = s?.wallpaper ?? d.wallpaper!
+        let am = s?.autoMode  ?? d.autoMode!
         let sh = s?.shortcuts ?? d.shortcuts!
         let cm = s?.commands ?? d.commands ?? []
 
@@ -127,6 +128,11 @@ struct ConfigLoader {
             path: "\(wp.path ?? "")"
             # Image scaling mode: fill, fit, stretch, or center.
             scaling: \(wp.scaling ?? "fill")
+          autoMode:
+            # Global keyboard shortcut to toggle auto mode on/off. Empty string disables.
+            keybinding: "\(am.keybinding ?? "")"
+            # Enable auto mode automatically when the app starts.
+            enabledOnStart: \(am.enabledOnStart ?? false)
           shortcuts:
             # Global keyboard shortcut for Tile All / Untile All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             tileAll: "\(sh.tileAll ?? "cmd+'")"
