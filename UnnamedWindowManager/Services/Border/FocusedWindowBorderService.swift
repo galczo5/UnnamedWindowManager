@@ -18,6 +18,12 @@ final class FocusedWindowBorderService {
         applyFull(axElement: axElement, windowID: windowID)
     }
 
+    /// Hides the border only if the given key is the currently active window.
+    func hideIfActive(key: WindowSlot) {
+        guard let activeID = activeWindowID, UInt(activeID) == key.windowHash else { return }
+        hide()
+    }
+
     /// Fully hides the border and clears the tracked window. Use when the window leaves the layout.
     func hide() {
         suppressedForAnimation = false

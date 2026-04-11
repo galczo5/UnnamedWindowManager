@@ -19,6 +19,7 @@ struct UntileHandler {
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
         let stored = TilingRootStore.shared.storedSlot(key)
+        FocusedWindowBorderService.shared.hideIfActive(key: key)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         TilingService.shared.removeAndReflow(key, screen: screen)
         WindowEventRouter.shared.stopObserving(key: key, pid: pid)
@@ -58,6 +59,7 @@ struct UntileHandler {
         let elements = WindowTracker.shared.elements
         let removed = TilingService.shared.removeAllTilingRoots()
         WindowOpacityService.shared.restoreAll()
+        FocusedWindowBorderService.shared.hide()
         for key in removed {
             if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
             WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)

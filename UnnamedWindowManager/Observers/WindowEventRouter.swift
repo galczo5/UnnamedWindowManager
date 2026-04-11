@@ -121,6 +121,7 @@ final class WindowEventRouter {
     /// Removes a window from all stores and tracking. Used for destroyed, miniaturized,
     /// and fullscreen events where AX notifications cannot or need not be unregistered.
     func removeWindow(key: WindowSlot, pid: pid_t, isScrolling: Bool) {
+        FocusedWindowBorderService.shared.hideIfActive(key: key)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         if let screen = NSScreen.main {
             if isScrolling {

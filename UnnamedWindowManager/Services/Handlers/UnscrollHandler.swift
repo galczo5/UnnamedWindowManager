@@ -16,6 +16,7 @@ struct UnscrollHandler {
 
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
+        FocusedWindowBorderService.shared.hideIfActive(key: key)
         let stored = ScrollingRootStore.shared.removeWindow(key, screen: screen)
         WindowOpacityService.shared.restore(hash: key.windowHash)
         WindowEventRouter.shared.stopObserving(key: key, pid: pid)
@@ -42,6 +43,7 @@ struct UnscrollHandler {
         let elements = WindowTracker.shared.elements
         let removed = ScrollingRootStore.shared.removeAllScrollingRoots()
         WindowOpacityService.shared.restoreAll()
+        FocusedWindowBorderService.shared.hide()
         for key in removed {
             if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
             WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
