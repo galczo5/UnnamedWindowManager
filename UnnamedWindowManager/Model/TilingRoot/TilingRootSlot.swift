@@ -76,7 +76,7 @@ struct TilingRootSlot {
                                gaps: w.gaps, fraction: w.fraction,
                                preTileOrigin: w.preTileOrigin, preTileSize: w.preTileSize,
                                isTabbed: true)
-            s.tabHashes = WindowTabDetector.tabSiblingHashes(of: newHash, pid: newPid)
+            s.tabHashes = TabRecognizer.tabSiblingHashes(of: newHash, pid: newPid)
             w = s
         }
     }

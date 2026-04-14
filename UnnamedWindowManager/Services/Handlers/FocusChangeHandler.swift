@@ -35,7 +35,7 @@ final class FocusChangeHandler {
             let managedSiblings = WindowTracker.shared.keysByPid[pid] ?? []
             // freshTabGroup uses bounds-matching (the authoritative check) and catches
             // new tabs whose hash was never in the existing slot's tabHashes.
-            let freshTabGroup = WindowTabDetector.tabSiblingHashes(of: hash, pid: pid)
+            let freshTabGroup = TabRecognizer.tabSiblingHashes(of: hash, pid: pid)
             var swapped = false
             for siblingKey in managedSiblings {
                 // Skip tab swap if sibling is in a root whose type doesn't match

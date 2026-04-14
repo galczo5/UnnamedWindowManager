@@ -208,7 +208,8 @@ Window utilities, AX helpers, and validation.
 | `PostResizeValidator.swift` | Detects and corrects windows that refused a resize |
 | `RestoreService.swift` | Restores a window to its pre-tile frame via AX |
 | `SettlePoller.swift` | Polls a condition every 20ms until satisfied or timeout (`animationDuration + 0.1`) elapses |
-| `TabDetector.swift` | Detects native macOS tab groups by matching same-PID windows with identical CGWindow bounds |
+| `AXWindowImproved.swift` | Value type pairing a representative tab's AX element with all sibling AX elements in the group |
+| `TabRecognizer.swift` | AX-based tab recognizer and public tab-group API: walks each window's subtree for an AXTabGroup + AXRadioButton children, exposes `isTab`, `tabSiblingHashes`, `filterTabDuplicates` |
 | `WindowCornerRadius.swift` | Detects per-window corner radii via SkyLight API, pixel scan, or OS fallback |
 | `WindowOpacityService.swift` | Dims non-focused windows via per-root overlays |
 | `WindowTracker.swift` | Central registry mapping WindowSlots to AXUIElements, PIDs, and reapply state |

@@ -2,16 +2,20 @@
 
 macOS apps like Safari and Finder support native window tabs — multiple documents sharing a single window frame. The window manager needs to recognise these tab groups so that only one representative window per group is tiled, and tab switches update the tracked identity without disrupting the layout.
 
-## How macOS Tabs Work at the CG Level
+## How macOS Tabs Appear via AX
 
-All tabs in a native tab group share the same `CGRect` bounds. The active tab is rendered on-screen; inactive tabs exist in `CGWindowListCopyWindowInfo` with identical frames but are not drawn. This property is the foundation of tab detection.
+Each tab in a native tab group is a separate `AXUIElement` window sharing the same `CGRect` bounds, but the authoritative source is the accessibility hierarchy: a window with tabs contains an `AXTabGroup` element whose children are `AXRadioButton` elements — one per tab. The selected radio button's `AXValue` is truthy; every tab's `AXTitle` matches the corresponding sibling window's title.
 
-## Detection (TabDetector)
+## Detection (TabRecognizer + WindowWindowTabDetector)
 
-`TabDetector` queries `CGWindowListCopyWindowInfo` **without** `.optionOnScreenOnly`, so inactive tabs appear in the results. It then groups windows by PID and exact bounds match:
+`TabRecognizer` takes a list of AX windows (one PID's full window list) and produces `[AXWindowImproved]` entries, each holding a representative (selected) tab AX element plus all sibling AX elements in the group. It finds the `AXTabGroup` via a depth-limited subtree walk (≤ 3 levels) and resolves radio-button entries back to the sibling windows by title.
 
-1. **Single-window query** — `tabSiblingHashes(of:pid:)` finds the target window's bounds, collects all same-PID windows with the same bounds, and returns their `CGWindowID` set. Returns empty if there are no siblings.
-2. **Bulk filtering** — `filterTabDuplicates(wids:pid:)` takes a set of candidate window IDs for one PID, groups them by bounds, and keeps the smallest ID per group. Reports whether any tabs were found.
+`WindowWindowTabDetector` is a thin adapter that exposes the same API the rest of the app uses:
+
+1. **Single-window query** — `tabSiblingHashes(of:pid:)` enumerates AX windows for the PID, runs the recognizer, and returns the `CGWindowID` set of whichever group contains the requested hash. Empty if the window has no tab group.
+2. **Bulk filtering** — `filterTabDuplicates(wids:pid:)` takes a set of candidate window IDs for one PID, drops duplicates per tab group, and keeps the selected tab as the representative (falling back to the smallest wid if that fails). Reports whether any tabs were found.
+
+Because detection is grounded in the AX tab group, two unrelated windows that happen to share identical frames are never treated as a tab group.
 
 ## Storage (WindowSlot)
 
@@ -26,11 +30,11 @@ Helper methods `isSameTabGroup(as:)` and `isSameTabGroup(hash:)` check membershi
 
 ### Tiling a single window (TileHandler)
 
-After snapping a window, `TabDetector.tabSiblingHashes()` is called. If the window has tab siblings, `tabHashes` is populated and `isTabbed` is set. If a managed window from the same PID is already tracked and is either off-screen or a known tab sibling, the slot identity is swapped rather than adding a duplicate.
+After snapping a window, `WindowTabDetector.tabSiblingHashes()` is called. If the window has tab siblings, `tabHashes` is populated and `isTabbed` is set. If a managed window from the same PID is already tracked and is either off-screen or a known tab sibling, the slot identity is swapped rather than adding a duplicate.
 
 ### Tiling all windows (TileAllHandler / ScrollAllHandler)
 
-Before tiling, `TabDetector.filterTabDuplicates()` deduplicates per tab group so only one window per group enters the layout. All resulting slots are marked as tabbed if any tabs were found.
+Before tiling, `WindowTabDetector.filterTabDuplicates()` deduplicates per tab group so only one window per group enters the layout. All resulting slots are marked as tabbed if any tabs were found.
 
 ## Tab Switching
 
@@ -49,7 +53,7 @@ When an AX notification arrives for an untracked window, `ResizeObserver.handle(
 1. Removes AX notifications from the old window element.
 2. Cleans up tracking for the old window.
 3. Updates the slot tree to reference the new window's identity — layout position and size are preserved.
-4. Queries fresh tab siblings from `TabDetector`.
+4. Queries fresh tab siblings from `WindowTabDetector`.
 5. Registers AX notifications on the new window element.
 
 ### ReapplyHandler

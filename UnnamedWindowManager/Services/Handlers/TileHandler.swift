@@ -27,7 +27,7 @@ struct TileHandler {
         // If a managed window from the same PID is no longer on screen, it became an
         // inactive tab. Swap its slot identity to the focused window instead of adding a new slot.
         let managedSiblings = WindowTracker.shared.keysByPid[pid] ?? []
-        let freshTabGroup = WindowTabDetector.tabSiblingHashes(of: key.windowHash, pid: pid)
+        let freshTabGroup = TabRecognizer.tabSiblingHashes(of: key.windowHash, pid: pid)
         for siblingKey in managedSiblings {
             if siblingKey.isSameTabGroup(hash: key.windowHash) || freshTabGroup.contains(siblingKey.windowHash) {
                 WindowEventRouter.shared.swapTab(oldKey: siblingKey,
@@ -40,7 +40,7 @@ struct TileHandler {
         var mutableKey = key
         mutableKey.preTileOrigin = readOrigin(of: axWindow)
         mutableKey.preTileSize = readSize(of: axWindow)
-        let tabSiblings = WindowTabDetector.tabSiblingHashes(of: mutableKey.windowHash, pid: pid)
+        let tabSiblings = TabRecognizer.tabSiblingHashes(of: mutableKey.windowHash, pid: pid)
         if !tabSiblings.isEmpty {
             mutableKey.isTabbed = true
             mutableKey.tabHashes = tabSiblings
@@ -81,7 +81,7 @@ struct TileHandler {
 
         key.preTileOrigin = readOrigin(of: window)
         key.preTileSize = readSize(of: window)
-        let tabSiblings = WindowTabDetector.tabSiblingHashes(of: key.windowHash, pid: pid)
+        let tabSiblings = TabRecognizer.tabSiblingHashes(of: key.windowHash, pid: pid)
         if !tabSiblings.isEmpty {
             key.isTabbed = true
             key.tabHashes = tabSiblings
