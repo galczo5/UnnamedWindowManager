@@ -58,45 +58,36 @@ final class TilingDragHandler {
     // MARK: - Private
 
     private func reapplyScrolling(key: WindowSlot, isResize: Bool) {
-        guard let tracker else { return }
-        tracker.reapplying.insert(key)
-        let animDur = Config.animationDuration
-        if let screen = NSScreen.main {
-            let isCenterResize = isResize && ScrollingRootStore.shared.isCenterWindow(key)
-            if isCenterResize,
-               let axElement = tracker.elements[key],
-               let actualSize = readSize(of: axElement) {
+        guard let tracker, let screen = NSScreen.main else { return }
+        let isCenterResize = isResize && ScrollingRootStore.shared.isCenterWindow(key)
+        if isCenterResize, let axElement = tracker.elements[key] {
+            // Prefer the frame captured before any in-flight reapply so a fast gesture
+            // during an animation reads the user-visible width, not an interpolated one.
+            let width = WindowTracker.shared.preReapplyFrame(for: key)?.size.width
+                ?? readSize(of: axElement)?.width
+            if let w = width {
                 let screenWidth = screenTilingArea(screen).width
                 ScrollingRootStore.shared.updateCenterFraction(
-                    for: key, proposedWidth: actualSize.width, screenWidth: screenWidth, screen: screen)
-            }
-            TilingLayoutService.shared.applyLayout(screen: screen, scrollingSidesPositionOnly: isCenterResize)
-            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1)) {
-                let windows = Set(ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
-                    .compactMap { (slot: Slot) -> WindowSlot? in
-                        guard case .window(let w) = slot else { return nil }
-                        return w
-                    })
-                WindowPostResizeValidator.checkAndFixRefusals(windows: windows, screen: screen)
+                    for: key, proposedWidth: w, screenWidth: screenWidth, screen: screen)
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) { [weak tracker] in
-            tracker?.reapplying.remove(key)
-        }
+        ReapplyHandler.reapplyAll(scrollingSidesPositionOnly: isCenterResize)
     }
 
     private func reapplyResize(key: WindowSlot) {
         guard let tracker,
               let screen = NSScreen.main,
-              let axElement = tracker.elements[key],
-              let actualSize = readSize(of: axElement) else { return }
+              let axElement = tracker.elements[key] else { return }
+
+        // Use the pre-reapply size when a generation is in flight; otherwise AX.
+        guard let actualSize = WindowTracker.shared.preReapplyFrame(for: key)?.size
+                ?? readSize(of: axElement) else { return }
 
         TilingService.shared.resize(key: key, actualSize: actualSize, screen: screen)
         ReapplyHandler.reapplyAll()
     }
 
     private func reapplyMove(key: WindowSlot) {
-        guard let tracker else { return }
         let hoverStart = dropTargetEnteredAt
         lastDropTarget = nil
         dropTargetEnteredAt = nil
@@ -110,15 +101,10 @@ final class TilingDragHandler {
                 TilingService.shared.insertAdjacent(dragged: key, target: drop.window,
                                                   zone: drop.zone, screen: screen)
             }
-            ReapplyHandler.reapplyAll()
-        } else {
-            guard let storedElement = tracker.elements[key] else { return }
-            tracker.reapplying.insert(key)
-            ReapplyHandler.reapply(window: storedElement, key: key)
-            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, Config.animationDuration + 0.05)) { [weak tracker] in
-                tracker?.reapplying.remove(key)
-            }
         }
+        // Snap-back (no drop) and drop branches both re-run the full layout.
+        // reapplyAll() owns generation + reapplying + preReapplyFrame state.
+        ReapplyHandler.reapplyAll()
 
         // Mission Control commits a window move after its animation completes (~0.5–1s),
         // after which no AX notification fires. Schedule a delayed reapply so

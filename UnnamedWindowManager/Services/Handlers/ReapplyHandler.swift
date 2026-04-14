@@ -16,9 +16,23 @@ struct ReapplyHandler {
     /// Reapplies the layout for all tiled windows, debounced to 10 ms.
     /// Multiple calls within 10 ms collapse into one execution. After the layout
     /// runs, WindowPostResizeValidator fires 300 ms later to catch any refusing windows.
-    static func reapplyAll() {
+    ///
+    /// Each call bumps a monotonic generation. All deferred stages scheduled by this
+    /// call capture that generation and bail if a newer call has advanced it, so
+    /// rapid repeated invocations (fast moves/swaps during an in-flight reapply)
+    /// do not let stale tails stomp on the new layout. Pre-reapply frames captured
+    /// for the first in-flight generation are preserved across overlapping generations
+    /// so mid-animation AX reads never pollute user-intent calculations.
+    static func reapplyAll(scrollingSidesPositionOnly: Bool = false) {
         pendingLayout?.cancel()
+        pendingClearReapplying?.cancel()
+        pendingValidator?.cancel()
+
+        currentGeneration &+= 1
+        let gen = currentGeneration
+
         let work = DispatchWorkItem {
+            guard gen == Self.currentGeneration else { return }
             guard let screen = NSScreen.main else { return }
             pruneOffScreenWindows(screen: screen)
             let tilingLeaves = TilingRootStore.shared.leavesInVisibleRoot()
@@ -27,52 +41,44 @@ struct ReapplyHandler {
                 if case .window(let w) = leaf { return w }
                 return nil
             })
+
+            // Capture pre-reapply frames only for keys not already tracked by an
+            // earlier in-flight generation. Preserving the earlier frame means a
+            // user gesture arriving mid-animation sees the frame the user actually
+            // saw, not whatever the animation is interpolating.
+            let newKeys = allWindows.subtracting(Self.activeSnapshot)
+            for key in newKeys {
+                guard let ax = WindowTracker.shared.elements[key] else { continue }
+                if let origin = readOrigin(of: ax), let size = readSize(of: ax) {
+                    WindowTracker.shared.preReapplyFrames[key] = CGRect(origin: origin, size: size)
+                }
+            }
             WindowTracker.shared.reapplying.formUnion(allWindows)
-            TilingLayoutService.shared.applyLayout(screen: screen)
+            Self.activeSnapshot.formUnion(allWindows)
+
+            TilingLayoutService.shared.applyLayout(
+                screen: screen, scrollingSidesPositionOnly: scrollingSidesPositionOnly)
+
             let animDur = Config.animationDuration
-            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05)) {
-                WindowTracker.shared.reapplying.subtract(allWindows)
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1)) {
-                guard let screen = NSScreen.main else { return }
-                let pass2Refusals = WindowPostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
 
-                for key in pass2Refusals {
-                    let appName = NSRunningApplication(processIdentifier: key.pid)?.localizedName ?? "Unknown"
-                    NotificationService.shared.post(
-                        title: "Window refused to resize",
-                        body: "\(appName) could not be resized to fit its slot."
-                    )
+            let clearWork = DispatchWorkItem {
+                guard gen == Self.currentGeneration else { return }
+                WindowTracker.shared.reapplying.subtract(Self.activeSnapshot)
+                for key in Self.activeSnapshot {
+                    WindowTracker.shared.preReapplyFrames.removeValue(forKey: key)
                 }
-
-                guard !pass2Refusals.isEmpty else { return }
-
-                let observer = WindowTracker.shared
-                SettlePoller.poll(condition: {
-                    pass2Refusals.allSatisfy { key in
-                        guard let axEl = observer.elements[key],
-                              let actual = readSize(of: axEl) else { return false }
-                        let gap = key.gaps ? Config.innerGap * 2 : 0
-                        return abs(actual.width  - (key.size.width  - gap)) <= 2
-                            && abs(actual.height - (key.size.height - gap)) <= 2
-                    }
-                }) { _ in
-                    guard let screen = NSScreen.main else { return }
-                    let pass3Refusals = WindowPostResizeValidator.checkAndFixRefusals(windows: allWindows, screen: screen)
-                    let persistent = pass2Refusals.intersection(pass3Refusals)
-                    guard !persistent.isEmpty else { return }
-
-                    for key in persistent {
-                        UntileHandler.untileByKey(key, screen: screen)
-                        let appName = NSRunningApplication(processIdentifier: key.pid)?.localizedName ?? "Unknown"
-                        NotificationService.shared.post(
-                            title: "Window untiled",
-                            body: "\(appName) was untiled because it repeatedly refused to resize."
-                        )
-                    }
-                    ReapplyHandler.reapplyAll()
-                }
+                Self.activeSnapshot = []
             }
+            Self.pendingClearReapplying = clearWork
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.2, animDur + 0.05), execute: clearWork)
+
+            let validatorWork = DispatchWorkItem {
+                guard gen == Self.currentGeneration else { return }
+                runPostLayoutValidator(generation: gen)
+            }
+            Self.pendingValidator = validatorWork
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, animDur + 0.1), execute: validatorWork)
+
             DispatchQueue.main.async {
                 TileStateChangedObserver.shared.notify(TileStateChangedEvent())
             }
@@ -81,7 +87,84 @@ struct ReapplyHandler {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01, execute: work)
     }
 
+    private static func runPostLayoutValidator(generation gen: UInt64) {
+        guard let screen = NSScreen.main else { return }
+        let currentLeaves = TilingRootStore.shared.leavesInVisibleRoot()
+            + ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
+        let current = Set(currentLeaves.compactMap { slot -> WindowSlot? in
+            if case .window(let w) = slot { return w }
+            return nil
+        })
+
+        // Snapshot expected slot sizes at pass2 time; pass3 compares against these
+        // to skip untile for keys whose slot has been moved/resized by a newer op.
+        var expectedSizes: [WindowSlot: CGSize] = [:]
+        for key in current { expectedSizes[key] = key.size }
+
+        let pass2Refusals = WindowPostResizeValidator.checkAndFixRefusals(windows: current, screen: screen)
+
+        for key in pass2Refusals {
+            let appName = NSRunningApplication(processIdentifier: key.pid)?.localizedName ?? "Unknown"
+            NotificationService.shared.post(
+                title: "Window refused to resize",
+                body: "\(appName) could not be resized to fit its slot."
+            )
+        }
+
+        guard !pass2Refusals.isEmpty else { return }
+
+        let observer = WindowTracker.shared
+        SettlePoller.poll(condition: {
+            pass2Refusals.allSatisfy { key in
+                guard let axEl = observer.elements[key],
+                      let actual = readSize(of: axEl) else { return false }
+                let gap = key.gaps ? Config.innerGap * 2 : 0
+                return abs(actual.width  - (key.size.width  - gap)) <= 2
+                    && abs(actual.height - (key.size.height - gap)) <= 2
+            }
+        }) { _ in
+            guard gen == Self.currentGeneration else { return }
+            guard let screen = NSScreen.main else { return }
+
+            let liveLeaves = TilingRootStore.shared.leavesInVisibleRoot()
+                + ScrollingRootStore.shared.leavesInVisibleScrollingRoot()
+            let live = Set(liveLeaves.compactMap { slot -> WindowSlot? in
+                if case .window(let w) = slot { return w }
+                return nil
+            })
+
+            let pass3Refusals = WindowPostResizeValidator.checkAndFixRefusals(windows: live, screen: screen)
+            let persistent = pass2Refusals.intersection(pass3Refusals)
+            guard !persistent.isEmpty else { return }
+
+            var didUntile = false
+            for key in persistent {
+                guard TilingRootStore.shared.isTracked(key)
+                        || ScrollingRootStore.shared.isTracked(key) else { continue }
+                // Stale-geometry guard: the key's slot must still be the same size
+                // it was at pass2; otherwise a newer op has re-slotted this window
+                // and the next generation's reapply will validate the new slot.
+                guard let expected = expectedSizes[key], expected == key.size else { continue }
+
+                UntileHandler.untileByKey(key, screen: screen)
+                didUntile = true
+                let appName = NSRunningApplication(processIdentifier: key.pid)?.localizedName ?? "Unknown"
+                NotificationService.shared.post(
+                    title: "Window untiled",
+                    body: "\(appName) was untiled because it repeatedly refused to resize."
+                )
+            }
+            if didUntile {
+                ReapplyHandler.reapplyAll()
+            }
+        }
+    }
+
+    private static var currentGeneration: UInt64 = 0
+    private static var activeSnapshot: Set<WindowSlot> = []
     private static var pendingLayout: DispatchWorkItem?
+    private static var pendingClearReapplying: DispatchWorkItem?
+    private static var pendingValidator: DispatchWorkItem?
 
     /// Returns the drop target (window + zone) under the current mouse cursor,
     /// excluding `draggedKey` itself. Returns `nil` when the cursor is not over any

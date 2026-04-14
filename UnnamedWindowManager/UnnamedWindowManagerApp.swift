@@ -211,7 +211,7 @@ struct UnnamedWindowManagerApp: App {
                     if menuState.isTiled    { Text("[tiled]") }
                     if menuState.isScrolled { Text("[scrolled]") }
                 } else {
-                    Image(systemName: "rectangle.split.3x1.fill")
+                    Text("[manager]")
                 }
             }
             .onAppear {
