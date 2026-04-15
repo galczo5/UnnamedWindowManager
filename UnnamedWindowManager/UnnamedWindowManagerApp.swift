@@ -204,7 +204,7 @@ struct UnnamedWindowManagerApp: App {
             Divider()
             Button("Debug")     {
                 DebugLogger.logSlotTree()
-                TabRecognizer.debugLog()
+                TabRecognizerDebug.log()
             }
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {

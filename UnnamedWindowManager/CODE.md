@@ -23,6 +23,7 @@ Debug-only utilities for logging on-screen windows and slot trees.
 | File | Description |
 |------|-------------|
 | `DebugLogger.swift` | Debug logging of on-screen windows and slot tree |
+| `TabRecognizerDebug.swift` | Debug-menu logger for the tab recognizer — dumps collected AX windows and recognized tab groups |
 
 ## Events
 
@@ -209,7 +210,9 @@ Window utilities, AX helpers, and validation.
 | `RestoreService.swift` | Restores a window to its pre-tile frame via AX |
 | `SettlePoller.swift` | Polls a condition every 20ms until satisfied or timeout (`animationDuration + 0.1`) elapses |
 | `AXWindowImproved.swift` | Value type pairing a representative tab's AX element with all sibling AX elements in the group |
-| `TabRecognizer.swift` | AX-based tab recognizer and public tab-group API: walks each window's subtree for an AXTabGroup + AXRadioButton children, exposes `isTab`, `tabSiblingHashes`, `filterTabDuplicates` |
+| `TabRecognizer.swift` | Public tab-group API (`isTab`, `tabSiblingHashes`, `filterTabDuplicates`), 0.5s result cache, and per-app window collection via AX + CGWindowList |
+| `TabRecognition.swift` | Core tab recognition: walks each window's AX subtree for an AXTabGroup and matches AXRadioButton children back to sibling windows by title |
+| `WindowsByBruteForce.swift` | Private AX SPI probe (`_AXUIElementCreateWithRemoteToken`) that enumerates standard/dialog windows for a PID across all Spaces, time-capped at 0.1s |
 | `WindowCornerRadius.swift` | Detects per-window corner radii via SkyLight API, pixel scan, or OS fallback |
 | `WindowOpacityService.swift` | Dims non-focused windows via per-root overlays |
 | `WindowTracker.swift` | Central registry mapping WindowSlots to AXUIElements, PIDs, and reapply state |
