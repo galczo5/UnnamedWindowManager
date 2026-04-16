@@ -13,12 +13,18 @@ enum TabRecognizerDebug {
         }
         Logger.shared.log(lines.joined(separator: "\n"))
 
-        let groups = TabRecognition.recognize(windows: all)
-        var groupLines: [String] = ["TabRecognizer.debug: recognize → \(groups.count) group(s)"]
-        for (i, group) in groups.enumerated() {
+        let result = TabRecognition.recognize(windows: all)
+        var groupLines: [String] = ["TabRecognizer.debug: recognize → \(result.groups.count) group(s)"]
+        for (i, group) in result.groups.enumerated() {
             groupLines.append("- group \(i + 1): \(describe(group.window))")
             for (j, tab) in group.tabs.enumerated() {
                 groupLines.append("   - tab \(j + 1): \(describe(tab))")
+            }
+        }
+        if !result.ambiguous.isEmpty {
+            groupLines.append("TabRecognizer.debug: ambiguous → \(result.ambiguous.count) window(s)")
+            for window in result.ambiguous {
+                groupLines.append("  \(describe(window))")
             }
         }
         Logger.shared.log(groupLines.joined(separator: "\n"))

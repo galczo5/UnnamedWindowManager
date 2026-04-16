@@ -67,12 +67,43 @@ enum TabRecognizer {
     private static var cachedGroups: [AXWindowImproved] = []
     private static var cachedAt: Date = .distantPast
 
+    private static var lastAmbiguousHashes: Set<UInt> = []
+
     private static func cachedRecognizeAll() -> [AXWindowImproved] {
         if Date().timeIntervalSince(cachedAt) < cacheTTL { return cachedGroups }
-        let groups = TabRecognition.recognize(windows: collectAllWindows())
-        cachedGroups = groups
+        let result = TabRecognition.recognize(windows: collectAllWindows())
+        cachedGroups = result.groups
         cachedAt = Date()
-        return groups
+        handleAmbiguous(result.ambiguous)
+        return result.groups
+    }
+
+    private static func handleAmbiguous(_ ambiguous: [AXUIElement]) {
+        guard !ambiguous.isEmpty else {
+            lastAmbiguousHashes = []
+            return
+        }
+        let hashes = Set(ambiguous.map { hashOf($0) })
+        if hashes == lastAmbiguousHashes { return }
+        lastAmbiguousHashes = hashes
+
+        NotificationService.shared.post(
+            title: "Tab recognition failed",
+            body: "\(ambiguous.count) windows share a title and frame. They have been removed from the layout."
+        )
+        let screen = NSScreen.main ?? NSScreen.screens.first
+        guard let screen else { return }
+        for element in ambiguous {
+            var pid: pid_t = 0
+            AXUIElementGetPid(element, &pid)
+            let key = windowSlot(for: element, pid: pid)
+            UntileHandler.untileByKey(key, screen: screen)
+        }
+    }
+
+    private static func hashOf(_ element: AXUIElement) -> UInt {
+        windowID(of: element).map(UInt.init)
+            ?? UInt(bitPattern: Unmanaged.passUnretained(element).toOpaque())
     }
 
     static func collectAllWindows() -> [AXUIElement] {

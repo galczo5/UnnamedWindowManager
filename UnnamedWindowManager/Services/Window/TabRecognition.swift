@@ -9,7 +9,15 @@ import Foundation
 // multiple candidate windows share a (pid, title) key.
 enum TabRecognition {
 
-    static func recognize(windows: [AXUIElement]) -> [AXWindowImproved] {
+    struct Result {
+        let groups: [AXWindowImproved]
+        // Windows that share (pid, title, frame) with another window and cannot
+        // be uniquely attributed to a tab button. Callers should surface this
+        // to the user and remove the affected windows from layout management.
+        let ambiguous: [AXUIElement]
+    }
+
+    static func recognize(windows: [AXUIElement]) -> Result {
         let infos: [WindowInfo] = windows.map { element in
             var pid: pid_t = 0
             AXUIElementGetPid(element, &pid)
@@ -27,6 +35,7 @@ enum TabRecognition {
         }
 
         var claimed = Set<Int>()
+        var ambiguous = Set<Int>()
         var results: [AXWindowImproved] = []
 
         for (i, info) in infos.enumerated() {
@@ -44,13 +53,16 @@ enum TabRecognition {
 
             for tab in tabs {
                 let key = CandidateKey(pid: info.pid, title: tab.title)
-                guard let candidates = byKey[key],
-                      let idx = pickCandidate(candidates: candidates,
-                                              infos: infos,
-                                              claimed: claimed,
-                                              ownerIndex: i,
-                                              ownerFrame: info.frame)
-                else { continue }
+                guard let candidates = byKey[key] else { continue }
+                let pick = pickCandidate(candidates: candidates,
+                                         infos: infos,
+                                         claimed: claimed,
+                                         ownerIndex: i,
+                                         ownerFrame: info.frame)
+                if let ambiguousSet = pick.ambiguous {
+                    ambiguous.formUnion(ambiguousSet)
+                }
+                guard let idx = pick.index else { continue }
 
                 let sibling = infos[idx].element
                 tabWindows.append(sibling)
@@ -59,7 +71,7 @@ enum TabRecognition {
             }
             results.append(AXWindowImproved(window: representative, tabs: tabWindows))
         }
-        return results
+        return Result(groups: results, ambiguous: ambiguous.sorted().map { infos[$0].element })
     }
 
     private struct WindowInfo {
@@ -74,25 +86,40 @@ enum TabRecognition {
         let title: String
     }
 
+    struct CandidatePick {
+        let index: Int?
+        let ambiguous: [Int]?
+    }
+
     // Picks the best candidate for a tab button. Preference order:
     // 1. The owner window itself (if (pid, title) matches — covers the "self tab").
     // 2. An unclaimed candidate whose frame matches the owner's frame (same tab group).
     // 3. Any unclaimed candidate.
     // 4. Any candidate (last resort — will duplicate a sibling).
+    //
+    // If step 2 yields ≥2 unclaimed candidates with matching frames, we cannot
+    // uniquely identify the sibling. Returns them as `ambiguous` so the caller
+    // can flag those windows for the user.
     private static func pickCandidate(candidates: [Int],
                                       infos: [WindowInfo],
                                       claimed: Set<Int>,
                                       ownerIndex: Int,
-                                      ownerFrame: CGRect?) -> Int? {
-        if candidates.contains(ownerIndex) { return ownerIndex }
+                                      ownerFrame: CGRect?) -> CandidatePick {
+        if candidates.contains(ownerIndex) {
+            return CandidatePick(index: ownerIndex, ambiguous: nil)
+        }
 
         let unclaimed = candidates.filter { !claimed.contains($0) }
         if let frame = ownerFrame {
-            if let match = unclaimed.first(where: { framesMatch(infos[$0].frame, frame) }) {
-                return match
+            let matching = unclaimed.filter { framesMatch(infos[$0].frame, frame) }
+            if matching.count >= 2 {
+                return CandidatePick(index: matching.first, ambiguous: matching)
+            }
+            if let match = matching.first {
+                return CandidatePick(index: match, ambiguous: nil)
             }
         }
-        return unclaimed.first ?? candidates.first
+        return CandidatePick(index: unclaimed.first ?? candidates.first, ambiguous: nil)
     }
 
     private static func framesMatch(_ a: CGRect?, _ b: CGRect) -> Bool {
