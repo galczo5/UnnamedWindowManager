@@ -10,7 +10,7 @@ Add a new config parameter across all required files. The parameter must be adde
 
 Parse from `$ARGUMENTS` in this order:
 - **name** — Swift property name (camelCase), e.g. `animationDuration`
-- **group** — one of: `layout`, `dropZones`, `overlay`, `behavior`
+- **group** — one of: `layout`, `overlay`, `behavior`
 - **type** — Swift type: `CGFloat` or `Bool`
 - **default** — default value, e.g. `0.3` or `true`
 - **description** — human-readable comment for the YAML file, in quotes
@@ -23,7 +23,7 @@ If arguments are missing or ambiguous, ask the user before proceeding.
 
 Read the file first. Make three changes:
 
-**a) Add property to the correct group struct** (`LayoutConfig`, `DropZoneConfig`, `OverlayConfig`, or `BehaviorConfig`):
+**a) Add property to the correct group struct** (`LayoutConfig`, `OverlayConfig`, or `BehaviorConfig`):
 ```swift
 var <name>: <Type>?
 ```

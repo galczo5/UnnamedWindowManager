@@ -20,16 +20,16 @@ final class Config {
 
     static var innerGap: CGFloat               { shared.s.layout!.innerGap! }
     static var outerGaps: ConfigData.OuterGapsConfig { shared.s.layout!.outerGaps! }
-    static var fallbackWidthFraction: CGFloat  { shared.s.layout!.fallbackWidthFraction! }
-    static var maxWidthFraction: CGFloat       { shared.s.layout!.maxWidthFraction! }
-    static var maxHeightFraction: CGFloat      { shared.s.layout!.maxHeightFraction! }
-    static var scrollCenterDefaultWidthFraction: CGFloat { shared.s.layout!.scrollCenterDefaultWidthFraction! }
-    static var dropZoneLeftFraction: CGFloat   { shared.s.dropZones!.leftFraction! }
-    static var dropZoneRightFraction: CGFloat  { shared.s.dropZones!.rightFraction! }
-    static var dropZoneBottomFraction: CGFloat { shared.s.dropZones!.bottomFraction! }
-    static var dropZoneTopFraction: CGFloat    { shared.s.dropZones!.topFraction! }
-    static var overlayCornerRadius: CGFloat    { shared.s.overlay!.cornerRadius! }
-    static var overlayBorderWidth: CGFloat     { shared.s.overlay!.borderWidth! }
+    static let fallbackWidthFraction: CGFloat  = 0.4
+    static let maxWidthFraction: CGFloat       = 0.80
+    static let maxHeightFraction: CGFloat      = 1.0
+    static let scrollCenterDefaultWidthFraction: CGFloat = 0.9
+    static let dropZoneLeftFraction: CGFloat   = 0.20
+    static let dropZoneRightFraction: CGFloat  = 0.20
+    static let dropZoneBottomFraction: CGFloat = 0.20
+    static let dropZoneTopFraction: CGFloat    = 0.20
+    static let overlayCornerRadius: CGFloat    = 8
+    static let overlayBorderWidth: CGFloat     = 3
     static var overlayFillColor: NSColor {
         (SystemColor.resolve(shared.s.overlay!.overlayColor!) ?? .systemBlue).withAlphaComponent(0.2)
     }

@@ -78,6 +78,14 @@ struct UnnamedWindowManagerApp: App {
             let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
             router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
         }
+        AppTerminatedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            let pid = event.app.processIdentifier
+            guard let keys = WindowTracker.shared.keysByPid[pid] else { return }
+            for key in Array(keys) {
+                let isScrolling = ScrollingRootStore.shared.isTracked(key)
+                router.removeWindow(key: key, pid: pid, isScrolling: isScrolling)
+            }
+        }
         WindowMiniaturizedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
             let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
             router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)

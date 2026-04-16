@@ -6,7 +6,6 @@ struct ConfigData: Codable {
 
     struct ConfigSection: Codable {
         var layout: LayoutConfig?
-        var dropZones: DropZoneConfig?
         var overlay: OverlayConfig?
         var focusedBorder: FocusedBorderConfig?
         var behavior: BehaviorConfig?
@@ -26,22 +25,9 @@ struct ConfigData: Codable {
     struct LayoutConfig: Codable {
         var innerGap: CGFloat?
         var outerGaps: OuterGapsConfig?
-        var fallbackWidthFraction: CGFloat?
-        var maxWidthFraction: CGFloat?
-        var maxHeightFraction: CGFloat?
-        var scrollCenterDefaultWidthFraction: CGFloat?
-    }
-
-    struct DropZoneConfig: Codable {
-        var leftFraction: CGFloat?
-        var rightFraction: CGFloat?
-        var bottomFraction: CGFloat?
-        var topFraction: CGFloat?
     }
 
     struct OverlayConfig: Codable {
-        var cornerRadius: CGFloat?
-        var borderWidth: CGFloat?
         var overlayColor: String?
     }
 
@@ -96,13 +82,12 @@ struct ConfigData: Codable {
     }
 
     static let defaults = ConfigData(config: ConfigSection(
-        layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5), fallbackWidthFraction: 0.4, maxWidthFraction: 0.80, maxHeightFraction: 1.0, scrollCenterDefaultWidthFraction: 0.9),
-        dropZones: DropZoneConfig(leftFraction: 0.20, rightFraction: 0.20, bottomFraction: 0.20, topFraction: 0.20),
-        overlay: OverlayConfig(cornerRadius: 8, borderWidth: 3, overlayColor: "blue"),
-        focusedBorder: FocusedBorderConfig(color: "gray", width: 6),
+        layout: LayoutConfig(innerGap: 5, outerGaps: OuterGapsConfig(left: 20, top: 5, right: 20, bottom: 5)),
+        overlay: OverlayConfig(overlayColor: "blue"),
+        focusedBorder: FocusedBorderConfig(color: "gray", width: 0),
         behavior: BehaviorConfig(dropZoneHoverDelay: 0.2, dimInactiveWindows: true, dimInactiveOpacity: 0.8, dimAnimationDuration: 1.0, animationDuration: 0.15, dimColor: "black", logPath: ""),
         wallpaper: WallpaperConfig(enabled: false, path: "", scaling: "fill"),
-        autoMode: AutoModeConfig(keybinding: "", enabledOnStart: false),
+        autoMode: AutoModeConfig(keybinding: "", enabledOnStart: true),
         shortcuts: ShortcutsConfig(tileAll: "cmd+'", tile: "cmd+;", resetLayout: "", refresh: "", flipOrientation: "", focusLeft: "ctrl+opt+left", focusRight: "ctrl+opt+right", focusUp: "ctrl+opt+up", focusDown: "ctrl+opt+down", scroll: "cmd+[", scrollAll: "cmd+]", swapLeft: "ctrl+shift+left", swapRight: "ctrl+shift+right", swapUp: "ctrl+shift+up", swapDown: "ctrl+shift+down", toggleWallpaper: ""),
         commands: [CommandConfig(shortcut: "cmd+enter", run: "open -n -a Alacritty")]
     ))
@@ -117,16 +102,6 @@ struct ConfigData: Codable {
         check(s?.layout?.outerGaps?.top,        "config.layout.outerGaps.top")
         check(s?.layout?.outerGaps?.right,      "config.layout.outerGaps.right")
         check(s?.layout?.outerGaps?.bottom,     "config.layout.outerGaps.bottom")
-        check(s?.layout?.fallbackWidthFraction,  "config.layout.fallbackWidthFraction")
-        check(s?.layout?.maxWidthFraction,       "config.layout.maxWidthFraction")
-        check(s?.layout?.maxHeightFraction,      "config.layout.maxHeightFraction")
-        check(s?.layout?.scrollCenterDefaultWidthFraction, "config.layout.scrollCenterDefaultWidthFraction")
-        check(s?.dropZones?.leftFraction,        "config.dropZones.leftFraction")
-        check(s?.dropZones?.rightFraction,       "config.dropZones.rightFraction")
-        check(s?.dropZones?.bottomFraction,      "config.dropZones.bottomFraction")
-        check(s?.dropZones?.topFraction,         "config.dropZones.topFraction")
-        check(s?.overlay?.cornerRadius,          "config.overlay.cornerRadius")
-        check(s?.overlay?.borderWidth,           "config.overlay.borderWidth")
         check(s?.overlay?.overlayColor,          "config.overlay.overlayColor")
         check(s?.focusedBorder?.color,           "config.focusedBorder.color")
         check(s?.focusedBorder?.width,           "config.focusedBorder.width")
@@ -173,21 +148,9 @@ struct ConfigData: Codable {
                     top:    s?.layout?.outerGaps?.top    ?? d.layout!.outerGaps!.top,
                     right:  s?.layout?.outerGaps?.right  ?? d.layout!.outerGaps!.right,
                     bottom: s?.layout?.outerGaps?.bottom ?? d.layout!.outerGaps!.bottom
-                ),
-                fallbackWidthFraction:  s?.layout?.fallbackWidthFraction  ?? d.layout!.fallbackWidthFraction,
-                maxWidthFraction:       s?.layout?.maxWidthFraction       ?? d.layout!.maxWidthFraction,
-                maxHeightFraction:      s?.layout?.maxHeightFraction      ?? d.layout!.maxHeightFraction,
-                scrollCenterDefaultWidthFraction: s?.layout?.scrollCenterDefaultWidthFraction ?? d.layout!.scrollCenterDefaultWidthFraction
-            ),
-            dropZones: DropZoneConfig(
-                leftFraction:   s?.dropZones?.leftFraction   ?? d.dropZones!.leftFraction,
-                rightFraction:  s?.dropZones?.rightFraction  ?? d.dropZones!.rightFraction,
-                bottomFraction: s?.dropZones?.bottomFraction ?? d.dropZones!.bottomFraction,
-                topFraction:    s?.dropZones?.topFraction    ?? d.dropZones!.topFraction
+                )
             ),
             overlay: OverlayConfig(
-                cornerRadius: s?.overlay?.cornerRadius ?? d.overlay!.cornerRadius,
-                borderWidth:  s?.overlay?.borderWidth  ?? d.overlay!.borderWidth,
                 overlayColor: s?.overlay?.overlayColor ?? d.overlay!.overlayColor
             ),
             focusedBorder: FocusedBorderConfig(

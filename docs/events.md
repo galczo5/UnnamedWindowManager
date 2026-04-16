@@ -5,9 +5,10 @@
 - **App Activated** — Starts observing the app's windows for creation and focus changes; applies window dimming
   - WindowCreationObserver
   - FocusObserver
-- **App Terminated** — Removes accessibility observers and cleans up tracking for the terminated app
+- **App Terminated** — Removes accessibility observers, removes the app's tiled/scrolled windows from the layout, and reapplies
   - WindowCreationObserver
   - FocusObserver
+  - UnnamedWindowManagerApp
 - **App Will Terminate** — Removes wallpapers, untiles and unscrolls all windows across all spaces before exit
   - AppDelegate
 - **Space Changed** — Untiles windows that were displaced to another space, reflows layout on the current space, refreshes menu state
