@@ -202,6 +202,15 @@ struct UnnamedWindowManagerApp: App {
                 ReapplyHandler.reapplyAll()
             }
             Divider()
+            Menu("Permissions \(PermissionService.allGranted ? "✓" : "✗")") {
+                ForEach(PermissionService.Permission.allCases, id: \.self) { permission in
+                    let symbol = permission.isGranted ? "✓" : "✗"
+                    Button("\(symbol)  \(permission.title) — \(permission.reason)") {
+                        PermissionService.openSettings(for: permission)
+                    }
+                }
+            }
+            Divider()
             Button("Debug")     {
                 DebugLogger.logSlotTree()
                 TabRecognizerDebug.log()

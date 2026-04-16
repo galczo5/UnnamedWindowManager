@@ -225,5 +225,6 @@ Cross-cutting services that don't belong to a single domain.
 |------|-------------|
 | `CommandService.swift` | Executes shell commands from user-configured shortcuts |
 | `NotificationService.swift` | Posts user-facing system notifications |
+| `PermissionService.swift` | Exposes Accessibility, Input Monitoring, and Screen Recording grant status and jump-to-Settings URLs, consumed by the menu bar extra |
 | `Screen.swift` | Screen geometry utilities: usable tiling area and AX layout origin |
 | `SharedRootStore.swift` | Thread-safe store for all layout roots (tiling + scrolling) |
