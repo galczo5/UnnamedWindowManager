@@ -44,7 +44,7 @@ struct ScrollHandler {
         } else {
             ScrollingRootStore.shared.createScrollingRoot(key: key, screen: screen)
         }
-        ResizeObserver.shared.observe(window: window, pid: pid, key: key)
+        WindowEventRouter.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }
 
@@ -73,7 +73,7 @@ struct ScrollHandler {
         } else {
             ScrollingRootStore.shared.createScrollingRoot(key: key, screen: screen)
         }
-        ResizeObserver.shared.observe(window: axWindow, pid: pid, key: key)
+        WindowEventRouter.shared.observe(window: axWindow, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }
 }

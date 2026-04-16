@@ -48,11 +48,11 @@ struct ConfigLoader {
         let s = data.config
         let l  = s?.layout     ?? d.layout!
         let og = l.outerGaps  ?? d.layout!.outerGaps!
-        let dz = s?.dropZones ?? d.dropZones!
         let ov = s?.overlay   ?? d.overlay!
         let fb = s?.focusedBorder ?? d.focusedBorder!
         let bh = s?.behavior  ?? d.behavior!
         let wp = s?.wallpaper ?? d.wallpaper!
+        let am = s?.autoMode  ?? d.autoMode!
         let sh = s?.shortcuts ?? d.shortcuts!
         let cm = s?.commands ?? d.commands ?? []
 
@@ -76,28 +76,7 @@ struct ConfigLoader {
               top: \(num(og.top))
               right: \(num(og.right))
               bottom: \(num(og.bottom))
-            # Fallback width fraction of the visible screen when a window's size cannot be read.
-            fallbackWidthFraction: \(num(l.fallbackWidthFraction))
-            # Maximum width of a snapped window as a fraction of the visible screen width.
-            maxWidthFraction: \(num(l.maxWidthFraction))
-            # Maximum height of a snapped window as a fraction of the visible screen height.
-            maxHeightFraction: \(num(l.maxHeightFraction))
-            # Default width of the center slot in scroll mode as a fraction of the screen.
-            scrollCenterDefaultWidthFraction: \(num(l.scrollCenterDefaultWidthFraction))
-          dropZones:
-            # Fraction of a window's width that counts as the left drop zone.
-            leftFraction: \(num(dz.leftFraction))
-            # Fraction of a window's width that counts as the right drop zone.
-            rightFraction: \(num(dz.rightFraction))
-            # Fraction of a slot's height (from the bottom) that activates the bottom drop zone.
-            bottomFraction: \(num(dz.bottomFraction))
-            # Fraction of a slot's height (from the top) that activates the top drop zone.
-            topFraction: \(num(dz.topFraction))
           overlay:
-            # Corner radius of the swap-target overlay rectangle (points).
-            cornerRadius: \(num(ov.cornerRadius))
-            # Border width of the swap-target overlay rectangle (points).
-            borderWidth: \(num(ov.borderWidth))
             # Accent color of the drop-zone overlay (black, white, blue, red, green, orange, yellow, pink, purple, teal, indigo, brown, mint, cyan, gray).
             overlayColor: \(ov.overlayColor ?? "blue")
           focusedBorder:
@@ -127,6 +106,11 @@ struct ConfigLoader {
             path: "\(wp.path ?? "")"
             # Image scaling mode: fill, fit, stretch, or center.
             scaling: \(wp.scaling ?? "fill")
+          autoMode:
+            # Global keyboard shortcut to toggle auto mode on/off. Empty string disables.
+            keybinding: "\(am.keybinding ?? "")"
+            # Enable auto mode automatically when the app starts.
+            enabledOnStart: \(am.enabledOnStart ?? false)
           shortcuts:
             # Global keyboard shortcut for Tile All / Untile All toggle. Format: modifier+key (e.g. cmd+', cmd+shift+o). Empty string disables.
             tileAll: "\(sh.tileAll ?? "cmd+'")"

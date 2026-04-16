@@ -3,11 +3,6 @@ import AppKit
 import ApplicationServices
 import CoreServices
 
-extension Notification.Name {
-    static let tileStateChanged = Notification.Name("tileStateChanged")
-    static let windowFocusChanged = Notification.Name("windowFocusChanged")
-}
-
 @Observable
 final class MenuState {
     var parentOrientation: Orientation? = nil
@@ -47,11 +42,97 @@ struct UnnamedWindowManagerApp: App {
         Logger.shared.configure(path: Config.logPath)
         LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
         NotificationService.shared.requestAuthorization()
-        FocusObserver.shared.start()
-        ScreenChangeObserver.shared.start()
-        SpaceChangeObserver.shared.start()
-        WindowCreationObserver.shared.start()
+        AppActivatedObserver.shared.start()
+        AppTerminatedObserver.shared.start()
+        FocusedWindowChangedObserver.shared.start()
+        ScreenParametersChangedObserver.shared.start()
+        SpaceChangedObserver.shared.start()
+        WindowCreatedObserver.shared.start()
+        KeyDownObserver.shared.start()
         WallpaperService.shared.apply()
+
+        FocusedWindowChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            WindowFocusChangedObserver.shared.notify(WindowFocusChangedEvent())
+            FocusChangeHandler.shared.handleFocusChange(pid: event.pid)
+        }
+
+        WindowCreatedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            let label = event.title.isEmpty ? event.appName : "\(event.appName) – \(event.title)"
+            let key = windowSlot(for: event.window, pid: event.pid)
+            let rootDesc: String
+            if let rootID = TilingRootStore.shared.rootID(containing: key) {
+                rootDesc = "tiling:\(rootID.uuidString.prefix(8))"
+            } else if let info = ScrollingRootStore.shared.scrollingRootInfo(containing: key) {
+                rootDesc = "scrolling:\(info.rootID.uuidString.prefix(8))"
+            } else {
+                rootDesc = "untiled"
+            }
+            Logger.shared.log("window appeared \"\(label)\" pid=\(event.pid) wid=\(event.windowHash ?? 0) root=\(rootDesc)")
+            AutoModeHandler.handleFocusChange()
+        }
+
+        let tracker = WindowTracker.shared
+        let router = WindowEventRouter.shared
+
+        WindowDestroyedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
+        }
+        AppTerminatedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            let pid = event.app.processIdentifier
+            guard let keys = WindowTracker.shared.keysByPid[pid] else { return }
+            for key in Array(keys) {
+                let isScrolling = ScrollingRootStore.shared.isTracked(key)
+                router.removeWindow(key: key, pid: pid, isScrolling: isScrolling)
+            }
+        }
+        WindowMiniaturizedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
+        }
+        WindowResizedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            if event.isFullScreen {
+                router.removeWindow(key: event.key, pid: event.pid, isScrolling: isScrolling)
+                return
+            }
+            if let axElement = tracker.elements[event.key] {
+                FocusedWindowBorderService.shared.updateIfActive(key: event.key, axElement: axElement)
+            }
+            guard TilingRootStore.shared.isTracked(event.key) || isScrolling else { return }
+            guard !tracker.reapplying.contains(event.key) else { return }
+            tracker.reapplyScheduler.schedule(key: event.key, isResize: true, isScrolling: isScrolling)
+        }
+        WindowMovedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { event in
+            let isScrolling = ScrollingRootStore.shared.isTracked(event.key)
+            if let axElement = tracker.elements[event.key] {
+                FocusedWindowBorderService.shared.updateIfActive(key: event.key, axElement: axElement)
+            }
+            guard TilingRootStore.shared.isTracked(event.key) || isScrolling else { return }
+            guard !tracker.reapplying.contains(event.key) else { return }
+            if !isScrolling && NSEvent.pressedMouseButtons != 0 {
+                tracker.reapplyScheduler.updateDragOverlay(forKey: event.key, element: event.element, elements: tracker.elements)
+            }
+            tracker.reapplyScheduler.schedule(key: event.key, isResize: false, isScrolling: isScrolling)
+        }
+
+        ScreenParametersChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
+            guard let screen = NSScreen.main else { return }
+            TilingService.shared.recomputeVisibleRootSizes(screen: screen)
+            WallpaperService.shared.screenChanged()
+            ReapplyHandler.reapplyAll()
+        }
+
+        let state = menuState
+        TileStateChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
+            state.refresh()
+        }
+        WindowFocusChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
+            state.refresh()
+        }
+        SpaceChangedObserver.shared.subscribe("UnnamedWindowManagerApp:init") { _ in
+            state.refresh()
+        }
     }
 
     var body: some Scene {
@@ -129,7 +210,19 @@ struct UnnamedWindowManagerApp: App {
                 ReapplyHandler.reapplyAll()
             }
             Divider()
-            Button("Debug")     { WindowLister.logSlotTree() }
+            Menu("Permissions \(PermissionService.allGranted ? "✓" : "✗")") {
+                ForEach(PermissionService.Permission.allCases, id: \.self) { permission in
+                    let symbol = permission.isGranted ? "✓" : "✗"
+                    Button("\(symbol)  \(permission.title) — \(permission.reason)") {
+                        PermissionService.openSettings(for: permission)
+                    }
+                }
+            }
+            Divider()
+            Button("Debug")     {
+                DebugLogger.logSlotTree()
+                TabRecognizerDebug.log()
+            }
             Button("Quit") { NSApplication.shared.terminate(nil) }
         } label: {
             HStack(spacing: 4) {
@@ -138,21 +231,12 @@ struct UnnamedWindowManagerApp: App {
                     if menuState.isTiled    { Text("[tiled]") }
                     if menuState.isScrolled { Text("[scrolled]") }
                 } else {
-                    Image(systemName: "rectangle.split.3x1.fill")
+                    Text("[manager]")
                 }
             }
             .onAppear {
                 menuState.refresh()
                 KeybindingService.shared.start()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .tileStateChanged)) { _ in
-                menuState.refresh()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .windowFocusChanged)) { _ in
-                menuState.refresh()
-            }
-            .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.activeSpaceDidChangeNotification)) { _ in
-                menuState.refresh()
             }
         }
         .menuBarExtraStyle(.menu)

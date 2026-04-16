@@ -1,14 +1,13 @@
 import ApplicationServices
-import CoreVideo
+import CoreFoundation
 import Foundation
 import os
 
 /// Direction-aware window animator for scrolling roots.
-/// Uses logical before-layout positions as start points to prevent jump artefacts on rapid scrolling.
+/// Uses before-layout positions as start points to prevent jump artefacts on rapid scrolling.
 /// Ticks run directly on the CVDisplayLink render thread for frame-accurate timing.
 final class ScrollingAnimationService {
     static let shared = ScrollingAnimationService()
-    private init() {}
 
     private struct Animation {
         let ax: AXUIElement
@@ -24,7 +23,6 @@ final class ScrollingAnimationService {
 
     private var animations: [UInt: Animation] = [:]
     private let lock = OSAllocatedUnfairLock()
-    private var displayLink: CVDisplayLink?
 
     /// Keys whose reapplying removal is deferred until all animations finish.
     private var pendingReapplyRemoval = Set<WindowSlot>()
@@ -32,6 +30,13 @@ final class ScrollingAnimationService {
     /// Hashes that have already been animated once; subsequent calls skip animation.
     private var animatedOnce = Set<UInt>()
     private var clearAnimatedOnceWork: DispatchWorkItem?
+
+
+    private init() {
+        ScrollingDisplayLinkTickObserver.shared.subscribe("ScrollingAnimationService:init") { [weak self] _ in
+            self?.tickAll()
+        }
+    }
 
     var isAnimating: Bool {
         lock.withLock { !animations.isEmpty }
@@ -47,21 +52,21 @@ final class ScrollingAnimationService {
         let beforePos = computePositions(root: before, origin: origin)
         let afterPos  = computePositions(root: after,  origin: origin)
 
-        ScrollingLayoutService.shared.updateExpectedFrames(afterPos)
-
         let centerHashes      = slotHashes(after.center)
         let beforeLeftHashes  = before.left.map  { slotHashes($0) } ?? []
         let beforeRightHashes = before.right.map { slotHashes($0) } ?? []
 
         let keysByHash = Dictionary(uniqueKeysWithValues: elements.map { ($0.key.windowHash, $0) })
+        var anyAnimated = false
 
         for (hash, end) in afterPos {
             guard let (key, ax) = keysByHash[hash] else { continue }
+            let isCenter = centerHashes.contains(hash)
             var start = beforePos[hash] ?? end
 
             // In symmetric layouts the computed before/after positions can match for the
             // arriving center window. Manufacture a start offset from the side it came from.
-            if centerHashes.contains(hash) {
+            if isCenter {
                 let delta = abs(start.pos.x - end.pos.x) + abs(start.pos.y - end.pos.y)
                            + abs(start.size.width - end.size.width) + abs(start.size.height - end.size.height)
                 if delta < 1 {
@@ -78,9 +83,9 @@ final class ScrollingAnimationService {
             let sizeDelta = abs(start.size.width - end.size.width) + abs(start.size.height - end.size.height)
             guard posDelta >= 1 || sizeDelta >= 1 else { continue }
 
-            if duration > 0 && centerHashes.contains(hash) {
+            if duration > 0 && isCenter && !key.isBeingAnimated {
                 cancel(hash: hash)
-                ResizeObserver.shared.reapplying.insert(key)
+                WindowTracker.shared.reapplying.insert(key)
                 lock.withLock {
                     animations[hash] = Animation(
                         ax: ax, key: key,
@@ -91,13 +96,17 @@ final class ScrollingAnimationService {
                         sizeChanged: sizeDelta >= 1
                     )
                 }
+                Logger.shared.log("scrolling animate wid=\(hash) pid=\(key.pid) pos=(\(Int(end.pos.x)),\(Int(end.pos.y))) size=\(Int(end.size.width))x\(Int(end.size.height))")
+                anyAnimated = true
             } else {
                 cancel(hash: hash)
-                ResizeObserver.shared.reapplying.insert(key)
+                WindowTracker.shared.reapplying.insert(key)
+                Logger.shared.log("scrolling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(end.pos.x)),\(Int(end.pos.y))) size=\(Int(end.size.width))x\(Int(end.size.height))")
                 applyImmediate(ax: ax, pos: end.pos, size: end.size, positionOnly: false)
             }
         }
-        startDisplayLinkIfNeeded()
+        if anyAnimated { FocusedWindowBorderService.shared.hideForAnimation() }
+        ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
 
         // Remove side windows from reapplying after a short delay so ResizeObserver
         // ignores the position changes from applyImmediate above.
@@ -107,7 +116,7 @@ final class ScrollingAnimationService {
         if !sideKeys.isEmpty {
             let keys = Set(sideKeys)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                ResizeObserver.shared.reapplying.subtract(keys)
+                WindowTracker.shared.reapplying.subtract(keys)
             }
         }
     }
@@ -120,7 +129,8 @@ final class ScrollingAnimationService {
         let hash = key.windowHash
         cancel(hash: hash)
 
-        if animatedOnce.contains(hash) {
+        if key.isBeingAnimated || animatedOnce.contains(hash) {
+            Logger.shared.log("scrolling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }
@@ -128,6 +138,7 @@ final class ScrollingAnimationService {
         guard duration > 0,
               let curPos  = readOrigin(of: ax),
               let curSize = readSize(of: ax) else {
+            Logger.shared.log("scrolling immediate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
             applyImmediate(ax: ax, pos: pos, size: size, positionOnly: positionOnly)
             return
         }
@@ -137,7 +148,7 @@ final class ScrollingAnimationService {
         if posDelta < 1 && (positionOnly || sizeDelta < 1) { return }
 
         markAnimatedOnce(hash)
-        ResizeObserver.shared.reapplying.insert(key)
+        WindowTracker.shared.reapplying.insert(key)
         lock.withLock {
             animations[hash] = Animation(
                 ax: ax, key: key,
@@ -148,14 +159,17 @@ final class ScrollingAnimationService {
                 sizeChanged: !positionOnly && sizeDelta >= 1
             )
         }
-        startDisplayLinkIfNeeded()
+        Logger.shared.log("scrolling animate wid=\(hash) pid=\(key.pid) pos=(\(Int(pos.x)),\(Int(pos.y))) size=\(Int(size.width))x\(Int(size.height))")
+        FocusedWindowBorderService.shared.hideForAnimation()
+        ScrollingDisplayLinkTickObserver.shared.startIfNeeded()
     }
 
     func cancel(hash: UInt) {
         let anim: Animation? = lock.withLock { animations.removeValue(forKey: hash) }
         guard let anim else { return }
-        ResizeObserver.shared.reapplying.remove(anim.key)
-        stopDisplayLinkIfIdle()
+        WindowTracker.shared.reapplying.remove(anim.key)
+        let empty = lock.withLock { animations.isEmpty }
+        if empty { ScrollingDisplayLinkTickObserver.shared.stopIfIdle() }
     }
 
     func cancelAll() {
@@ -165,12 +179,12 @@ final class ScrollingAnimationService {
             return copy
         }
         for anim in all.values {
-            ResizeObserver.shared.reapplying.remove(anim.key)
+            WindowTracker.shared.reapplying.remove(anim.key)
         }
         animatedOnce.removeAll()
         clearAnimatedOnceWork?.cancel()
         clearAnimatedOnceWork = nil
-        stopDisplayLinkIfIdle()
+        ScrollingDisplayLinkTickObserver.shared.stopIfIdle()
     }
 
     // MARK: - Position computation
@@ -223,31 +237,6 @@ final class ScrollingAnimationService {
         case .stacking(let s): return Set(s.children.map(\.windowHash))
         default:               return []
         }
-    }
-
-    // MARK: - Display Link
-
-    private func startDisplayLinkIfNeeded() {
-        guard displayLink == nil else { return }
-        var link: CVDisplayLink?
-        CVDisplayLinkCreateWithActiveCGDisplays(&link)
-        guard let link else { return }
-
-        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
-        CVDisplayLinkSetOutputCallback(link, { _, _, _, _, _, userInfo -> CVReturn in
-            let service = Unmanaged<ScrollingAnimationService>.fromOpaque(userInfo!).takeUnretainedValue()
-            service.tickAll()
-            return kCVReturnSuccess
-        }, selfPtr)
-        CVDisplayLinkStart(link)
-        displayLink = link
-    }
-
-    private func stopDisplayLinkIfIdle() {
-        let empty = lock.withLock { animations.isEmpty }
-        guard empty, let link = displayLink else { return }
-        CVDisplayLinkStop(link)
-        displayLink = nil
     }
 
     // MARK: - Tick (runs on CVDisplayLink render thread)
@@ -308,12 +297,14 @@ final class ScrollingAnimationService {
                 return animations.isEmpty
             }
             if allDone {
-                stopDisplayLinkIfIdle()
+                ScrollingDisplayLinkTickObserver.shared.stopIfIdle()
                 let pending = pendingReapplyRemoval
                 pendingReapplyRemoval.removeAll()
                 DispatchQueue.main.async {
-                    ResizeObserver.shared.reapplying.subtract(pending)
-                    FocusedWindowBorderService.shared.recheckActive()
+                    WindowTracker.shared.reapplying.subtract(pending)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Config.borderRestoreDelay) {
+                        FocusedWindowBorderService.shared.recheckActive()
+                    }
                 }
             }
         }

@@ -26,11 +26,11 @@ struct TileHandler {
 
         // If a managed window from the same PID is no longer on screen, it became an
         // inactive tab. Swap its slot identity to the focused window instead of adding a new slot.
-        let onScreen = OnScreenWindowCache.visibleHashes()
-        let managedSiblings = ResizeObserver.shared.keysByPid[pid] ?? []
+        let managedSiblings = WindowTracker.shared.keysByPid[pid] ?? []
+        let freshTabGroup = TabRecognizer.tabSiblingHashes(of: key.windowHash, pid: pid)
         for siblingKey in managedSiblings {
-            if siblingKey.isSameTabGroup(hash: key.windowHash) || !onScreen.contains(siblingKey.windowHash) {
-                ResizeObserver.shared.swapTab(oldKey: siblingKey,
+            if siblingKey.isSameTabGroup(hash: key.windowHash) || freshTabGroup.contains(siblingKey.windowHash) {
+                WindowEventRouter.shared.swapTab(oldKey: siblingKey,
                                               newWindow: axWindow, newHash: key.windowHash)
                 ReapplyHandler.reapplyAll()
                 return
@@ -40,14 +40,14 @@ struct TileHandler {
         var mutableKey = key
         mutableKey.preTileOrigin = readOrigin(of: axWindow)
         mutableKey.preTileSize = readSize(of: axWindow)
-        let tabSiblings = TabDetector.tabSiblingHashes(of: mutableKey.windowHash, pid: pid)
+        let tabSiblings = TabRecognizer.tabSiblingHashes(of: mutableKey.windowHash, pid: pid)
         if !tabSiblings.isEmpty {
             mutableKey.isTabbed = true
             mutableKey.tabHashes = tabSiblings
         }
         SharedRootStore.shared.setActiveRootType(.tiling)
-        TilingSnapService.shared.snap(mutableKey, screen: screen)
-        ResizeObserver.shared.observe(window: axWindow, pid: pid, key: mutableKey)
+        TilingService.shared.snap(mutableKey, screen: screen)
+        WindowEventRouter.shared.observe(window: axWindow, pid: pid, key: mutableKey)
         ReapplyHandler.reapplyAll()
     }
 
@@ -81,13 +81,13 @@ struct TileHandler {
 
         key.preTileOrigin = readOrigin(of: window)
         key.preTileSize = readSize(of: window)
-        let tabSiblings = TabDetector.tabSiblingHashes(of: key.windowHash, pid: pid)
+        let tabSiblings = TabRecognizer.tabSiblingHashes(of: key.windowHash, pid: pid)
         if !tabSiblings.isEmpty {
             key.isTabbed = true
             key.tabHashes = tabSiblings
         }
-        TilingSnapService.shared.snap(key, screen: screen)
-        ResizeObserver.shared.observe(window: window, pid: pid, key: key)
+        TilingService.shared.snap(key, screen: screen)
+        WindowEventRouter.shared.observe(window: window, pid: pid, key: key)
         ReapplyHandler.reapplyAll()
     }
 }

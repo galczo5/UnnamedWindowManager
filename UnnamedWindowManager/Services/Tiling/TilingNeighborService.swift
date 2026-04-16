@@ -24,10 +24,7 @@ struct TilingNeighborService {
 
     static func leafRects(in root: TilingRootSlot) -> [LeafRect] {
         guard let screen = NSScreen.main else { return [] }
-        let primaryHeight = NSScreen.screens[0].frame.height
-        let visible = screen.visibleFrame
-        let og = Config.outerGaps
-        let origin = CGPoint(x: visible.minX + og.left!, y: primaryHeight - visible.maxY + og.top!)
+        let origin = screenLayoutOrigin(screen)
 
         var results: [LeafRect] = []
         var cursor = origin

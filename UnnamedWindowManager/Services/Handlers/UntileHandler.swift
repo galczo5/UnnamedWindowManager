@@ -19,51 +19,50 @@ struct UntileHandler {
         guard let screen = NSScreen.main else { return }
         let key = windowSlot(for: axWindow, pid: pid)
         let stored = TilingRootStore.shared.storedSlot(key)
+        FocusedWindowBorderService.shared.hideIfActive(key: key)
         WindowOpacityService.shared.restore(hash: key.windowHash)
-        WindowVisibilityManager.shared.restoreAndForget(key)
-        TilingSnapService.shared.removeAndReflow(key, screen: screen)
-        ResizeObserver.shared.stopObserving(key: key, pid: pid)
-        if let stored { RestoreService.restore(stored, element: axWindow) }
+        TilingService.shared.removeAndReflow(key, screen: screen)
+        WindowEventRouter.shared.stopObserving(key: key, pid: pid)
+        if let stored { WindowRestoreService.restore(stored, element: axWindow) }
         ReapplyHandler.reapplyAll()
     }
 
     static func untileAll() {
         guard AXIsProcessTrusted() else { return }
-        let elements = ResizeObserver.shared.elements
-        let removed = TilingSnapService.shared.removeVisibleRoot()
+        let elements = WindowTracker.shared.elements
+        let removed = TilingService.shared.removeVisibleRoot()
         WindowOpacityService.shared.restoreAll()
+        FocusedWindowBorderService.shared.hide()
         for key in removed {
-            if let ax = elements[key] { RestoreService.restore(key, element: ax) }
-            WindowVisibilityManager.shared.restoreAndForget(key)
-            ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+            if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
+            WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
         }
-        NotificationCenter.default.post(name: .tileStateChanged, object: nil)
+        TileStateChangedObserver.shared.notify(TileStateChangedEvent())
     }
 
     static func untileByKey(_ key: WindowSlot, screen: NSScreen) {
         let isScrolling = ScrollingRootStore.shared.isTracked(key)
         WindowOpacityService.shared.restore(hash: key.windowHash)
-        WindowVisibilityManager.shared.restoreAndForget(key)
-        if let ax = ResizeObserver.shared.elements[key] {
-            RestoreService.restore(key, element: ax)
+        if let ax = WindowTracker.shared.elements[key] {
+            WindowRestoreService.restore(key, element: ax)
         }
         if isScrolling {
             ScrollingRootStore.shared.removeWindow(key, screen: screen)
         } else {
-            TilingSnapService.shared.removeAndReflow(key, screen: screen)
+            TilingService.shared.removeAndReflow(key, screen: screen)
         }
-        ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+        WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
     }
 
     static func untileAllSpaces() {
         guard AXIsProcessTrusted() else { return }
-        let elements = ResizeObserver.shared.elements
-        let removed = TilingSnapService.shared.removeAllTilingRoots()
+        let elements = WindowTracker.shared.elements
+        let removed = TilingService.shared.removeAllTilingRoots()
         WindowOpacityService.shared.restoreAll()
+        FocusedWindowBorderService.shared.hide()
         for key in removed {
-            if let ax = elements[key] { RestoreService.restore(key, element: ax) }
-            WindowVisibilityManager.shared.restoreAndForget(key)
-            ResizeObserver.shared.stopObserving(key: key, pid: key.pid)
+            if let ax = elements[key] { WindowRestoreService.restore(key, element: ax) }
+            WindowEventRouter.shared.stopObserving(key: key, pid: key.pid)
         }
     }
 }

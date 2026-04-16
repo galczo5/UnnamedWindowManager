@@ -33,7 +33,7 @@ struct FocusDirectionService {
     // MARK: - Private
 
     private static func activateWindow(_ key: WindowSlot) {
-        let elements = ResizeObserver.shared.elements
+        let elements = WindowTracker.shared.elements
         guard let axElement = elements[key] else { return }
         guard let app = NSRunningApplication(processIdentifier: key.pid) else { return }
         app.activate()
